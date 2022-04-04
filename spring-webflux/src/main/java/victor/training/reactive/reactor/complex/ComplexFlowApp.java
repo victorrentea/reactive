@@ -53,9 +53,12 @@ public class ComplexFlowApp implements CommandLineRunner {
       return mainFlow(productIds)
           .map(list -> "Done. Got " + list.size() + " products: " + list);
    }
+   {
+   }
 
    // ================================== work below ====================================
 
+//@Transactional
    public Mono<List<Product>> mainFlow(List<Long> productIds) {
       return Flux.fromIterable(productIds)
           .buffer(2)
