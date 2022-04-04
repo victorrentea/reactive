@@ -10,7 +10,7 @@
       {
         "rating": 4
       },
-    "fixedDelayMilliseconds": 100,
+    "fixedDelayMilliseconds": 10,
 
     "headers": {
       "Content-Type": "application/json"

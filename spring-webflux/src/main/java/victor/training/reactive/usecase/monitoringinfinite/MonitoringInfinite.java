@@ -1,4 +1,4 @@
-package victor.training.reactive.reactor;
+package victor.training.reactive.usecase.monitoringinfinite;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -8,7 +8,7 @@ import javax.annotation.PostConstruct;
 import java.time.Duration;
 
 class OrderApi {
-   Mono<Boolean> isOrderPresent(Long id) {
+   static Mono<Boolean> isOrderPresent(Long id) {
       return Mono.deferContextual(contextView -> {
          System.out.println("Current user is " + contextView.get("username"));
          return Mono.fromSupplier(() -> Math.random() < .5);
@@ -16,7 +16,7 @@ class OrderApi {
    }
 }
 class AuditApi {
-   Mono<Void> auditOrderNotFound(Long id) {
+   static Mono<Void> auditOrderNotFound(Long id) {
       return Mono.fromRunnable(() -> {
          System.out.println("CALL AUDIT " + id);
          if (Math.random() < .1) {
@@ -28,25 +28,24 @@ class AuditApi {
 
 //@Service
 public class MonitoringInfinite {
-   static OrderApi orderApi = new OrderApi();
-   static AuditApi auditApi = new AuditApi();
+
    public static void main(String[] args) {
       monitor(Flux.interval(Duration.ofMillis(10)));
       Utils.sleep(1000000);
    }
 
-   // You are monitoring an infinite flux of order ids (think Kafka stream)
+
+   //You are monitoring an infinite flux of order ids (think Kafka stream)
    //Each id is checked in the OrderApi.isOrderPresent(id):Mono<Boolean>
    //If it is NOT found, or an error occurs, the id is sent to AuditApi.
-   //In case of error, the AuditApi is retried once.
-
+   //  (In case of error, the AuditApi is retried once.)
    @PostConstruct
    private static void monitor(Flux<Long> orderIdInfiniteStream) {
       // ???
       orderIdInfiniteStream
           .doOnNext(id -> System.out.println("I see ID " + id))
 
-          .filterWhen(orderId -> orderApi.isOrderPresent(orderId).map(b->!b))
+          .filterWhen(orderId -> OrderApi.isOrderPresent(orderId).map(b->!b))
 
 //          .flatMap(orderId -> orderApi.isOrderPresent(orderId)
 //              .map(isPresent -> Tuples.of(orderId, isPresent)))
@@ -55,7 +54,7 @@ public class MonitoringInfinite {
 
 
           .log("BEFORE FLATMAP")
-          .flatMap(id -> auditApi.auditOrderNotFound(id)
+          .flatMap(id -> AuditApi.auditOrderNotFound(id)
                   .retry(1)
 //                .onErrorResume(tt -> Mono.empty())
           )
@@ -70,4 +69,8 @@ public class MonitoringInfinite {
 
    }
 }
-//record Resul(orderId:long)
+// checklist:
+// - filterWhen
+// - log() around audit sees CANCEL signal
+// - onErrorResume BEFORE you reach the surface (top level reactive flow)
+// - onErrorContinue propagates via Reactor Context

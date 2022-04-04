@@ -1,4 +1,4 @@
-package victor.training.reactive.reactor.complex;
+package victor.training.reactive.usecase.complex;
 
 import lombok.Data;
 
@@ -8,7 +8,6 @@ public class ProductDetailsResponse {
    private String name;
    private boolean active;
    private boolean resealed;
-
 
    public Product toEntity() {
       return new Product(id,name,active,resealed, null);

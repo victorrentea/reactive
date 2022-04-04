@@ -1,4 +1,4 @@
-package victor.training.reactive.reactor.complex;
+package victor.training.reactive.usecase.complex;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -70,17 +70,15 @@ public class ComplexFlowApp implements CommandLineRunner {
 
    public Mono<Product> enhanceWithRating(Product product) {
       return ExternalCacheClient.lookupInCache(product.getId())
-          .doOnError(e -> e.printStackTrace())
+          .doOnError(Throwable::printStackTrace)
           .onErrorResume(t->Mono.empty())
           .switchIfEmpty(
               Mono.defer(() -> ExternalAPIs.fetchProductRating(product.getId()))
-
                   .onErrorResume(t -> Mono.empty())
 
                   .doOnNext(rating ->ExternalCacheClient.putInCache(product.getId(), rating)
                      .doOnError(t -> log.trace("Boom " + t))
                      .subscribe())
-//                  .onErrorReturn(ProductRatingResponse.NO_RATING)
           )
           .map(product::withRating)
           .defaultIfEmpty(product);

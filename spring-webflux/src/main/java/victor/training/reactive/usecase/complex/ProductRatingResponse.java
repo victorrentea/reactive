@@ -1,4 +1,4 @@
-package victor.training.reactive.reactor.complex;
+package victor.training.reactive.usecase.complex;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
