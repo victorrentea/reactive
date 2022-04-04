@@ -53,8 +53,6 @@ public class ComplexFlowApp implements CommandLineRunner {
       return mainFlow(productIds)
           .map(list -> "Done. Got " + list.size() + " products: " + list);
    }
-   {
-   }
 
    // ================================== work below ====================================
 
@@ -62,6 +60,8 @@ public class ComplexFlowApp implements CommandLineRunner {
    public Mono<List<Product>> mainFlow(List<Long> productIds) {
       return Flux.fromIterable(productIds)
           .buffer(2)
+          .metrics()
+          .name("mainFlow")
           .flatMap(productIdList -> retrieveMultipleProducts(productIdList), 4) // max 4 calls in parallel.
           .doOnNext(product -> auditProduct(product).subscribe())
           .flatMap(product -> enhanceWithRating(product))

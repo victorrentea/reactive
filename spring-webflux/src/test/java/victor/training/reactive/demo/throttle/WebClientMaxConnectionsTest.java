@@ -1,6 +1,5 @@
 package victor.training.reactive.demo.throttle;
 
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -8,6 +7,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.ParallelFlux;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import victor.training.util.WireMockExtension;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -17,7 +17,7 @@ public class WebClientMaxConnectionsTest {
     public static final int MAX_CONNECTIONS = 5;
 
     @RegisterExtension
-    public WireMockRule wireMock = new WireMockRule(9999);
+    public WireMockExtension wireMock = new WireMockExtension(9999);
 
     public WebClientMaxConnections target = new WebClientMaxConnections(
         "http://localhost:9999/testing", MAX_CONNECTIONS);
