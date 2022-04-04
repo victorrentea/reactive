@@ -20,14 +20,11 @@ import lombok.Data;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import reactor.test.publisher.TestPublisher;
 import victor.training.reactive.reactor.lite.domain.User;
 
 import java.time.Duration;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 public class Part03StepVerifier {

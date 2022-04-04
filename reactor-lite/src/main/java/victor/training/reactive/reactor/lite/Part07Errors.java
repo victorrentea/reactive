@@ -19,21 +19,15 @@ package victor.training.reactive.reactor.lite;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-import victor.training.reactive.intro.Utils;
 import victor.training.reactive.reactor.lite.domain.User;
 
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import static java.time.Duration.ofMillis;
 import static java.util.Collections.emptyList;
 import static reactor.core.scheduler.Schedulers.boundedElastic;
 
