@@ -19,6 +19,7 @@
             <artifactId>lombok</artifactId>
         </dependency>
         <dependency>
+            <!-- detect blocking code in non-blocking context -->
             <groupId>io.projectreactor.tools</groupId>
             <artifactId>blockhound</artifactId>
             <version>1.0.6.RELEASE</version>
@@ -30,6 +31,7 @@
             <version>0.9.14</version>
         </dependency>
         <dependency>
+            <!-- PublisherProbe, StepVerifier -->
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-test</artifactId>
             <scope>compile</scope>
@@ -39,14 +41,15 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>compile</scope>
         </dependency>
-        <!--To demonstrate integration-->
         <dependency>
+            <!--To demonstrate integration-->
             <groupId>io.reactivex.rxjava3</groupId>
             <artifactId>rxjava</artifactId>
             <version>3.0.1</version>
         </dependency>
 
         <dependency>
+            <!-- TupleUtils -->
             <groupId>io.projectreactor.addons</groupId>
             <artifactId>reactor-extra</artifactId>
             <version>3.4.3</version>
