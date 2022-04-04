@@ -35,6 +35,12 @@ public class BlockingApp {
    }
    @Autowired
    private Barman barman;
+
+   @GetMapping("fast")
+   public String fast() throws Exception {
+      return "immediate";
+   }
+
    @GetMapping("drink")
    public DillyDilly drink() throws Exception {
       log.info("Talking to proxied barman: " + barman.getClass());
