@@ -47,8 +47,8 @@ public class ComplexFlowApp implements CommandLineRunner {
    }
 
    @GetMapping("complex")
-   public static Mono<String> executeAsNonBlocking() {
-      List<Long> productIds = LongStream.rangeClosed(1, 1000).boxed().collect(toList());
+   public Mono<String> executeAsNonBlocking() {
+      List<Long> productIds = LongStream.rangeClosed(1, 10).boxed().collect(toList());
 
       return mainFlow(productIds)
           .map(list -> "Done. Got " + list.size() + " products: " + list);
@@ -57,31 +57,20 @@ public class ComplexFlowApp implements CommandLineRunner {
    // ================================== work below ====================================
 
    public static Mono<List<Product>> mainFlow(List<Long> productIds) {
-//      return Flux.fromIterable(productIds)
-//          .flatMap(productId ->
-//              WebClient.create().get().uri("http://localhost:9999/api/product/" + productId)
-//                  .retrieve()
-//                  .bodyToMono(ProductDetailsResponse.class)
-//                  .map(e -> e.toEntity())
-//          ).collectList();
-
-//      Mono<Void> ack = Mono.just(new Void());
       return Flux.fromIterable(productIds)
-          // Flux<List<Long>> grouping them in pages of 2
           .buffer(2)
 //          .flatMap(productIdList -> retrieveMultipleProducts(productIdList)) // infinite requests in parallel
-//          .flatMap(productIdList -> retrieveMultipleProducts(productIdList), 4) // max 4 calls in parallel.
+          .flatMap(productIdList -> retrieveMultipleProducts(productIdList), 4) // max 4 calls in parallel.
 //          .concatMap(productIdList -> retrieveMultipleProducts(productIdList)) // one request at a time
-          .flatMapSequential(productIdList -> retrieveMultipleProducts(productIdList)) // one request at a time
-
+//          .flatMapSequential(productIdList -> retrieveMultipleProducts(productIdList)) // one request at a time
+//
 //          .flatMap(product -> auditProduct(product).thenReturn(product))
-//          .delayUntil(product -> auditProduct(product))
+          .delayUntil(product -> auditProduct(product))
 
           .doOnNext(product -> auditProduct(product).subscribe())
                // there are only two valid reasons to call .subscribe():
                // 1) fire-and-forget
                // 2) infinite (kafka) streams
-
 
           .collectList();
 

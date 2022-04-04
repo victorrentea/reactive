@@ -18,7 +18,7 @@
    
     <modules>
         <module>kafka</module>
-        <module>reactor-lite</module>
+<!--        <module>reactor-lite</module>-->
         <module>spring-mvc</module>
         <module>spring-webflux</module>
     </modules>
