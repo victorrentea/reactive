@@ -1,0 +1,19 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/api/rating/.*"
+  },
+  "response": {
+    "status": 200,
+
+    "jsonBody":
+      {
+        "rating": 4
+      },
+    "fixedDelayMilliseconds": 100,
+
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

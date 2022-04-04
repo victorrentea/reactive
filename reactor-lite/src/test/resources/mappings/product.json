@@ -1,0 +1,22 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/api/product/\\d+"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody":
+      {
+        "id": "{{request.path.[2]}}",
+        "name": "Product{{request.path.[2]}}",
+        "active": true,
+        "resealed": true
+      },
+    "transformers": ["response-template"],
+    "fixedDelayMilliseconds": 100,
+
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}
