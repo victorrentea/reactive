@@ -21,9 +21,9 @@ public class Apis {
    }
 
    private Mono<Void> api(String apiName, Object data) {
-      return Mono.fromRunnable(() -> log.info("Api " + apiName + ": {} START", data))
-          .delayElement(Duration.ofMillis(100))
-          .doOnNext(item -> log.info("Api " + apiName + ": {} END", data))
+      return Mono.delay(Duration.ofMillis(100))
+          .doOnSubscribe(s -> log.info("Api" + apiName + ": {} START", data))
+          .doOnNext(item -> log.info("Api" + apiName + ": {} END", data))
           .then();
    }
 }
