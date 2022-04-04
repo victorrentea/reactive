@@ -1,0 +1,29 @@
+version: '3'
+services:
+  cassandra:
+    image: cassandra
+    hostname: cassandra
+    ports:
+      - "9042:9042"
+    volumes:
+      - ./data/cassandra:/var/lib/cassandra
+
+  redis:
+    image: redis
+    hostname: redis
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres
+    hostname: postgres
+    environment:
+      - POSTGRES_PASSWORD=secret
+    ports:
+      - "5432:5432"
+
+  mongo:
+    image: mongo
+    hostname: mongo
+    ports:
+      - "27017:27017"

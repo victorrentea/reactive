@@ -25,6 +25,34 @@
             <version>1.0.6.RELEASE</version>
         </dependency>
         <dependency>
+            <!-- non-blocking rate limiter as in https://stackoverflow.com/questions/50387584/how-to-limit-the-request-second-with-webclient -->
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-reactor</artifactId>
+            <version>1.7.1</version>
+        </dependency>
+        <dependency>
+            <!-- non-blocking rate limiter as in https://stackoverflow.com/questions/50387584/how-to-limit-the-request-second-with-webclient -->
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-ratelimiter</artifactId>
+            <version>1.7.1</version>
+        </dependency>
+
+        <dependency>
+            <!-- Unchecked.* -->
+            <groupId>org.jooq</groupId>
+            <artifactId>jool</artifactId>
+            <version>0.9.14</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.tomakehurst</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <version>2.27.2</version>
+            <scope>runtime</scope>
+        </dependency>
+
+
+        <dependency>
             <!-- PublisherProbe, StepVerifier -->
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-test</artifactId>
