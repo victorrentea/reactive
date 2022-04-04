@@ -11,11 +11,6 @@ public class ProductDetailsResponse {
 
 
    public Product toEntity() {
-      Product product = new Product();
-      product.setId(id);
-      product.setName(name);
-      product.setActive(active);
-      product.setResealed(resealed);
-      return product;
+      return new Product(id,name,active,resealed, null);
    }
 }

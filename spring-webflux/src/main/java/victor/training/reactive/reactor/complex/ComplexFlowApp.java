@@ -56,24 +56,29 @@ public class ComplexFlowApp implements CommandLineRunner {
 
    // ================================== work below ====================================
 
-   public static Mono<List<Product>> mainFlow(List<Long> productIds) {
+   public Mono<List<Product>> mainFlow(List<Long> productIds) {
+
+
+
       return Flux.fromIterable(productIds)
           .buffer(2)
-//          .flatMap(productIdList -> retrieveMultipleProducts(productIdList)) // infinite requests in parallel
           .flatMap(productIdList -> retrieveMultipleProducts(productIdList), 4) // max 4 calls in parallel.
-//          .concatMap(productIdList -> retrieveMultipleProducts(productIdList)) // one request at a time
-//          .flatMapSequential(productIdList -> retrieveMultipleProducts(productIdList)) // one request at a time
-//
-//          .flatMap(product -> auditProduct(product).thenReturn(product))
-          .delayUntil(product -> auditProduct(product))
-
           .doOnNext(product -> auditProduct(product).subscribe())
-               // there are only two valid reasons to call .subscribe():
-               // 1) fire-and-forget
-               // 2) infinite (kafka) streams
-
+          .flatMap(product -> enhanceWithRating(product))
           .collectList();
 
+   }
+
+
+
+   public Mono<Product> enhanceWithRating(Product product) {
+      return ExternalCacheClient.lookupInCache(product.getId())
+          .switchIfEmpty(  ExternalAPIs.fetchProductRating(product.getId())
+              .doOnNext(rating ->ExternalCacheClient.putInCache(product.getId(), rating)
+                  .doOnError(t -> log.trace("Boom " + t))
+                  .subscribe())
+          )
+          .map(product::withRating);
    }
 
    private static Mono<Void> auditProduct(Product product) {
@@ -81,8 +86,9 @@ public class ComplexFlowApp implements CommandLineRunner {
          return Mono.empty();
       }
       return ExternalAPIs.auditResealedProduct(product)
+          .doOnSubscribe(s -> log.error("Product rating: " + product.getRating() ))
           .doOnError(e -> log.error("OMG i'm afraid", e))
-          .onErrorResume(e -> Mono.empty()) // converts an ERROR signal into a COMPLETION signal
+//          .delaySubscription(Duration.ofMillis(10))
           ;
    }
 

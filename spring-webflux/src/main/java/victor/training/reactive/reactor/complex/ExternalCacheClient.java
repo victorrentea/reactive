@@ -19,10 +19,14 @@ public class ExternalCacheClient {
    }
 
    public static Mono<Void> putInCache(Long productId, ProductRatingResponse rating) {
+      return internal(productId);
+   }
+
+   private static Mono<Void> internal(Long productId) {
       log.info("Put in cache " + productId);
       if (true) {
          throw new RuntimeException("buba");
       }
-      return Mono.empty();//.delayElement(ofMillis(10)).then();
+      return Mono.empty();
    }
 }
