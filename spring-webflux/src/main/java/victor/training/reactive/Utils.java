@@ -1,4 +1,4 @@
-package victor.training.reactive.intro;
+package victor.training.reactive;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

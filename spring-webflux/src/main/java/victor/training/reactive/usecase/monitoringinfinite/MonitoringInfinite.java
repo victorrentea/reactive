@@ -2,7 +2,7 @@ package victor.training.reactive.usecase.monitoringinfinite;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import victor.training.reactive.intro.Utils;
+import victor.training.reactive.Utils;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;

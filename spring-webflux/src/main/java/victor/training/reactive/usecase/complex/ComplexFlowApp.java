@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.stream.LongStream;
 
 import static java.util.stream.Collectors.toList;
-import static victor.training.reactive.intro.Utils.installBlockHound;
+import static victor.training.reactive.Utils.installBlockHound;
 
 @RestController
 @Slf4j

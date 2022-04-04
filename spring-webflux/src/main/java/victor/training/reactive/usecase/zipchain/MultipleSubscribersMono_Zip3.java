@@ -5,7 +5,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Objects;
 
-import static victor.training.reactive.intro.Utils.sleep;
+import static victor.training.reactive.Utils.sleep;
 
 public class MultipleSubscribersMono_Zip3 {
 

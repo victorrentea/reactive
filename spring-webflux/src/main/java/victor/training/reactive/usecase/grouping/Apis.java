@@ -7,7 +7,7 @@ import java.time.Duration;
 import java.util.List;
 
 @Slf4j
-public class Apis {
+class Apis {
 
    public Mono<Void> apiA(Integer oddItem) {
       return api("A", oddItem);

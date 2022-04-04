@@ -6,7 +6,7 @@ import reactor.core.publisher.Flux;
 import java.util.List;
 import java.util.Objects;
 
-import static victor.training.reactive.intro.Utils.waitForEnter;
+import static victor.training.reactive.Utils.waitForEnter;
 
 @Slf4j
 public class MultipleSubscribersFluxConnect {

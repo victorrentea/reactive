@@ -1,6 +1,6 @@
 package victor.training.reactive.usecase.grouping;
 
-public enum MessageType {
+enum MessageType {
    TYPE1_NEGATIVE,
    TYPE2_ODD,
    TYPE3_EVEN;
