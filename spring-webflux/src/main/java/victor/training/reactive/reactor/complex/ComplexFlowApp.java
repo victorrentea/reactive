@@ -48,7 +48,7 @@ public class ComplexFlowApp implements CommandLineRunner {
 
    @GetMapping("complex")
    public Mono<String> executeAsNonBlocking() {
-      List<Long> productIds = LongStream.rangeClosed(1, 10).boxed().collect(toList());
+      List<Long> productIds = LongStream.rangeClosed(1, 1000).boxed().collect(toList());
 
       return mainFlow(productIds)
           .map(list -> "Done. Got " + list.size() + " products: " + list);
@@ -57,28 +57,30 @@ public class ComplexFlowApp implements CommandLineRunner {
    // ================================== work below ====================================
 
    public Mono<List<Product>> mainFlow(List<Long> productIds) {
-
-
-
       return Flux.fromIterable(productIds)
           .buffer(2)
           .flatMap(productIdList -> retrieveMultipleProducts(productIdList), 4) // max 4 calls in parallel.
           .doOnNext(product -> auditProduct(product).subscribe())
           .flatMap(product -> enhanceWithRating(product))
           .collectList();
-
    }
-
-
 
    public Mono<Product> enhanceWithRating(Product product) {
       return ExternalCacheClient.lookupInCache(product.getId())
-          .switchIfEmpty(  ExternalAPIs.fetchProductRating(product.getId())
-              .doOnNext(rating ->ExternalCacheClient.putInCache(product.getId(), rating)
-                  .doOnError(t -> log.trace("Boom " + t))
-                  .subscribe())
+          .doOnError(e -> e.printStackTrace())
+          .onErrorResume(t->Mono.empty())
+          .switchIfEmpty(
+              Mono.defer(() -> ExternalAPIs.fetchProductRating(product.getId()))
+
+                  .onErrorResume(t -> Mono.empty())
+
+                  .doOnNext(rating ->ExternalCacheClient.putInCache(product.getId(), rating)
+                     .doOnError(t -> log.trace("Boom " + t))
+                     .subscribe())
+//                  .onErrorReturn(ProductRatingResponse.NO_RATING)
           )
-          .map(product::withRating);
+          .map(product::withRating)
+          .defaultIfEmpty(product);
    }
 
    private static Mono<Void> auditProduct(Product product) {

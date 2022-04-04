@@ -20,7 +20,7 @@ class ExternalAPIs {
    @SneakyThrows
    public static Mono<Void> auditResealedProduct(Product product) {
       // TODO only audit resealed products !
-      return WebClient.create().get().uri("http://localhost:9999/api/audit-xxxxesealed/" + product)
+      return WebClient.create().get().uri("http://localhost:9999/api/audit-resealed/" + product)
           .retrieve()
           .toBodilessEntity()
           .doOnSubscribe(s -> log.info("Calling Audit REST"))
@@ -30,7 +30,10 @@ class ExternalAPIs {
    @SneakyThrows
    public static Mono<ProductRatingResponse> fetchProductRating(long productId) {
 
-
+      if (Math.random() < .5) {
+         log.error("Failing rating");
+         return Mono.error(new RuntimeException("Oups"));
+      }
 
       log.info("Calling Rating REST is a LIE! - executing this method does NOT do any network > it just creates a Mono");
       return WebClient.create().get().uri("http://localhost:9999/api/rating/{}", productId)
