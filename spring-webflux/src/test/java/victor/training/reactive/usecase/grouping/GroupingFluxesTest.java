@@ -8,6 +8,10 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.*;
 
 @Slf4j
 @ExtendWith(MockitoExtension.class)
@@ -21,9 +25,6 @@ class GroupingFluxesTest {
 
    @Test
    void negative() {
-//      when(apis.apiA(anyInt())).thenReturn(Mono.empty());
-//      when(apis.apiB(anyInt())).thenReturn(Mono.empty());
-
       // when
 //      target.processMessageStream(Flux.just(-1)).subscribe(); // NEVER .subscribe in tests as it does NOT block the JUnit thread > the assertions start firing too early
       target.processMessageStream(Flux.just(-1)).blockOptional();
@@ -33,7 +34,17 @@ class GroupingFluxesTest {
    }
 
    @Test
-   void apiA_and_B_areCalled_forOddNumbers() {
+   void apiA_and_B_areCalled_forOneOddNumber() {
+      when(apis.apiA(anyInt())).thenReturn(Mono.empty());
+      when(apis.apiB(anyInt())).thenReturn(Mono.empty());
+
+      target.processMessageStream(Flux.just(1)).blockOptional();
+
+      verify(apis).apiA(anyInt());
+      verify(apis).apiB(anyInt());
+   }
+   @Test
+   void apiA_and_B_areCalled_for2OddNumbers() {
    }
 
    @Test

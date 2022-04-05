@@ -35,7 +35,6 @@ public class GroupingFluxes {
           .groupBy(m -> MessageType.forMessage(m))
           // geek way
           .flatMap(groupedFlux -> groupedFlux.key().handleFunction.apply(this, groupedFlux))
-
           // standard way
 //          .flatMap(groupedFlux -> {
 //             switch (groupedFlux.key()) {
@@ -55,7 +54,8 @@ public class GroupingFluxes {
    }
 
    public Mono<Void> handleType2(Flux<Integer> groupedFlux) {
-      return groupedFlux.flatMap(m2 -> Mono.zip(apis.apiA(m2), apis.apiB(m2)))
+      return groupedFlux
+          .doOnNext(m2 ->Mono.zip(apis.apiA(m2), apis.apiB(m2)))
           .then();
    }
 
