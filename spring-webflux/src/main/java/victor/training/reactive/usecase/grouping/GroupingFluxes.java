@@ -4,8 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import static java.time.Duration.ofMillis;
-
 @Slf4j
 public class GroupingFluxes {
    public static void main(String[] args) {
@@ -29,24 +27,10 @@ public class GroupingFluxes {
 
    public Mono<Void> processMessageStream(Flux<Integer> messageStream) {
       return messageStream
-//          .then() // starting point
+          .then() // starting point
 
-          // solution:
-          .groupBy(MessageType::forMessage)
-          .flatMap(groupedFlux -> {
-             switch (groupedFlux.key()) {
-                case TYPE1_NEGATIVE:
-                   return Mono.empty();
-                case TYPE2_ODD:
-                   return groupedFlux.flatMap(odd -> Mono.zip(apis.apiA(odd), apis.apiB(odd)));
-                case TYPE3_EVEN:
-                   return groupedFlux
-                       .bufferTimeout(3, ofMillis(500))
-                       .flatMap(evenPage -> apis.apiC(evenPage));
-                default:
-                   return Flux.error(new IllegalStateException("Unexpected value: " + groupedFlux.key()));
-             }
-          }).then();
+
+          ;
    }
 
 }
