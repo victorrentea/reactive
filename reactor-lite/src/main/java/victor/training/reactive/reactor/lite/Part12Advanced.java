@@ -12,9 +12,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class Part12Advanced {
 
-   // TODO Create a Flux returning 3 different random numbers to anyone subscribing to it.
-   // Note: multiple subscribers will subscribe!
-   // Use generateRandomInts()!
+   // TODO MUST Create a Flux returning 3 different random numbers to anyone subscribing to it.
+   // Warning: multiple subscribers will subscribe!
+   // Hint: generateRandomInts()!
    public Flux<Integer> defer() {
       return Flux.defer( () -> Flux.fromIterable(generate3RandomInts()) );
    }

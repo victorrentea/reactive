@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuples;
 
@@ -37,6 +38,9 @@ public class ComplexFlowApp implements CommandLineRunner {
 
    @Override
    public void run(String... args) throws Exception {
+
+      Hooks.onOperatorDebug(); // provide better stack traces
+
       log.info("Calling myself automatically once");
       WebClient.create().get().uri("http://localhost:8081/complex").retrieve().bodyToMono(String.class)
           .subscribe(
@@ -60,8 +64,8 @@ public class ComplexFlowApp implements CommandLineRunner {
    public Mono<List<Product>> mainFlow(List<Long> productIds) {
       return Flux.fromIterable(productIds)
           .buffer(2)
-          .metrics()
           .name("mainFlow")
+          .metrics()
           .flatMap(productIdList -> retrieveMultipleProducts(productIdList), 4) // max 4 calls in parallel.
           .doOnNext(product -> auditProduct(product).subscribe())
           .flatMap(product -> enhanceWithRating(product))

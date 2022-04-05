@@ -24,9 +24,9 @@ public class ExternalCacheClient {
 
    private static Mono<Void> internal(Long productId) {
       log.info("Put in cache " + productId);
-      if (true) {
-         throw new RuntimeException("buba");
-      }
+//      if (true) {
+//         throw new RuntimeException("buba");
+//      }
       return Mono.empty();
    }
 }
