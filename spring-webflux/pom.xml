@@ -41,6 +41,12 @@
             <version>1.0.6.RELEASE</version>
         </dependency>
         <dependency>
+            <!-- TupleUtils -->
+            <groupId>io.projectreactor.addons</groupId>
+            <artifactId>reactor-extra</artifactId>
+            <version>3.4.3</version>
+        </dependency>
+        <dependency>
             <!-- non-blocking rate limiter as in https://stackoverflow.com/questions/50387584/how-to-limit-the-request-second-with-webclient -->
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-reactor</artifactId>
