@@ -27,6 +27,7 @@ public class InMemoryBroadcast {
 
       return sink.asFlux()
           .log()
+
           .filter(message -> message.getTopic().equals(Topic.valueOf(topic)))
           .map(message -> ServerSentEvent.builder(message).build());
    }

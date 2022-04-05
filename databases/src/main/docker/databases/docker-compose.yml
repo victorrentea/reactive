@@ -1,19 +1,5 @@
 version: '3'
 services:
-  cassandra:
-    image: cassandra
-    hostname: cassandra
-    ports:
-      - "9042:9042"
-    volumes:
-      - ./data/cassandra:/var/lib/cassandra
-
-  redis:
-    image: redis
-    hostname: redis
-    ports:
-      - "6379:6379"
-
   postgres:
     image: postgres
     hostname: postgres
@@ -27,3 +13,17 @@ services:
     hostname: mongo
     ports:
       - "27017:27017"
+
+#  cassandra:
+#    image: cassandra
+#    hostname: cassandra
+#    ports:
+#      - "9042:9042"
+#    volumes:
+#      - ./data/cassandra:/var/lib/cassandra
+
+#  redis:
+#    image: redis
+#    hostname: redis
+#    ports:
+#      - "6379:6379"

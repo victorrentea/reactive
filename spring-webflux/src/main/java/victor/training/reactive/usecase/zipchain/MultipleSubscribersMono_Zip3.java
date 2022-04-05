@@ -39,6 +39,9 @@ public class MultipleSubscribersMono_Zip3 {
 // ///      return monoA.zipWith(monoB, (a,b) -> Apis.getC(a,b))
 //          .flatMap(m -> m);
 
+//      A a = await getA();
+//      B b = await getB(a);
+//      C c = await getC(a,b);
 
       return Apis.getA(id)
           .zipWhen(Apis::getB, Apis::getC)

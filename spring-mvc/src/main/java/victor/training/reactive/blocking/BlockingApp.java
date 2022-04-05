@@ -7,10 +7,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.concurrent.CompletableFuture;
 
 import static java.lang.System.currentTimeMillis;
 import static victor.training.reactive.blocking.Utils.sleep;
@@ -30,9 +33,13 @@ public class BlockingApp {
               "region", "training-region");
    }
 
+
+
+
    public static void main(String[] args) {
       org.springframework.boot.SpringApplication.run(BlockingApp.class, args);
    }
+
    @Autowired
    private Barman barman;
 
@@ -42,43 +49,63 @@ public class BlockingApp {
    }
 
    @GetMapping("drink")
-   public DillyDilly drink() throws Exception {
+   public CompletableFuture<DillyDilly> drink() throws Exception {
       log.info("Talking to proxied barman: " + barman.getClass());
 
       long t0 = currentTimeMillis();
 
-      Beer beer = barman.pourBeer();
-      Vodka vodka = barman.pourVodka();
 
-      DillyDilly dilly = new DillyDilly(beer, vodka);
+      CompletableFuture<Beer> beerCF = barman.pourBeer();
+      CompletableFuture<Vodka> vodkaCF = barman.pourVodka();
+
+      CompletableFuture<DillyDilly> futureDilly = beerCF
+          .thenCombineAsync(vodkaCF, (b, v) -> new DillyDilly(b, v)/*, anotherThreadPool*/);
 
       log.debug("Time= " + (currentTimeMillis() - t0));
-      return dilly;
+
+
+
+      return futureDilly;
    }
+
+//   public void hardCore(HttpServletRequest request) throws Exception {
+//      AsyncContext asyncContext = request.startAsync();
+//      drink().thenAccept(dilly -> {
+//         asyncContext.getResponse().getWriter().write("Stuff " + dilly);
+//         asyncContext.complete();
+//      });
+//   }
 }
 
 @Service
 class Barman {
    private static final Logger log = LoggerFactory.getLogger(Barman.class);
 
-   public Beer pourBeer() {
+   @Async
+   public CompletableFuture<Beer> pourBeer() {
       log.info("Start pour beer");
+
+//      return new AsyncRestTemplate().exchange()
+//          .completable().thenApply(tranform);
+
       sleep(1000); // imagine blocking REST call
       log.info("End pour beer");
-      return new Beer();
+      return CompletableFuture.completedFuture(new Beer());
    }
 
-   public Vodka pourVodka() {
+   @Async
+   public CompletableFuture<Vodka> pourVodka() {
       log.info("Start pour vodka");
-      sleep(1000);  // imagine blocking DB call
+      sleep(200);  // imagine blocking DB call
       log.info("End pour vodka");
-      return new Vodka();
+      return CompletableFuture.completedFuture(new Vodka());
    }
 }
 
 
 class Beer {
    private final String type = "blond";
+
    public String getType() {
       return type;
    }
@@ -86,6 +113,7 @@ class Beer {
 
 class Vodka {
    private final String type = "deadly";
+
    public String getType() {
       return type;
    }
@@ -99,7 +127,7 @@ class DillyDilly {
    public DillyDilly(Beer beer, Vodka vodka) {
       this.beer = beer;
       this.vodka = vodka;
-      log.debug("Mixing {} with {} (takes time) ...", beer, vodka);
+      log.info("Mixing {} with {} (takes time) ...", beer, vodka);
       sleep(500);
    }
 

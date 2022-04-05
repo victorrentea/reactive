@@ -16,15 +16,15 @@
 
 package victor.training.reactive.reactor.lite;
 
-import java.util.concurrent.CompletableFuture;
-
-import victor.training.reactive.reactor.lite.domain.User;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import victor.training.reactive.reactor.lite.domain.User;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Learn how to adapt from/to RxJava 3 Observable/Single/Flowable and Java 8+ CompletableFuture.
@@ -77,12 +77,22 @@ public class Part09Adapt {
 
 	// TODO Adapt Mono to Java 8+ CompletableFuture
 	public CompletableFuture<User> fromMonoToCompletableFuture(Mono<User> mono) {
-		return null;
+		return mono.toFuture();
 	}
 
 	// TODO Adapt Java 8+ CompletableFuture to Mono
 	public Mono<User> fromCompletableFutureToMono(CompletableFuture<User> future) {
-		return null;
+		return Mono.fromFuture(future);
 	}
 
 }
+
+
+
+
+
+
+
+
+
+
