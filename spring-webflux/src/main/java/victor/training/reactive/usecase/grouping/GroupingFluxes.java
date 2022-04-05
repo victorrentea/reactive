@@ -4,15 +4,16 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
+import static java.time.Duration.ofMillis;
+import static java.time.Duration.ofNanos;
 
 @Slf4j
 public class GroupingFluxes {
    public static void main(String[] args) {
 
       Flux<Integer> messageStream =
-          Flux.range(0, 10);
-//          Flux.interval(ofMillis(200)).map(Long::intValue).take(10);
+//          Flux.range(0, 10);
+          Flux.interval(ofMillis(200)).map(Long::intValue).take(10);
 
       new GroupingFluxes(new Apis()).processMessageStream(messageStream).block();
    }
@@ -28,22 +29,41 @@ public class GroupingFluxes {
       //TYPE2: Call apiA(id) and apiB(id) in parallel
       //TYPE3: Call apiC(idList), buffering together requests such that
       //you send max 3 IDs, an ID waits max 500 millis
-      return messageStream
 
+      return messageStream
+          .delayElements(ofNanos(1))
           .groupBy(m -> MessageType.forMessage(m))
-          .flatMap(groupedFlux -> {
-             switch (groupedFlux.key()) {
-                case TYPE1_NEGATIVE: return Mono.empty();
-                case TYPE2_ODD: return groupedFlux.flatMap(m2 -> Mono.zip(apis.apiA(m2), apis.apiB(m2)));
-                case TYPE3_EVEN: return groupedFlux
-                    .bufferTimeout(3, Duration.ofMillis(500))
-                    .flatMap(pageOfType3 -> apis.apiC(pageOfType3));
-                default:
-                   return Flux.error(new IllegalStateException("Unexpected value: " + groupedFlux.key()));
-             }
-          })
+          // geek way
+          .flatMap(groupedFlux -> groupedFlux.key().handleFunction.apply(this, groupedFlux))
+
+          // standard way
+//          .flatMap(groupedFlux -> {
+//             switch (groupedFlux.key()) {
+//                case TYPE1_NEGATIVE: return handleType1(groupedFlux);
+//                case TYPE2_ODD: return handleType2(groupedFlux);
+//                case TYPE3_EVEN: return handleType3(groupedFlux);
+//                default:
+//                   return Flux.error(new IllegalStateException("Unexpected value: " + groupedFlux.key()));
+//             }
+//          })
           .then() // starting point
           ;
+   }
+
+   public Mono<Void> handleType1(Flux<Integer> groupedFlux) {
+      return Mono.empty();
+   }
+
+   public Mono<Void> handleType2(Flux<Integer> groupedFlux) {
+      return groupedFlux.flatMap(m2 -> Mono.zip(apis.apiA(m2), apis.apiB(m2)))
+          .then();
+   }
+
+   public Mono<Void> handleType3(Flux<Integer> groupedFlux) {
+      return groupedFlux
+          .bufferTimeout(3, ofMillis(500))
+          .flatMap(pageOfType3 -> apis.apiC(pageOfType3))
+          .then();
    }
 
 }

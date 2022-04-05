@@ -23,7 +23,7 @@ class Apis {
    private Mono<Void> api(String apiName, Object data) {
       return Mono.delay(Duration.ofMillis(100))
           .doOnSubscribe(s -> log.info("Api" + apiName + ": {} START", data))
-          .doOnNext(item -> log.info("Api" + apiName + ": {} END", data))
+          .doOnTerminate(() -> log.info("Api" + apiName + ": {} END", data))
           .then();
    }
 }
