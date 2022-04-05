@@ -49,13 +49,19 @@ public class GroupingFluxes {
           ;
    }
 
+   public Mono<String> f() {
+      return Mono.just("a");
+   }
+
    public Mono<Void> handleType1(Flux<Integer> groupedFlux) {
       return Mono.empty();
    }
 
    public Mono<Void> handleType2(Flux<Integer> groupedFlux) {
       return groupedFlux
-          .doOnNext(m2 ->Mono.zip(apis.apiA(m2), apis.apiB(m2)))
+          .flatMap(m2 ->Mono.zip(apis.apiA(m2), apis.apiB(m2)))
+//          .flatMap(m2 ->apis.apiA(m2).then(apis.apiB(m2)))
+//          .doOnNext(m2 ->Mono.zip(apis.apiA(m2), apis.apiB(m2)))
           .then();
    }
 
