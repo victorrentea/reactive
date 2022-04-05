@@ -34,7 +34,6 @@ public class LargeHttp {
 
    @GetMapping("flood/download")
    public Flux<String> download() throws IOException {
-
       Writer fileWriter = new FileWriter("download.dat");
       return WebClient.create().get().uri("http://localhost:8080/flood/generate")
           .retrieve()
@@ -46,13 +45,14 @@ public class LargeHttp {
                 throw new RuntimeException(e);
              }
           })
-          .doFinally(signalType -> {
+          .doFinally(signalType -> { // finally {   ... runs even if ex in try {}
              try {
                 fileWriter.close();
              } catch (IOException e) {
                 e.printStackTrace();
              }
           })
+          .retry(3) // causes a error because the next write finds the file closed.See  Correct solution in ReactiveFiles.java
           .scan(0, (sum, x) -> sum + 1)
           .sample(Duration.ofMillis(500))
           .map(i -> i + "<br>");

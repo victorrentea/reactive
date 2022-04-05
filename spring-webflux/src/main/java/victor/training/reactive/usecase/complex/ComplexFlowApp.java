@@ -61,12 +61,14 @@ public class ComplexFlowApp implements CommandLineRunner {
    // ================================== work below ====================================
 
 //@Transactional
+//   @Timed
    public Mono<List<Product>> mainFlow(List<Long> productIds) {
       return Flux.fromIterable(productIds)
           .buffer(2)
           .name("mainFlow")
           .metrics()
-          .flatMap(productIdList -> retrieveMultipleProducts(productIdList), 4) // max 4 calls in parallel.
+          .flatMap(productIdList -> retrieveMultipleProducts(productIdList), 4)
+          // max 4 calls in parallel.
           .doOnNext(product -> auditProduct(product).subscribe())
           .flatMap(product -> enhanceWithRating(product))
           .collectList();
@@ -98,15 +100,22 @@ public class ComplexFlowApp implements CommandLineRunner {
 //          .delaySubscription(Duration.ofMillis(10))
           ;
    }
-
    private static Flux<Product> retrieveMultipleProducts(List<Long> productIdList) {
+      if (true) Flux.error(new RuntimeException());
+
       return WebClient.create()
           .post()
           .uri("http://localhost:9999/api/product/many")
           .bodyValue(productIdList)
           .retrieve()
           .bodyToFlux(ProductDetailsResponse.class)
-          .map(ProductDetailsResponse::toEntity);
+//          .samplTi
+          .name("LoadProducts")
+          .metrics()
+          .map(ProductDetailsResponse::toEntity)
+          ;
+
+
    }
 
 //   private static Mono<Product> retrieveProduct(Long productId) {
