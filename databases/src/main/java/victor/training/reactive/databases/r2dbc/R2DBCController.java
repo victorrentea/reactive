@@ -2,6 +2,7 @@ package victor.training.reactive.databases.r2dbc;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,6 +24,7 @@ public class R2DBCController {
    }
 
    @GetMapping("create")
+   @Transactional
    public Mono<User> create() {
       String name = "User " + now().format(ofPattern("mm:ss"));
       return userRepository.save(new User(name));
