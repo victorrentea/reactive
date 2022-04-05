@@ -24,6 +24,13 @@ public class MDCDemoApp {
       return Mono.just("Stuff")
           .doOnEach(LogbackMDC.logOnNext(v -> log.debug("Start " + v)))
           .delayElement(ofSeconds(1))
-          .doOnEach(LogbackMDC.logOnNext(v -> log.debug("End " + v)));
+          .map(this::innocent)
+          .doOnEach(LogbackMDC.logOnNext(v -> log.debug("End " + v)))
+          ;
+   }
+
+   private String innocent(String v) {
+      if (true) throw new RuntimeException("BU");
+      return v;
    }
 }
