@@ -18,7 +18,7 @@ import static java.util.stream.Collectors.toMap;
 public class MDCContextLifterConfig {
    private static final String MDC_CONTEXT_REACTOR_HOOK_KEY = "MDC_ON_REACTOR_CONTEXT";
 
-   @PostConstruct
+   @PostConstruct // TODO try comment out
    public void setUpOperatorHook() {
       Hooks.onEachOperator(MDC_CONTEXT_REACTOR_HOOK_KEY, Operators.lift(
           (scannable, subscriber) -> new MdcContextLifter<>(subscriber)));

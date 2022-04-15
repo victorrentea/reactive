@@ -6,6 +6,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import static java.time.Duration.ofSeconds;
@@ -22,15 +23,20 @@ public class MDCLifterApp {
    @GetMapping
    public Mono<String> mdcDemo() {
       log.debug("In subscriber thread");
-      return Mono.just("Stuff")
-          .doOnEach(v -> log.debug("Start " + v))
+      return WebClient.create().get().uri("http://localhost:8080/call").retrieve()
+          .bodyToMono(String.class)
+          .doOnEach(v -> log.debug("After WebClient " + v))
           .doOnNext(e -> f())
           .delayElement(ofSeconds(1)) // publishes on parallel scheduler
-          .doOnEach(v -> log.debug("End " + v))
+          .doOnEach(v -> log.debug("After delayElement " + v))
           ;
    }
 
    private void f() {
       log.debug("In called function");
    }
+
+   @GetMapping("call")
+   public Mono<String> call() {
+      return Mono.just("Stuff");}
 }
