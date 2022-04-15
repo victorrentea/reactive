@@ -1,4 +1,4 @@
-package victor.training.reactive.demo.mdc;
+package victor.training.reactive.demo.mdc_decorator;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;

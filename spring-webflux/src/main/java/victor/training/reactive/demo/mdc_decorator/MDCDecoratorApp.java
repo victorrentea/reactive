@@ -1,4 +1,4 @@
-package victor.training.reactive.demo.mdc;
+package victor.training.reactive.demo.mdc_decorator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
