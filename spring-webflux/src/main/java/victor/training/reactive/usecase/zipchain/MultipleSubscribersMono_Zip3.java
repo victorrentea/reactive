@@ -14,7 +14,13 @@ public class MultipleSubscribersMono_Zip3 {
    // from A ==> get a B
    // from A and B ==> get a C
    public Mono<C> retrieveC(long id) {
-      return Mono.empty();
+
+      Mono<A> monoA = Apis.getA(id);
+
+      Mono<B> monoB = monoA.flatMap(a -> Apis.getB(a));
+
+      return monoA.zipWith(monoB, (a,b)->Apis.getC(a, b))
+          .flatMap(monoC -> monoC);
    }
 }
 
