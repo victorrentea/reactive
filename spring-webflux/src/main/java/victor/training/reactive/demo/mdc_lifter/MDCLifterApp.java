@@ -1,4 +1,4 @@
-package victor.training.reactive.demo.mdc;
+package victor.training.reactive.demo.mdc_lifter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,21 +12,25 @@ import static java.time.Duration.ofSeconds;
 
 @RestController
 @SpringBootApplication
-public class MDCDemoApp {
-   private static final Logger log = LoggerFactory.getLogger(MDCDemoApp.class);
+public class MDCLifterApp {
+   private static final Logger log = LoggerFactory.getLogger(MDCLifterApp.class);
 
    public static void main(String[] args) {
-       SpringApplication.run(MDCDemoApp.class, args);
+       SpringApplication.run(MDCLifterApp.class, args);
    }
 
    @GetMapping
    public Mono<String> mdcDemo() {
-
+      log.debug("In subscriber thread");
       return Mono.just("Stuff")
-          .doOnEach(LogbackMDC.logOnNext(v -> log.debug("Start " + v)))
-          .delayElement(ofSeconds(1))
-          .doOnEach(LogbackMDC.logOnNext(v -> log.debug("End " + v)))
+          .doOnEach(v -> log.debug("Start " + v))
+          .doOnNext(e -> f())
+          .delayElement(ofSeconds(1)) // publishes on parallel scheduler
+          .doOnEach(v -> log.debug("End " + v))
           ;
    }
 
+   private void f() {
+      log.debug("In called function");
+   }
 }

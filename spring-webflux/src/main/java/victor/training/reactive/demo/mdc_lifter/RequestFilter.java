@@ -1,15 +1,13 @@
-package victor.training.reactive.demo.mdc;
+package victor.training.reactive.demo.mdc_lifter;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
-import reactor.util.context.Context;
 
 import java.util.List;
 
@@ -19,12 +17,10 @@ import java.util.List;
 public class RequestFilter implements WebFilter {
    @Override
    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-      ServerHttpRequest request = exchange.getRequest();
-      String requestId = getRequestId(request.getHeaders());
-      return chain
-          .filter(exchange) // your @RequestMapping is invoked here. But nothing happens until you subscribe
-          .doOnEach(LogbackMDC.logOnEach(r -> log.info("Intercepted {} {}", request.getMethod(), request.getURI())))
-          .contextWrite(Context.of(LogbackMDC.REACTOR_CONTEXT_KEY, requestId));
+      String requestId = getRequestId(exchange.getRequest().getHeaders());
+      return chain.filter(exchange)
+          .contextWrite(context -> context.put("MDC_KEY", requestId))
+          ;
    }
 
    private String getRequestId(HttpHeaders headers) {
