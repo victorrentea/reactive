@@ -1,8 +1,7 @@
 package victor.training.reactive.usecase.zipchain;
 
+import lombok.Value;
 import reactor.core.publisher.Mono;
-
-import static java.util.function.Function.identity;
 
 public class MultipleSubscribersMono_Zip3 {
 
@@ -25,15 +24,24 @@ public class MultipleSubscribersMono_Zip3 {
 //          .flatMap(a -> Apis.getB(a).map(b -> Tuples.of(a, b)))
 //          .flatMap(tuple -> Apis.getC(tuple.getT1(), tuple.getT2()));
 
+      return Apis.getA(id)
+          .flatMap(a -> Apis.getB(a).map(b -> new AB(a,b)))
+          .flatMap(ab -> Apis.getC(ab.getA(), ab.getB()));
+
 //      return Apis.getA(id)
 //          .flatMap(a -> Apis.getB(a).flatMap(b -> Apis.getC(a,b)) );
 
-      return Apis.getA(id)
-          .zipWhen(a -> Apis.getB(a), (a, b) -> Apis.getC(a, b))
-          .flatMap(identity());
+//      return Apis.getA(id)
+//          .zipWhen(a -> Apis.getB(a), (a, b) -> Apis.getC(a, b))
+//          .flatMap(identity());
    }
-}
+   @Value
+   private static class AB {
+      A a;
+      B b;
+   }
 
+}
 
 
 
