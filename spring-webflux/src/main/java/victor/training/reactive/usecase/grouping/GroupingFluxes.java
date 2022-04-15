@@ -30,8 +30,16 @@ public class GroupingFluxes {
    //you send max 3 IDs, and
    //an ID waits max 500 millis
 
-   public Mono<Void> processMessageStream(Flux<Integer> messageStream) {
-      return Mono.empty();
+   public Mono<Void> processMessageStream(Flux<Integer> infiniteMessageStream) {
+//      int message = 7;
+//
+//      MessageType messageType = MessageType.forMessage(message);
+//      if (messageType == MessageType.TYPE2_ODD)
+
+      return infiniteMessageStream
+          .filter(m -> MessageType.forMessage(m) == MessageType.TYPE2_ODD)
+          .flatMap(m -> Mono.zip(apis.apiA(m), apis.apiB(m)).then())
+          .then();
    }
 
 }
