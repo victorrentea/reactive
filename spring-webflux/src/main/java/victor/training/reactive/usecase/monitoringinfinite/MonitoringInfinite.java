@@ -25,30 +25,6 @@ public class MonitoringInfinite {
    //  (In case of error, the AuditApi is retried once.)
    @PostConstruct
    private static void monitor(Flux<Long> orderIdInfiniteStream) {
-      orderIdInfiniteStream
-          .doOnNext(id -> System.out.println("I see ID " + id))
-
-          .filterWhen(orderId -> OrderApi.isOrderPresent(orderId).map(b->!b))
-
-//          .flatMap(orderId -> orderApi.isOrderPresent(orderId)
-//              .map(isPresent -> Tuples.of(orderId, isPresent)))
-//          .filter(Tuple2::getT2)
-//          .map(Tuple2::getT1)
-
-
-          .log("BEFORE FLATMAP")
-          .flatMap(id -> AuditApi.auditOrderNotFound(id)
-                  .retry(1)
-//                .onErrorResume(tt -> Mono.empty())
-          )
-          .log("AFTER FLATMAP")
-          .onErrorContinue((e, v) ->
-              System.err.println("Magically caught an error from upstream, but allowed the flow to continue (no cancel) : " +
-                                 e))
-          .contextWrite(context -> {
-             return context.put("username", "john"); // SecurityContextHolder
-          })
-          .subscribe();
 
    }
 }
