@@ -7,31 +7,27 @@ import java.util.List;
 
 
 interface NameApi {
-
-   Mono<String> fetchName(Long id);
+   Mono<String> fetchName(Long userId);
 }
 interface AgeApi {
-
-   Mono<Integer> fetchAge(Long id);
+   Mono<Integer> fetchAge(Long userId);
 }
-interface MinorApi {
-
-   Mono<Void> notifyMinor(String name);
+interface UnderAgeApi {
+   Mono<Void> notifyUnderAge(String name);
 }
 public class Augmenting {
    private NameApi nameApi;
    private AgeApi ageApi;
-   private MinorApi minorApi;
+   private UnderAgeApi underAgeApi;
 
    Flux<User> augment(List<Long> userIds) {
-      return Flux.fromIterable(userIds)
-          .flatMap(id -> Mono.zip(
-                  nameApi.fetchName(id).onErrorReturn("UNDEFINED"),
-                  ageApi.fetchAge(id),
-                  (name, age) -> new User(id,name,age)) // Mono<User>
-              .onErrorResume(t -> Mono.empty())
-          )
-          .doOnNext (user-> { if (user.age < 18) minorApi.notifyMinor(user.name).subscribe();});
+      Long userId = -1L;
+      Mono<String> nameMono = nameApi.fetchName(userId);
+      Mono<Integer> ageMono = ageApi.fetchAge(userId);
+      int age = 15;
+      if (age < 18) underAgeApi.notifyUnderAge("name");
+
+      return Flux.empty();
    }
 
 
@@ -48,3 +44,12 @@ class User {
       this.age = age;
    }
 }
+// SOLUTION:
+//return Flux.fromIterable(userIds)
+//    .flatMap(id -> Mono.zip(
+//            nameApi.fetchName(id).onErrorReturn("UNDEFINED"),
+//            ageApi.fetchAge(id),
+//            (name, age) -> new User(id,name,age)) // Mono<User>
+//        .onErrorResume(t -> Mono.empty())
+//    )
+//    .doOnNext (user-> { if (user.age < 18) minorApi.notifyMinor(user.name).subscribe();});

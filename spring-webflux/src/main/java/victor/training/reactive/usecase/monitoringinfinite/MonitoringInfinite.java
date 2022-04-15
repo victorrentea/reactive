@@ -1,5 +1,6 @@
 package victor.training.reactive.usecase.monitoringinfinite;
 
+import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import victor.training.reactive.Utils;
 
@@ -7,7 +8,7 @@ import javax.annotation.PostConstruct;
 import java.time.Duration;
 
 
-//@Service
+@Service // imagine
 public class MonitoringInfinite {
 
    public static void main(String[] args) {
@@ -24,7 +25,6 @@ public class MonitoringInfinite {
    //  (In case of error, the AuditApi is retried once.)
    @PostConstruct
    private static void monitor(Flux<Long> orderIdInfiniteStream) {
-      // ???
       orderIdInfiniteStream
           .doOnNext(id -> System.out.println("I see ID " + id))
 
@@ -57,3 +57,4 @@ public class MonitoringInfinite {
 // - log() around audit sees CANCEL signal
 // - onErrorResume BEFORE you reach the surface (top level reactive flow)
 // - onErrorContinue propagates via Reactor Context
+// - Hooks.onOperatorDebug() - global debug for exceptions
