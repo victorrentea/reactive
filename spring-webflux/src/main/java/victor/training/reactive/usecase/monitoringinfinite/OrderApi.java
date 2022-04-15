@@ -4,9 +4,14 @@ import reactor.core.publisher.Mono;
 
 class OrderApi {
    static Mono<Boolean> isOrderPresent(Long id) {
-      return Mono.deferContextual(contextView -> {
-         System.out.println("Current user is " + contextView.get("username"));
-         return Mono.fromSupplier(() -> Math.random() < .5);
-      });
+      return Mono.fromSupplier(() -> {
+             double r = Math.random();
+             if (r < 0.1) {
+                System.err.println("BUM NOW");
+                throw new RuntimeException("BUM");
+             }
+             return r < .5;
+          })
+          .doOnNext(b -> System.out.println("emiting " + b));
    }
 }
