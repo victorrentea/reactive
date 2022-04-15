@@ -4,8 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-
 import static java.time.Duration.ofMillis;
 
 @Slf4j
@@ -37,17 +35,22 @@ public class GroupingFluxes {
 
    public Mono<Void> processMessageStream(Flux<Integer> infiniteMessageStream) {
       return infiniteMessageStream
-          .flatMap(m -> {
-                 switch (MessageType.forMessage(m)) {
-                    case TYPE2_ODD:
-                       return Mono.zip(apis.apiA(m), apis.apiB(m)).then();// should only happen for elements of TYPE2
-                    case TYPE3_EVEN:
-                       return apis.apiC(List.of(m));
-                    default:
-                       return Mono.empty();
-                 }
-              }
-          )
+          .groupBy(m -> MessageType.forMessage(m))
+          .flatMap(groupedFlux -> {
+             switch (groupedFlux.key()) {
+                case TYPE2_ODD:
+                   return groupedFlux.flatMap(m -> Mono.zip(apis.apiA(m), apis.apiB(m))).then();// should only happen for elements of TYPE2
+                case TYPE3_EVEN:
+                   return groupedFlux
+//                       .buffer(3)// makes eg two elements wait 1h for the third to arrive from upstream publisher.
+                       .bufferTimeout(3, ofMillis(500))
+                       .flatMap(pageOfMessage -> apis.apiC(pageOfMessage)).then();
+                case TYPE1_NEGATIVE:
+                   return Mono.empty();
+                default:
+                   throw new IllegalStateException("Unexpected value: " + groupedFlux.key());
+             }
+          })
           .then();
    }
 
