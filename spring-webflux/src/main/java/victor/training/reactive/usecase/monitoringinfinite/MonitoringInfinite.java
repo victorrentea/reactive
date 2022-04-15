@@ -25,18 +25,27 @@ public class MonitoringInfinite {
    @PostConstruct
    private static void monitor(Flux<Long> orderIdInfiniteStream) {
       orderIdInfiniteStream
-          .log()
+//          .log()
           .filterWhen(orderId -> OrderApi.isOrderPresent(orderId)
               .onErrorReturn(false)
               .map(isPresent -> !isPresent))
           .doOnNext(x -> System.out.println("AFTER: " + x))
           .doOnError(System.out::println)
+//          .checkpoint("Before")
           .flatMap(orderId -> AuditApi.auditOrderNotFound(orderId).retry(1))
+//          .onErrorResume(t -> Mono.empty())
 
-          .onErrorContinue((ex, data)-> System.err.println("Ignoring:" + ex)) // HOW THE HACK does this work
-          // Reactor Context
+//          .checkpoint()
+//          .checkpoint("After")
+//          .log("ERROR", Level.WARNING, SignalType.ON_ERROR)
+
+//          .onErrorContinue((ex, data)-> System.err.println("Ignoring:" + ex)) // HOW THE HACK does this work
+
+          // Reactor Context !!!!!!
+          // Reactor Context !!!!!!
           // migrate from blocking code to reactive. > threads/schedulers
 
+          .contextWrite(context -> context.put("username", "john"))
           .subscribe();
    }
 }

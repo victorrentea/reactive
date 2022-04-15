@@ -21,10 +21,13 @@ public class RequestFilter implements WebFilter {
    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
       ServerHttpRequest request = exchange.getRequest();
       String requestId = getRequestId(request.getHeaders());
+
       return chain
           .filter(exchange)
           .doOnEach(LogbackMDC.logOnEach(r -> log.info("Intercepted {} {}", request.getMethod(), request.getURI())))
-          .contextWrite(Context.of(LogbackMDC.REACTOR_CONTEXT_KEY, requestId));
+          .contextWrite(Context.of(LogbackMDC.REACTOR_CONTEXT_KEY, requestId))
+          // here
+          ;
    }
 
    private String getRequestId(HttpHeaders headers) {
