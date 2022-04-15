@@ -9,6 +9,7 @@ import reactor.blockhound.integration.BlockHoundIntegration;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 import java.util.ServiceLoader;
@@ -29,6 +30,9 @@ public class Utils {
 		new Scanner(System.in).next();
 	}
 
+	public static void installBlockHound() {
+		installBlockHound(Collections.emptyList());
+	}
 	public static void installBlockHound(List<Tuple2<String, String>> excludedClassMethods) {
 		log.warn("Installing BlockHound to detect I/O in non-blocking threads");
 
