@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 import static java.time.Duration.ofMillis;
 
 @Slf4j
@@ -18,6 +20,7 @@ public class GroupingFluxes {
    }
 
    private final Apis apis;
+
    public GroupingFluxes(Apis apis) {
       this.apis = apis;
    }
@@ -26,19 +29,25 @@ public class GroupingFluxes {
    //Depending on the message type, run one of the following flows:
    //TYPE1: Do nothing (ignore the message)
    //TYPE2: Call apiA(id) and apiB(id) in parallel
+   //TYPE3: Call apiC(id)
+
    //TYPE3: Call apiC(idList), buffering together requests such that
    //you send max 3 IDs, and
    //an ID waits max 500 millis
 
    public Mono<Void> processMessageStream(Flux<Integer> infiniteMessageStream) {
-//      int message = 7;
-//
-//      MessageType messageType = MessageType.forMessage(message);
-//      if (messageType == MessageType.TYPE2_ODD)
-
       return infiniteMessageStream
-          .filter(m -> MessageType.forMessage(m) == MessageType.TYPE2_ODD)
-          .flatMap(m -> Mono.zip(apis.apiA(m), apis.apiB(m)).then())
+          .flatMap(m -> {
+                 switch (MessageType.forMessage(m)) {
+                    case TYPE2_ODD:
+                       return Mono.zip(apis.apiA(m), apis.apiB(m)).then();// should only happen for elements of TYPE2
+                    case TYPE3_EVEN:
+                       return apis.apiC(List.of(m));
+                    default:
+                       return Mono.empty();
+                 }
+              }
+          )
           .then();
    }
 
