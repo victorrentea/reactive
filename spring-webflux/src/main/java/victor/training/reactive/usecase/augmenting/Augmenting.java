@@ -24,14 +24,7 @@ public class Augmenting {
    private MinorApi minorApi;
 
    Flux<User> augment(List<Long> userIds) {
-      return Flux.fromIterable(userIds)
-          .flatMap(id -> Mono.zip(
-                  nameApi.fetchName(id).onErrorReturn("UNDEFINED"),
-                  ageApi.fetchAge(id),
-                  (name, age) -> new User(id,name,age)) // Mono<User>
-              .onErrorResume(t -> Mono.empty())
-          )
-          .doOnNext (user-> { if (user.age < 18) minorApi.notifyMinor(user.name).subscribe();});
+      return Flux.empty();
    }
 
 
