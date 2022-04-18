@@ -58,6 +58,7 @@ public class ComplexFlowApp implements CommandLineRunner {
           .map(list -> "Done. Got " + list.size() + " products: " + list);
    }
 
+   // TIP: Caching in Reactor: https://stackoverflow.com/questions/48156424/spring-webflux-and-cacheable-proper-way-of-caching-result-of-mono-flux-type
    // ================================== work below ====================================
 
 //@Transactional
