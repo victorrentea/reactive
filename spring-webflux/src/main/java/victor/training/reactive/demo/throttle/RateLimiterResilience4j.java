@@ -16,6 +16,8 @@ public class RateLimiterResilience4j {
    private final String url;
    private final RateLimiter rateLimiter;
 
+
+   // solutia proofy . care merge oricate poduri de-ale tale ridici
    public RateLimiterResilience4j(String url, int rps) {
       this.url = url;
       InMemoryRateLimiterRegistry rateLimiterRegistry = new InMemoryRateLimiterRegistry(RateLimiterConfig.ofDefaults());

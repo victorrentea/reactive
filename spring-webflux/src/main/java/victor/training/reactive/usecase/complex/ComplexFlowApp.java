@@ -59,6 +59,7 @@ public class ComplexFlowApp implements CommandLineRunner {
    public Mono<String> executeAsNonBlocking() {
       List<Long> productIds = LongStream.rangeClosed(1, 1000).boxed().collect(toList());
 
+
       return mainFlow(productIds)
           .map(list -> "Done. Got " + list.size() + " products: " + list);
    }
@@ -69,6 +70,7 @@ public class ComplexFlowApp implements CommandLineRunner {
    public Mono<List<Product>> mainFlow(List<Long> productIds) {
       return Flux.fromIterable(productIds)
               // o forma primitiva de rate limiting :
+              // cum e forma profesionista
               .flatMap(ComplexFlowApp::retrieve, 10)
               .collectList();
    }
