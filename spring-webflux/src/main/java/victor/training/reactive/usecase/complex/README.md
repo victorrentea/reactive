@@ -18,6 +18,11 @@
 ## Audit
 - An audit API REST call should happen passing the id of the product.
 - The Audit API call should only happen for products with resealed=true
+- Explore alternative ways of triggering a side-effect-only action:
+  - First idea: flatMap(p->audit(p).thenReturn(p))
+  - More compact: delayUntil(p->audit(p))
+  - Log and ignore exceptions: .doOnError().onErrorResume()
+  - fire-and-forget: subscribe() - tradeoff: cancellation
 
 ## Enhance Data
 - Complement the Product with rating fetched from a REST API call to RatingService 
