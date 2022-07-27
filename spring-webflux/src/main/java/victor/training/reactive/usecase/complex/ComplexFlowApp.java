@@ -6,6 +6,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,12 +21,14 @@ import victor.training.reactive.Utils;
 import java.util.List;
 import java.util.stream.LongStream;
 
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static victor.training.reactive.Utils.installBlockHound;
 
 @RestController
 @Slf4j
 @SpringBootApplication
+@EnableScheduling
 public class ComplexFlowApp implements CommandLineRunner {
 
     public static final WebClient WEB_CLIENT = WebClient.create();
@@ -79,18 +83,25 @@ public class ComplexFlowApp implements CommandLineRunner {
     }
 
     @GetMapping("complex")
-    public Mono<String> executeAsNonBlocking(@RequestParam(value = "n", defaultValue = "1000") int n) {
+    public Mono<String> executeAsNonBlocking(@RequestParam(value = "n", defaultValue = "100") int n) {
         List<Long> productIds = LongStream.rangeClosed(1, n).boxed().collect(toList());
 
-        return mainFlow(productIds)
-                .collectList()
-                .map(list -> "Done. Got " + list.size() + " products: " + list);
+        Mono<List<Product>> listMono = mainFlow(productIds)
+                .collectList();
+
+        return listMono
+                .map(list -> "<h2>Done!</h2>Requested " + n +", returning " + list.size() + " products: <br><br>" +
+                             list.stream().map(Product::toString).collect(joining("<br>")));
     }
 
-    public void jobuLansatDinQuartzUnLibVechicareNUStieReact() {
-//      ......subsccribe(); // 1ms fara erori.
-        // m-as gandi la .block(); pt ca sa-i arunc exceptie, sa vada cat a durat.
-        // nici nu starvezi =threaduri ca are propriul thraed poolq
+
+    @Scheduled(fixedRate = 1000)
+    public Mono<Integer> jobuLansatDinQuartzUnLibVechicareNUStieReact() {
+        return Mono.fromSupplier(() -> {
+            log.debug("Meeee too!");
+            return 1;
+        });
+        // @Scheduled nu poate intoarce Publisher
     }
 
     public Flux<Product> mainFlow(List<Long> productIds) {
