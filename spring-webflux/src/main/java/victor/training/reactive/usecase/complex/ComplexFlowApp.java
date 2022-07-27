@@ -68,7 +68,8 @@ public class ComplexFlowApp implements CommandLineRunner {
 
    public Mono<List<Product>> mainFlow(List<Long> productIds) {
       return Flux.fromIterable(productIds)
-              .flatMap(ComplexFlowApp::retrieve)
+              // o forma primitiva de rate limiting :
+              .flatMap(ComplexFlowApp::retrieve, 10)
               .collectList();
    }
 
