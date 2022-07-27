@@ -6,27 +6,24 @@ import reactor.core.publisher.Mono;
 import static java.time.Duration.ofMillis;
 
 @Slf4j
-public class ExternalCacheClient {
+public class ExternalCacheClient { // faking a remote cache (involving network => Mono)
    public static Mono<ProductRatingResponse> lookupInCache(Long productId) {
-      return Mono.defer(() -> {
+      // if (true) return Mono.error(new RuntimeException("Sh*t happens..."));
+      return Mono.fromSupplier(() -> {
          if (Math.random() < .5) {
-            log.debug("Cache hit");
-            return Mono.just(new ProductRatingResponse(5));
+            log.debug("Cache hit ✅: " + productId);
+            return new ProductRatingResponse(5);
          } else {
-            return Mono.empty();
+            log.debug("Cache miss ❌: " + productId);
+            return null;
          }
-      }).delayElement(ofMillis(10));//.publishOn(Schedulers.single());
+      }).delayElement(ofMillis(10));
    }
 
    public static Mono<Void> putInCache(Long productId, ProductRatingResponse rating) {
-      return internal(productId);
-   }
-
-   private static Mono<Void> internal(Long productId) {
-      log.info("Put in cache " + productId);
-//      if (true) {
-//         throw new RuntimeException("buba");
-//      }
+      // if (true) return Mono.error(new RuntimeException("Sh*t happens..."));
+      log.info("Cache put ✍️: " + productId);
       return Mono.empty();
    }
+
 }

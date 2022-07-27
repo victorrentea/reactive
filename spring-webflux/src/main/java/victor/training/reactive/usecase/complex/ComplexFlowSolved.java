@@ -35,7 +35,7 @@ public class ComplexFlowSolved {
                 .doOnError(Throwable::printStackTrace)
                 .onErrorResume(t->Mono.empty())
                 .switchIfEmpty(
-                        Mono.defer(() -> ExternalAPIs.fetchProductRating(product.getId()))
+                        Mono.defer(() -> ExternalAPIs.getProductRating(product.getId()))
                                 .onErrorResume(t -> Mono.empty())
 
                                 .doOnNext(rating ->ExternalCacheClient.putInCache(product.getId(), rating)

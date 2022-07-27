@@ -1,9 +1,10 @@
 package victor.training.reactive.usecase.complex;
 
-import lombok.Value;
-import lombok.With;
+import lombok.*;
 
-@Value
+@Data // 🪤
+@AllArgsConstructor
+@NoArgsConstructor
 public class Product {
    Long id;
    String name;
