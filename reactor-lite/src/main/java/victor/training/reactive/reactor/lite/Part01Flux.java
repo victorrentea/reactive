@@ -51,12 +51,12 @@ public class Part01Flux {
 
 	// TODO Create a Flux that emits increasing values from 0 to 9 each 100ms
 	public Flux<Long> countEach100ms() {
-//		return Flux.range(0, 10)
-//				.delayElements(Duration.ofMillis(100))// TODO de explorat
-//				.map(Long::valueOf);
-		return Flux.interval(Duration.ofMillis(100))
-				.take(10)
-				;
+		return Flux.range(0, 10)
+				.delayElements(Duration.ofMillis(100))// TODO de explorat
+				.map(Long::valueOf);
+//		return Flux.interval(Duration.ofMillis(100))
+//				.take(10)
+//				;
 	}
 
 }

@@ -8,12 +8,14 @@ import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuples;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.LongStream;
 
@@ -61,72 +63,25 @@ public class ComplexFlowApp implements CommandLineRunner {
    // TIP: Caching in Reactor: https://stackoverflow.com/questions/48156424/spring-webflux-and-cacheable-proper-way-of-caching-result-of-mono-flux-type
    // ================================== work below ====================================
 
-//@Transactional
-//   @Timed
    public Mono<List<Product>> mainFlow(List<Long> productIds) {
-      return Flux.fromIterable(productIds)
-          .buffer(2)
-          .name("mainFlow")
-          .metrics()
-          .flatMap(productIdList -> retrieveMultipleProducts(productIdList), 4)
-          // max 4 calls in parallel.
-          .doOnNext(product -> auditProduct(product).subscribe())
-          .flatMap(product -> enhanceWithRating(product))
-          .collectList();
+      log.info("HAlloooo");
+
+      List<Product> products = productIds.stream().map(ComplexFlowApp::retrieve).collect(toList());
+      return Mono.just(products);
    }
 
-   public Mono<Product> enhanceWithRating(Product product) {
-      return ExternalCacheClient.lookupInCache(product.getId())
-          .doOnError(Throwable::printStackTrace)
-          .onErrorResume(t->Mono.empty())
-          .switchIfEmpty(
-              Mono.defer(() -> ExternalAPIs.fetchProductRating(product.getId()))
-                  .onErrorResume(t -> Mono.empty())
-
-                  .doOnNext(rating ->ExternalCacheClient.putInCache(product.getId(), rating)
-                     .doOnError(t -> log.trace("Boom " + t))
-                     .subscribe())
-          )
-          .map(product::withRating)
-          .defaultIfEmpty(product);
+   private static Product retrieve(Long productId) {
+      log.info("Call pentru " + productId);
+      ProductDetailsResponse productDetails = WebClient.create()
+              .get()
+              .uri("http://localhost:9999/api/product/" + productId)
+              .retrieve()
+              .bodyToMono(ProductDetailsResponse.class)
+              .block();
+      Product product = productDetails.toEntity();
+      return product;
    }
 
-   private static Mono<Void> auditProduct(Product product) {
-      if (!product.isResealed()) {
-         return Mono.empty();
-      }
-      return ExternalAPIs.auditResealedProduct(product)
-          .doOnSubscribe(s -> log.error("Product rating: " + product.getRating() ))
-          .doOnError(e -> log.error("OMG i'm afraid", e))
-//          .delaySubscription(Duration.ofMillis(10))
-          ;
-   }
-   private static Flux<Product> retrieveMultipleProducts(List<Long> productIdList) {
-      if (true) Flux.error(new RuntimeException());
-
-      return WebClient.create()
-          .post()
-          .uri("http://localhost:9999/api/product/many")
-          .bodyValue(productIdList)
-          .retrieve()
-          .bodyToFlux(ProductDetailsResponse.class)
-//          .samplTi
-          .name("LoadProducts")
-          .metrics()
-          .map(ProductDetailsResponse::toEntity)
-          ;
-
-
-   }
-
-//   private static Mono<Product> retrieveProduct(Long productId) {
-//      return WebClient.create()
-//          .get()
-//          .uri("http://localhost:9999/api/product/" + productId)
-//          .retrieve()
-//          .bodyToMono(ProductDetailsResponse.class)
-//          .map(ProductDetailsResponse::toEntity);
-//   }
 
 }
 

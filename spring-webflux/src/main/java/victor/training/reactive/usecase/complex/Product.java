@@ -1,16 +1,17 @@
 package victor.training.reactive.usecase.complex;
 
-import lombok.Value;
-import lombok.With;
+import lombok.*;
 
-@Value
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Product {
-   Long id;
-   String name;
-   boolean active;
-   boolean resealed;
-   @With
-   ProductRatingResponse rating;
+private Long id;
+private String name;
+private boolean active;
+private boolean resealed;
+//   @With
+   private ProductRatingResponse rating;
 
 //   public Product withRating(ProductRatingResponse newRating)  {
 //      return new Product(id, name, active, resealed, newRating);
