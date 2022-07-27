@@ -1,6 +1,5 @@
 package victor.training.reactive.intro.mvc;
 
-import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,8 +40,8 @@ public class BlockingApp {
    private Barman barman;
 
    @GetMapping("fast")
-   public String fast() throws Exception {
-      return "immediate";
+   public String undeTalciokul() throws Exception {
+      return "immediate dupa colt";
    }
 
    @GetMapping("drink")
