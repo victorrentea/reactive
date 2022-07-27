@@ -4,24 +4,33 @@ import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.aop.TimedAspect;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.actuate.cache.CachesEndpoint;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.WebFilter;
+import reactor.cache.CacheMono;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Signal;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuples;
 import victor.training.reactive.Utils;
-import victor.training.reactive.usecase.complex.TimedReactiveAspect.TimedReactive;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.LongStream;
 
 import static java.lang.System.currentTimeMillis;
@@ -32,6 +41,7 @@ import static victor.training.reactive.Utils.installBlockHound;
 @RestController
 @Slf4j
 @SpringBootApplication
+@EnableCaching
 public class ComplexFlowApp implements CommandLineRunner {
 
     public static final WebClient WEB_CLIENT = WebClient.create();
@@ -56,6 +66,7 @@ public class ComplexFlowApp implements CommandLineRunner {
         ));
         return (exchange, chain) -> Mono.defer(() -> chain.filter(exchange)).subscribeOn(Schedulers.parallel());
     }
+
     @Override
     public void run(String... args) throws Exception {
 
@@ -77,8 +88,7 @@ public class ComplexFlowApp implements CommandLineRunner {
         List<Long> productIds = LongStream.rangeClosed(1, n).boxed().collect(toList());
 
         Mono<List<Product>> listMono = mainFlow(productIds)
-                .collectList()
-                ;
+                .collectList();
         return listMono.map(list ->
                 "<h2>Done!</h2>\n" +
                 "Requested " + n + " (add ?n=1000 to url to change), " +
@@ -88,21 +98,70 @@ public class ComplexFlowApp implements CommandLineRunner {
     }
 
 
-
-
-
     public Flux<Product> mainFlow(List<Long> productIds) {
         return Flux.fromIterable(productIds)
                 .buffer(2)
                 .flatMap(ComplexFlowApp::retrieveMany, 10)
-//              .delayUntil(ComplexFlowApp::auditResealed)
+                //              .delayUntil(ComplexFlowApp::auditResealed)
                 .doOnNext(ComplexFlowApp::auditResealed // pierzi CANCEL signal
                         // daca subscriberu final da cancel audit resealed deja lansate nu poti sa le cancelezi.
                 )
+                .flatMap(p -> resolveRatingWithCache(p.getId()).map(r -> p.withRating(r)))
+
                 ;
         // Q de la biz: nu ne pasa de erorile de la audit
         // problema: auditu dureaza si nu are sens sa stam dupa el. Sa facem deci fire-and-forget
     }
+
+    //     1: al mano!
+    private Mono<ProductRatingResponse> resolveRatingWithCache(Long productId) {
+        return ExternalCacheClient.lookupInCache(productId)
+                .switchIfEmpty(Mono.defer(() -> ExternalAPIs.getProductRating(productId))
+                        .delayUntil(r -> ExternalCacheClient.putInCache(productId, r)));
+    }
+
+    // 2: @Cacheable+Mono.cache()
+    //    @Autowired
+    //    private RatingAdapter ratingAdapter;
+    //    private Mono<ProductRatingResponse> resolveRatingWithCache(Long productId) {
+    //        return ratingAdapter.resolveRating(productId);
+    //    }
+    //@Component
+    //@Slf4j
+    //public static class RatingAdapter {
+    //
+    //    @Cacheable("rating")
+    //    public Mono<ProductRatingResponse> resolveRating(Long productId) {
+    //        log.debug("entering resolveRating");
+    //        return ExternalAPIs.getProductRating(productId).cache();
+    //    }
+    //}
+
+    // 3: CacheManager + CacheMono (reactor-addons)
+    //    @Autowired
+    //    private CacheManager cacheManager;
+    //    private Mono<ProductRatingResponse> resolveRatingWithCache(Long productId) {
+    //        Cache ratingCache = cacheManager.getCache("rating");
+    //        return CacheMono.lookup(k -> Mono.justOrEmpty(Optional.ofNullable( ratingCache.get(k)).map(valueWrapper -> (ProductRatingResponse)valueWrapper.get()))
+    //                        .map(Signal::next),
+    //                productId)
+    //                .onCacheMissResume(() -> ExternalAPIs.getProductRating(productId))
+    //                .andWriteWith((k, sig) -> Mono.fromRunnable(() ->
+    //                        ratingCache.put(k, sig.get())));
+    //    }
+
+    //    @Autowired
+    //        private CacheManager cacheManager;
+    //    private Mono<ProductRatingResponse> resolveRatingWithCache(Long productId) {
+    //        Cache cache = cacheManager.getCache("rating");
+    //        ProductRatingResponse value = cache.get(productId, ProductRatingResponse.class);
+    //        if (value != null) {
+    //            return Mono.just(value);
+    //        }
+    //        return ExternalAPIs.getProductRating(productId)
+    //                .doOnNext(r -> cache.put(productId, r));
+    //    }
+
 
     private static void auditResealed(Product p) {
         if (p.isResealed()) {
@@ -112,7 +171,7 @@ public class ComplexFlowApp implements CommandLineRunner {
     }
 
     private static Flux<Product> retrieveMany(List<Long> productIds) {
-        log.info("Call pentru " + productIds);
+        log.info("Retrieve product IDs: " + productIds);
         return WEB_CLIENT
                 .post()
                 .uri("http://localhost:9999/api/product/many")
@@ -122,8 +181,5 @@ public class ComplexFlowApp implements CommandLineRunner {
                 .map(ProductDetailsResponse::toEntity)
                 ;
     }
-
-
-
 }
 
