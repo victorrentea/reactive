@@ -37,6 +37,11 @@
             <scope>runtime</scope>
         </dependency>
         <dependency>
+            <!-- @Aspect -->
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aspects</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.12.0</version>

@@ -7,6 +7,8 @@ import java.util.List;
 
 @Component
 public class ComplexFlow {
+
+    // @TimedReactive // TODO
     public Mono<List<Product>> mainFlow(List<Long> productIds) {
 
         // 1: for ... + RestTemplate

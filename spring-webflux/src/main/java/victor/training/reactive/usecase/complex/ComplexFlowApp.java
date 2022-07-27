@@ -32,7 +32,7 @@ import static victor.training.reactive.Utils.installBlockHound;
 @SpringBootApplication
 public class ComplexFlowApp implements CommandLineRunner {
    public static void main(String[] args) {
-      SpringApplication.run(ComplexFlowApp.class, "--server.port=8081");
+      SpringApplication.run(ComplexFlowApp.class);
    }
 
    @Bean
@@ -51,10 +51,10 @@ public class ComplexFlowApp implements CommandLineRunner {
       Hooks.onOperatorDebug(); // provide better stack traces
 
       log.info("Calling myself automatically once at startup");
-      WebClient.create().get().uri("http://localhost:8081/complex").retrieve().bodyToMono(String.class)
+      WebClient.create().get().uri("http://localhost:8080/complex").retrieve().bodyToMono(String.class)
           .subscribe(
               data -> log.info("COMPLETED with: "+data),
-              error -> log.error("FAILED! See above why" )
+              error -> log.error("FAILED! See above why: "+ error )
           );
    }
 
