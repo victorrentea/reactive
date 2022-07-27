@@ -1,6 +1,7 @@
 package victor.training.reactive.usecase.complex;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -59,7 +60,7 @@ public class ComplexFlowApp implements CommandLineRunner {
 
 
       return mainFlow(productIds)
-              .collectList()
+           .collectList()
           .map(list -> "Done. Got " + list.size() + " products: " + list);
    }
 
@@ -67,13 +68,21 @@ public class ComplexFlowApp implements CommandLineRunner {
    // ================================== work below ====================================
 
    public Flux<Product> mainFlow(List<Long> productIds) {
-//      return retrieveMany(productIds);
-      return Flux.fromIterable(productIds)
-              // o forma primitiva de rate limiting :
-              // cum e forma profesionista
+       return Flux.fromIterable(productIds)
               .buffer(2)
               .flatMap(ComplexFlowApp::retrieveMany, 10)
+              .flatMap(ComplexFlowApp::auditResealed)
             ;
+   }
+
+   @NotNull
+   private static Mono<Product> auditResealed(Product p) {
+      if (p.isResealed()) {
+         return ExternalAPIs.auditResealedProduct(p)
+                 .thenReturn(p);
+      } else {
+         return Mono.just(p);
+      }
    }
 
    // perfect
