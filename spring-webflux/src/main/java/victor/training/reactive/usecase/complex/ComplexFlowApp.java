@@ -26,6 +26,9 @@ import static victor.training.reactive.Utils.installBlockHound;
 @Slf4j
 @SpringBootApplication
 public class ComplexFlowApp implements CommandLineRunner {
+
+   public static final WebClient WEB_CLIENT = WebClient.create();
+
    public static void main(String[] args) {
       SpringApplication.run(ComplexFlowApp.class, "--server.port=8081");
    }
@@ -44,7 +47,7 @@ public class ComplexFlowApp implements CommandLineRunner {
       Hooks.onOperatorDebug(); // provide better stack traces
 
       log.info("Calling myself automatically once");
-      WebClient.create().get().uri("http://localhost:8081/complex").retrieve().bodyToMono(String.class)
+      WEB_CLIENT.get().uri("http://localhost:8081/complex").retrieve().bodyToMono(String.class)
           .subscribe(
               data -> log.info("COMPLETED with: "+data),
               error -> log.error("FAILED! See above why" )
@@ -64,22 +67,21 @@ public class ComplexFlowApp implements CommandLineRunner {
    // ================================== work below ====================================
 
    public Mono<List<Product>> mainFlow(List<Long> productIds) {
-      log.info("HAlloooo");
-
-      List<Product> products = productIds.stream().map(ComplexFlowApp::retrieve).collect(toList());
-      return Mono.just(products);
+      return Flux.fromIterable(productIds)
+              .flatMap(ComplexFlowApp::retrieve)
+              .collectList();
    }
 
-   private static Product retrieve(Long productId) {
+   // perfect
+   private static Mono<Product> retrieve(Long productId) {
       log.info("Call pentru " + productId);
-      ProductDetailsResponse productDetails = WebClient.create()
+      return WEB_CLIENT
               .get()
               .uri("http://localhost:9999/api/product/" + productId)
               .retrieve()
               .bodyToMono(ProductDetailsResponse.class)
-              .block();
-      Product product = productDetails.toEntity();
-      return product;
+              .map(ProductDetailsResponse::toEntity)
+      ;
    }
 
 
