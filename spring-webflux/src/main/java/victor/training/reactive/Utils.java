@@ -8,6 +8,7 @@ import reactor.blockhound.BlockHound.Builder;
 import reactor.blockhound.integration.BlockHoundIntegration;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
+import victor.training.reactive.usecase.complex.ComplexFlowApp;
 
 import java.util.Collections;
 import java.util.List;
@@ -47,5 +48,16 @@ public class Utils {
 
 	public static Mono<ResponseEntity<Void>> refreshWireMockStubsFromJson() {
 		return WebClient.create().post().uri("http://localhost:9999/__admin/mappings/reset").retrieve().toBodilessEntity();
+	}
+
+    public static void noop() {
+		// adica nimic! nada.
+    }
+
+	public static void noop(Void v) {
+	}
+
+	public static void handleError(Throwable error) {
+	   log.error("Ca m-am panicat", error);
 	}
 }

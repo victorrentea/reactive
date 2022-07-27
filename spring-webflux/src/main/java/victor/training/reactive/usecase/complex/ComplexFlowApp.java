@@ -1,7 +1,6 @@
 package victor.training.reactive.usecase.complex;
 
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -14,6 +13,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuples;
+import victor.training.reactive.Utils;
 
 import java.util.List;
 import java.util.stream.LongStream;
@@ -79,7 +79,7 @@ public class ComplexFlowApp implements CommandLineRunner {
               .buffer(2)
               .flatMap(ComplexFlowApp::retrieveMany, 10)
 //              .delayUntil(ComplexFlowApp::auditResealed)
-               .doOnNext(p -> auditResealed(p).subscribe() // pierzi CANCEL signal
+               .doOnNext(ComplexFlowApp::auditResealed // pierzi CANCEL signal
         // daca subscriberu final da cancel audit resealed deja lansate nu poti sa le cancelezi.
                )
             ;
@@ -87,15 +87,10 @@ public class ComplexFlowApp implements CommandLineRunner {
       // problema: auditu dureaza si nu are sens sa stam dupa el. Sa facem deci fire-and-forget
    }
 
-   @NotNull
-   private static Mono<Void> auditResealed(Product p) {
+   private static void auditResealed(Product p) {
       if (p.isResealed()) {
-         return ExternalAPIs.auditResealedProduct(p)
-                 .doOnError(e -> log.error("Ca m-am panicat", e))
-                 .onErrorResume(e -> Mono.empty())   // catch (Exception) {log;}
-                 ;
-      } else {
-         return Mono.empty();
+          ExternalAPIs.auditResealedProduct(p)
+                 .subscribe(Utils::noop, Utils::handleError);
       }
    }
 
