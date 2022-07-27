@@ -1,152 +1,134 @@
-package victor.training.reactive.intro.mvc;
+package victor.training.reactive.intro.mvc
 
-import io.micrometer.core.instrument.MeterRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.concurrent.CompletableFuture;
-
-import static java.lang.System.currentTimeMillis;
-import static victor.training.reactive.intro.mvc.Utils.sleep;
+import io.micrometer.core.instrument.MeterRegistry
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.SpringApplication
+import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.context.annotation.Bean
+import org.springframework.scheduling.annotation.Async
+import org.springframework.scheduling.annotation.EnableAsync
+import org.springframework.stereotype.Service
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RestController
+import java.util.concurrent.CompletableFuture
 
 @EnableAsync
 @RestController
 @SpringBootApplication
-public class BlockingApp {
+class BlockingApp {
+    @Bean
+    fun metricsCommonTags(): MeterRegistryCustomizer<MeterRegistry> {
+        return MeterRegistryCustomizer { registry: MeterRegistry ->
+            registry.config()
+                .commonTags(
+                    "application", "spring-mvc",
+                    "region", "training-region"
+                )
+        }
+    }
 
-   private static final Logger log = LoggerFactory.getLogger(BlockingApp.class);
+    @Autowired
+    private val barman: Barman? = null
+    @GetMapping("fast")
+    @Throws(Exception::class)
+    fun undeTalciokul(): String {
+        return "immediate dupa colt"
+    }
 
-   @Bean
-   MeterRegistryCustomizer<MeterRegistry> metricsCommonTags() {
-      return registry -> registry.config()
-          .commonTags(
-              "application", "spring-mvc",
-              "region", "training-region");
-   }
-
-
-   public static void main(String[] args) {
-      org.springframework.boot.SpringApplication.run(BlockingApp.class, args);
-   }
-
-   @Autowired
-   private Barman barman;
-
-   @GetMapping("fast")
-   public String undeTalciokul() throws Exception {
-      return "immediate dupa colt";
-   }
-
-   @GetMapping("drink")
-   public CompletableFuture<Yorsh> drink() throws Exception {
-      log.info("Talking to barman: " + barman.getClass());
-
-      long t0 = currentTimeMillis();
-
-      CompletableFuture<Beer> beerPromise =  barman.pourBeer();
-      CompletableFuture<Vodka> vodkaPromise = barman.pourVodka();
+    @GetMapping("drink")
+    @Throws(Exception::class)
+    fun drink(): CompletableFuture<Yorsh> {
+        log.info("Talking to barman: " + barman!!.javaClass)
+        val t0 = System.currentTimeMillis()
+        val beerPromise = barman.pourBeer()
+        val vodkaPromise = barman.pourVodka()
+        val yorshPromise = beerPromise.thenCombineAsync(
+            vodkaPromise
+        ) { b: Beer?, v: Vodka? -> Yorsh(b, v) }
 
 
-      CompletableFuture<Yorsh> yorshPromise = beerPromise.thenCombineAsync(vodkaPromise,
-              (b,v) -> new Yorsh(b,v));
+        val deltaT = System.currentTimeMillis() - t0
+        log.info("HTTP thread was blocked for {} millis ", deltaT)
+        return yorshPromise
+    }
 
-
-//      Yorsh yorsh = yorshPromise.get();
-      long deltaT = currentTimeMillis() - t0;
-      log.info("HTTP thread was blocked for {} millis ", deltaT);
-      return yorshPromise;
-   }
+    companion object {
+        private val log = LoggerFactory.getLogger(BlockingApp::class.java)
+        @JvmStatic
+        fun main(args: Array<String>) {
+            SpringApplication.run(BlockingApp::class.java, *args)
+        }
+    }
 }
 
 @Service
-class Barman {
-   private static final Logger log = LoggerFactory.getLogger(Barman.class);
-// "promise" (JS) = = = CompletableFuture (java)
-   @Async
-   public CompletableFuture<Beer> pourBeer() {
-      log.info("Start pour beer");
+internal class Barman {
+    // "promise" (JS) = = = CompletableFuture (java)
+    @Async
+    fun pourBeer(): CompletableFuture<Beer> {
+        log.info("Start pour beer")
 
-      // 1: emulate REST Call
-      sleep(1000);
-      Beer beer = new Beer("blond");
+        // 1: emulate REST Call
+        Utils.sleep(1000)
+        val beer = Beer("blond")
 
-      // 2: really call
+        // 2: really call
 //      Beer beer = new RestTemplate().getForEntity("http://localhost:9999/api/beer", Beer.class).getBody();
 
-      // 3: async alternative
+        // 3: async alternative
 //      return new AsyncRestTemplate().exchange()
 //          .completable().thenApply(tranform);
+        log.info("End pour beer")
+        return CompletableFuture.completedFuture(beer)
+    }
 
-      log.info("End pour beer");
-      return CompletableFuture.completedFuture(beer);
-   }
+    @Async
+    fun pourVodka(): CompletableFuture<Vodka> {
+        log.info("Start pour vodka")
+        Utils.sleep(200) // imagine blocking DB call
+        log.info("End pour vodka")
+        return CompletableFuture.completedFuture(Vodka())
+    }
 
-   @Async
-   public CompletableFuture<Vodka> pourVodka() {
-      log.info("Start pour vodka");
-      sleep(200);  // imagine blocking DB call
-      log.info("End pour vodka");
-      return CompletableFuture.completedFuture(new Vodka());
-   }
+    companion object {
+        private val log = LoggerFactory.getLogger(Barman::class.java)
+    }
 }
 
+internal class Beer {
+    var type: String? = null
+        private set
 
-class Beer {
-   private String type;
-   public Beer() {}
-   Beer(String type) {
-      this.type = type;
-   }
-
-   public String getType() {
-      return type;
-   }
+    constructor() {}
+    constructor(type: String?) {
+        this.type = type
+    }
 }
 
-class Vodka {
-   private final String type = "deadly";
-
-   public String getType() {
-      return type;
-   }
+internal class Vodka {
+    val type = "deadly"
 }
 
-class Yorsh {
-   private static final Logger log = LoggerFactory.getLogger(Yorsh.class);
-   private final Beer beer;
-   private final Vodka vodka;
+class Yorsh(val beer: Beer?, val vodka: Vodka?) {
 
-   public Yorsh(Beer beer, Vodka vodka) {
-      this.beer = beer;
-      this.vodka = vodka;
-      log.info("Mixing {} with {} (takes time) ...", beer, vodka);
-      sleep(500);
-   }
+    init {
+        log.info("Mixing {} with {} (takes time) ...", beer, vodka)
+        Utils.sleep(500)
+    }
 
-   public Beer getBeer() {
-      return beer;
-   }
-
-   public Vodka getVodka() {
-      return vodka;
-   }
+    companion object {
+        private val log = LoggerFactory.getLogger(Yorsh::class.java)
+    }
 }
 
-class Utils {
-   public static void sleep(long millis) {
-      try {
-         Thread.sleep(millis);
-      } catch (InterruptedException e) {
-         throw new RuntimeException(e);
-      }
-   }
+internal object Utils {
+    fun sleep(millis: Long) {
+        try {
+            Thread.sleep(millis)
+        } catch (e: InterruptedException) {
+            throw RuntimeException(e)
+        }
+    }
 }
