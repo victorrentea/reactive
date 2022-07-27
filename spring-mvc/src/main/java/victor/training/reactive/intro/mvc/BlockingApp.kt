@@ -12,6 +12,8 @@ import org.springframework.scheduling.annotation.EnableAsync
 import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.client.AsyncRestTemplate
+import org.springframework.web.client.RestTemplate
 import java.util.concurrent.CompletableFuture
 
 @EnableAsync
@@ -31,6 +33,7 @@ open class BlockingApp {
 
     @Autowired
     private val barman: Barman? = null
+
     @GetMapping("fast")
     @Throws(Exception::class)
     fun undeTalciokul(): String {
@@ -55,6 +58,7 @@ open class BlockingApp {
 
     companion object {
         private val log = LoggerFactory.getLogger(BlockingApp::class.java)
+
         @JvmStatic
         fun main(args: Array<String>) {
             SpringApplication.run(BlockingApp::class.java, *args)
@@ -65,22 +69,18 @@ open class BlockingApp {
 @Service
 open class Barman {
     // "promise" (JS) = = = CompletableFuture (java)
-    @Async
+//    @Async
     open fun pourBeer(): CompletableFuture<Beer> {
         log.info("Start pour beer")
 
-        // 1: emulate REST Call
-        Utils.sleep(1000)
-        val beer = Beer("blond")
+        val beer = AsyncRestTemplate()
+            .getForEntity("http://localhost:9999/api/beer", Beer::class.java)
+            .completable()
+            .thenApply {
+                log.info("End pour beer")
+                it.body!! }
 
-        // 2: really call
-//      Beer beer = new RestTemplate().getForEntity("http://localhost:9999/api/beer", Beer.class).getBody();
-
-        // 3: async alternative
-//      return new AsyncRestTemplate().exchange()
-//          .completable().thenApply(tranform);
-        log.info("End pour beer")
-        return CompletableFuture.completedFuture(beer)
+        return beer
     }
 
     @Async
