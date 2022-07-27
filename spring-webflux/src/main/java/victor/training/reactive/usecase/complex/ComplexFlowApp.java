@@ -71,9 +71,13 @@ public class ComplexFlowApp implements CommandLineRunner {
        return Flux.fromIterable(productIds)
               .buffer(2)
               .flatMap(ComplexFlowApp::retrieveMany, 10)
-              .delayUntil(ComplexFlowApp::auditResealed)
+//              .delayUntil(ComplexFlowApp::auditResealed)
+               .doOnNext(p -> auditResealed(p).subscribe() // pierzi CANCEL signal
+        // daca subscriberu final da cancel audit resealed deja lansate nu poti sa le cancelezi.
+               )
             ;
        // Q de la biz: nu ne pasa de erorile de la audit
+      // problema: auditu dureaza si nu are sens sa stam dupa el. Sa facem deci fire-and-forget
    }
 
    @NotNull
