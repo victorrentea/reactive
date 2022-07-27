@@ -1,30 +1,26 @@
 package victor.training.reactive.usecase.complex;
 
+import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.aop.TimedAspect;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
-import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuples;
 import victor.training.reactive.Utils;
+import victor.training.reactive.usecase.complex.TimedReactiveAspect.TimedReactive;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.stream.LongStream;
 
@@ -32,7 +28,6 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static victor.training.reactive.Utils.installBlockHound;
-import static victor.training.reactive.Utils.sleep;
 
 @RestController
 @Slf4j
@@ -42,8 +37,15 @@ public class ComplexFlowApp implements CommandLineRunner {
     public static final WebClient WEB_CLIENT = WebClient.create();
 
     public static void main(String[] args) {
-        SpringApplication.run(ComplexFlowApp.class, "--server.port=8081");
+        SpringApplication.run(ComplexFlowApp.class);
     }
+
+    // enables the use of @Timed (exposed via /actuator/prometheus)
+    @Bean
+    public TimedAspect timedAspect(MeterRegistry meterRegistry) {
+        return new TimedAspect(meterRegistry);
+    }
+
 
     @Bean
     public WebFilter alwaysParallelWebfluxFilter() {
@@ -60,20 +62,23 @@ public class ComplexFlowApp implements CommandLineRunner {
         Hooks.onOperatorDebug(); // provide better stack traces
 
         log.info("Calling myself automatically once");
-        WEB_CLIENT.get().uri("http://localhost:8081/complex").retrieve().bodyToMono(String.class)
+        WEB_CLIENT.get().uri("http://localhost:8080/complex").retrieve().bodyToMono(String.class)
                 .subscribe(
                         data -> log.info("Call COMPLETED with: " + data),
-                        error -> log.error("Call to MainFlow FAILED! See above why")
+                        error -> log.error("Call to MainFlow FAILED! See above why: " + error)
                 );
     }
 
     @GetMapping("complex")
+    @Timed("complex")
+    // @TimedReactive // TODO
     public Mono<String> executeAsNonBlocking(@RequestParam(value = "n", defaultValue = "100") int n) {
         long t0 = currentTimeMillis();
         List<Long> productIds = LongStream.rangeClosed(1, n).boxed().collect(toList());
 
         Mono<List<Product>> listMono = mainFlow(productIds)
-                .collectList();
+                .collectList()
+                ;
         return listMono.map(list ->
                 "<h2>Done!</h2>\n" +
                 "Requested " + n + " (add ?n=1000 to url to change), " +
@@ -81,6 +86,9 @@ public class ComplexFlowApp implements CommandLineRunner {
                 "after " + (currentTimeMillis() - t0) + " ms: <br>\n<br>\n" +
                 list.stream().map(Product::toString).collect(joining("<br>\n")));
     }
+
+
+
 
 
     public Flux<Product> mainFlow(List<Long> productIds) {
