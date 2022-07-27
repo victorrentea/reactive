@@ -30,20 +30,20 @@ public class TimedReactiveAspect {
 
     @Around("@annotation(victor.training.reactive.usecase.complex.TimedReactiveAspect.TimedReactive)")
     public Object method(ProceedingJoinPoint pjp) throws Throwable {
-        String metricName = pjp.getSignature().getName() + "-elapsed";
+        Object result = pjp.proceed(); // real method call
 
-        Timer timer = meterRegistry.timer(metricName);
-        timer.record(Duration.ofMillis(100)); // example: find it in /actuator/prometheus TODO remove me
+        Timer timer = meterRegistry.timer(pjp.getSignature().getName() + "-elapsed");
 
-        Object result = pjp.proceed();
         if (result instanceof Mono<?>) {
             Mono<?> mono = (Mono<?>) result;
-            // TODO #1 measure and timer.record(...) the time elapsed between subscribe and next signals
+            timer.record(Duration.ofMillis(100)); // example: find it in /actuator/prometheus
+            // TODO #1 timer.record(...) the time elapsed between subscribe and next signals
             return mono;
             // SOLUTION: return mono.timed().doOnNext(timed -> timer.record(timed.elapsedSinceSubscription())).map(Timed::get);
         } else if (result instanceof Flux<?>) {
             Flux<?> flux = (Flux<?>) result;
-            // TODO #2 measure time elapsed between subscribe and completion signals (Hint: .timed() won't help anymore)
+            // TODO #2 timer.record(...) the time elapsed between subscribe and completion signals
+            //      (Hint: .timed() won't help anymore)
             throw new IllegalArgumentException("not implemented ");
         }
         return result;
