@@ -12,18 +12,23 @@
 ## Optimize network calls
 - Play: what if you have 10k products to fetch ?
 - Call their API with max 10 requests in parallel <<<
-- Avoid calling network in a loop by fetching "pages of Products" 
+- Avoid calling network in a loop by fetching "pages of Products"
   ExternalApi.getProductData(List<productId>): List<Product>
-  
+
 ## Audit
 - An audit API REST call should happen passing the id of the product.
 - The Audit API call should only happen for products with resealed=true
+- Explore alternative ways of triggering a side-effect-only action:
+  - First idea: flatMap(p->audit(p).thenReturn(p))
+  - More compact: delayUntil(p->audit(p))
+  - Log and ignore exceptions: .doOnError().onErrorResume()
+  - fire-and-forget: subscribe() - tradeoff: cancellation
 
 ## Enhance Data
-- Complement the Product with rating fetched from a REST API call to RatingService 
-- Before doing the previous call, check an external cache (ExternalCacheClient#lookupInCache). 
+- Complement the Product with rating fetched from a REST API call to RatingService
+- Before doing the previous call, check an external cache (ExternalCacheClient#lookupInCache).
   If the returned Mono is empty, perform the call, otherwise use the cached rating.
-  
+
 - After the call to RatingService completes, put the rating back in cache (ExternalCacheClient#putInCache)
 
 ## Parallelism
