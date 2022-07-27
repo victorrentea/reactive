@@ -1,5 +1,7 @@
 package victor.training.reactive.reactor.lite.domain;
 
+import org.jetbrains.annotations.NotNull;
+
 public class User {
 
 	public static final User SKYLER = new User("swhite", "Skyler", "White");
@@ -17,6 +19,14 @@ public class User {
 		this.username = username;
 		this.firstname = firstname;
 		this.lastname = lastname;
+	}
+
+	@NotNull
+	public User capitalize() {
+		return new User(getUsername().toUpperCase(),
+				getFirstname().toUpperCase(),
+				getLastname().toUpperCase()
+		);
 	}
 
 	public String getUsername() {
