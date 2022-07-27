@@ -8,14 +8,12 @@ import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuples;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.LongStream;
 
@@ -71,18 +69,20 @@ public class ComplexFlowApp implements CommandLineRunner {
       return Flux.fromIterable(productIds)
               // o forma primitiva de rate limiting :
               // cum e forma profesionista
-              .flatMap(ComplexFlowApp::retrieve, 10)
+              .buffer(2)
+              .flatMap(ComplexFlowApp::retrieveMany, 10)
               .collectList();
    }
 
    // perfect
-   private static Mono<Product> retrieve(Long productId) {
-      log.info("Call pentru " + productId);
+   private static Flux<Product> retrieveMany(List<Long> productIds) {
+      log.info("Call pentru " + productIds);
       return WEB_CLIENT
-              .get()
-              .uri("http://localhost:9999/api/product/" + productId)
+              .post()
+              .uri("http://localhost:9999/api/product/many")
+              .bodyValue(productIds)
               .retrieve()
-              .bodyToMono(ProductDetailsResponse.class)
+              .bodyToFlux(ProductDetailsResponse.class)
               .map(ProductDetailsResponse::toEntity)
       ;
    }
