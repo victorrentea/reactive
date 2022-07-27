@@ -17,9 +17,9 @@ import java.util.concurrent.CompletableFuture
 @EnableAsync
 @RestController
 @SpringBootApplication
-class BlockingApp {
+open class BlockingApp {
     @Bean
-    fun metricsCommonTags(): MeterRegistryCustomizer<MeterRegistry> {
+    open fun metricsCommonTags(): MeterRegistryCustomizer<MeterRegistry> {
         return MeterRegistryCustomizer { registry: MeterRegistry ->
             registry.config()
                 .commonTags(
@@ -48,7 +48,6 @@ class BlockingApp {
             vodkaPromise
         ) { b: Beer?, v: Vodka? -> Yorsh(b, v) }
 
-
         val deltaT = System.currentTimeMillis() - t0
         log.info("HTTP thread was blocked for {} millis ", deltaT)
         return yorshPromise
@@ -64,10 +63,10 @@ class BlockingApp {
 }
 
 @Service
-internal class Barman {
+open class Barman {
     // "promise" (JS) = = = CompletableFuture (java)
     @Async
-    fun pourBeer(): CompletableFuture<Beer> {
+    open fun pourBeer(): CompletableFuture<Beer> {
         log.info("Start pour beer")
 
         // 1: emulate REST Call
@@ -85,7 +84,7 @@ internal class Barman {
     }
 
     @Async
-    fun pourVodka(): CompletableFuture<Vodka> {
+    open fun pourVodka(): CompletableFuture<Vodka> {
         log.info("Start pour vodka")
         Utils.sleep(200) // imagine blocking DB call
         log.info("End pour vodka")
@@ -97,7 +96,7 @@ internal class Barman {
     }
 }
 
-internal class Beer {
+class Beer {
     var type: String? = null
         private set
 
@@ -107,7 +106,7 @@ internal class Beer {
     }
 }
 
-internal class Vodka {
+class Vodka {
     val type = "deadly"
 }
 
