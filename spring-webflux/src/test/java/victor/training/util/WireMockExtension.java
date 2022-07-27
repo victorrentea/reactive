@@ -58,7 +58,7 @@ public class WireMockExtension extends WireMockServer implements InvocationInter
       }
    }
 
-   private void checkForUnmatchedRequests() {
+   public void checkForUnmatchedRequests() {
       if (failOnUnmatchedRequests) {
          List<LoggedRequest> unmatchedRequests = findAllUnmatchedRequests();
          if (!unmatchedRequests.isEmpty()) {

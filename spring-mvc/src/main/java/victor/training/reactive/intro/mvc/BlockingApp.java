@@ -1,5 +1,6 @@
-package victor.training.reactive.blocking;
+package victor.training.reactive.intro.mvc;
 
+import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,16 +8,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.concurrent.CompletableFuture;
+import org.springframework.web.client.RestTemplate;
 
 import static java.lang.System.currentTimeMillis;
-import static victor.training.reactive.blocking.Utils.sleep;
+import static victor.training.reactive.intro.mvc.Utils.sleep;
 
 @EnableAsync
 @RestController
@@ -34,8 +33,6 @@ public class BlockingApp {
    }
 
 
-
-
    public static void main(String[] args) {
       org.springframework.boot.SpringApplication.run(BlockingApp.class, args);
    }
@@ -49,62 +46,57 @@ public class BlockingApp {
    }
 
    @GetMapping("drink")
-   public CompletableFuture<DillyDilly> drink() throws Exception {
-      log.info("Talking to proxied barman: " + barman.getClass());
+   public DillyDilly drink() throws Exception {
+      log.info("Talking to barman: " + barman.getClass());
 
       long t0 = currentTimeMillis();
 
+      Beer beer = barman.pourBeer();
+      Vodka vodka = barman.pourVodka();
 
-      CompletableFuture<Beer> beerCF = barman.pourBeer();
-      CompletableFuture<Vodka> vodkaCF = barman.pourVodka();
+      log.debug("HTTP thread was blocked for {} millis ", (currentTimeMillis() - t0));
 
-      CompletableFuture<DillyDilly> futureDilly = beerCF
-          .thenCombineAsync(vodkaCF, (b, v) -> new DillyDilly(b, v)/*, anotherThreadPool*/);
-
-      log.debug("Time= " + (currentTimeMillis() - t0));
-
-
-
-      return futureDilly;
+      return new DillyDilly(beer, vodka);
    }
-
-//   public void hardCore(HttpServletRequest request) throws Exception {
-//      AsyncContext asyncContext = request.startAsync();
-//      drink().thenAccept(dilly -> {
-//         asyncContext.getResponse().getWriter().write("Stuff " + dilly);
-//         asyncContext.complete();
-//      });
-//   }
 }
 
 @Service
 class Barman {
    private static final Logger log = LoggerFactory.getLogger(Barman.class);
 
-   @Async
-   public CompletableFuture<Beer> pourBeer() {
+   public Beer pourBeer() {
       log.info("Start pour beer");
 
+      // 1: emulate
+//      sleep(1000);
+//      Beer beer = new Beer("blond");
+
+      // 2: really call
+      Beer beer = new RestTemplate().getForEntity("http://localhost:9999/api/beer", Beer.class).getBody();
+
+      // 3: async alternative
 //      return new AsyncRestTemplate().exchange()
 //          .completable().thenApply(tranform);
 
-      sleep(1000); // imagine blocking REST call
       log.info("End pour beer");
-      return CompletableFuture.completedFuture(new Beer());
+      return beer;
    }
 
-   @Async
-   public CompletableFuture<Vodka> pourVodka() {
+   public Vodka pourVodka() {
       log.info("Start pour vodka");
       sleep(200);  // imagine blocking DB call
       log.info("End pour vodka");
-      return CompletableFuture.completedFuture(new Vodka());
+      return new Vodka();
    }
 }
 
 
 class Beer {
-   private final String type = "blond";
+   private String type;
+   public Beer() {}
+   Beer(String type) {
+      this.type = type;
+   }
 
    public String getType() {
       return type;
