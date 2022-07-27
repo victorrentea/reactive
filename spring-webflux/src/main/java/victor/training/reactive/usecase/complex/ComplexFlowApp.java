@@ -71,15 +71,18 @@ public class ComplexFlowApp implements CommandLineRunner {
        return Flux.fromIterable(productIds)
               .buffer(2)
               .flatMap(ComplexFlowApp::retrieveMany, 10)
-//              .flatMap(p -> auditResealed(p).thenReturn(p))
               .delayUntil(ComplexFlowApp::auditResealed)
             ;
+       // Q de la biz: nu ne pasa de erorile de la audit
    }
 
    @NotNull
    private static Mono<Void> auditResealed(Product p) {
       if (p.isResealed()) {
-         return ExternalAPIs.auditResealedProduct(p);
+         return ExternalAPIs.auditResealedProduct(p)
+                 .doOnError(e -> log.error("Ca m-am panicat", e))
+                 .onErrorResume(e -> Mono.empty())   // catch (Exception) {log;}
+                 ;
       } else {
          return Mono.empty();
       }
