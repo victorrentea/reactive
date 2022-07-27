@@ -55,23 +55,25 @@ public class ComplexFlowApp implements CommandLineRunner {
 
    @GetMapping("complex")
    public Mono<String> executeAsNonBlocking() {
-      List<Long> productIds = LongStream.rangeClosed(1, 1000).boxed().collect(toList());
+      List<Long> productIds = LongStream.rangeClosed(1, 1000_000).boxed().collect(toList());
 
 
       return mainFlow(productIds)
+              .collectList()
           .map(list -> "Done. Got " + list.size() + " products: " + list);
    }
 
    // TIP: Caching in Reactor: https://stackoverflow.com/questions/48156424/spring-webflux-and-cacheable-proper-way-of-caching-result-of-mono-flux-type
    // ================================== work below ====================================
 
-   public Mono<List<Product>> mainFlow(List<Long> productIds) {
+   public Flux<Product> mainFlow(List<Long> productIds) {
+//      return retrieveMany(productIds);
       return Flux.fromIterable(productIds)
               // o forma primitiva de rate limiting :
               // cum e forma profesionista
               .buffer(2)
               .flatMap(ComplexFlowApp::retrieveMany, 10)
-              .collectList();
+            ;
    }
 
    // perfect
@@ -82,10 +84,11 @@ public class ComplexFlowApp implements CommandLineRunner {
               .uri("http://localhost:9999/api/product/many")
               .bodyValue(productIds)
               .retrieve()
-              .bodyToFlux(ProductDetailsResponse.class)
+              .bodyToFlux(ProductDetailsResponse.class) // jackson parseaza progresiv JSONu cum vine si-ti emite semnale de date ProductDetails.
               .map(ProductDetailsResponse::toEntity)
       ;
    }
+
 
 
 }
