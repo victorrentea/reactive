@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.stream.LongStream;
 
+import static java.lang.System.currentTimeMillis;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static victor.training.reactive.Utils.installBlockHound;
@@ -68,14 +69,17 @@ public class ComplexFlowApp implements CommandLineRunner {
 
     @GetMapping("complex")
     public Mono<String> executeAsNonBlocking(@RequestParam(value = "n", defaultValue = "100") int n) {
+        long t0 = currentTimeMillis();
         List<Long> productIds = LongStream.rangeClosed(1, n).boxed().collect(toList());
 
         Mono<List<Product>> listMono = mainFlow(productIds)
                 .collectList();
-
         return listMono.map(list ->
-                "<h2>Done!</h2>\nRequested " + n +" (add ?n=1000 to url to change), returning " + list.size() + " products: <br>\n<br>\n" +
-                             list.stream().map(Product::toString).collect(joining("<br>\n")));
+                "<h2>Done!</h2>\n" +
+                "Requested " + n + " (add ?n=1000 to url to change), " +
+                "returning " + list.size() + " products " +
+                "after " + (currentTimeMillis() - t0) + " ms: <br>\n<br>\n" +
+                list.stream().map(Product::toString).collect(joining("<br>\n")));
     }
 
 
