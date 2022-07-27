@@ -13,9 +13,9 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
-        <!-- only for Mac M1 chips -->
         <dependency>
             <groupId>io.netty</groupId>
+            <!-- only for Mac M1 chips -->
             <artifactId>netty-resolver-dns-native-macos</artifactId>
             <classifier>osx-x86_64</classifier>
         </dependency>
