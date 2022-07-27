@@ -67,6 +67,13 @@ public class ComplexFlowApp implements CommandLineRunner {
    // TIP: Caching in Reactor: https://stackoverflow.com/questions/48156424/spring-webflux-and-cacheable-proper-way-of-caching-result-of-mono-flux-type
    // ================================== work below ====================================
 
+
+   public void jobuLansatDinQuartzUnLibVechicareNUStieReact() {
+//      ......subsccribe(); // 1ms fara erori.
+      // m-as gandi la .block(); pt ca sa-i arunc exceptie, sa vada cat a durat.
+      // nici nu starvezi =threaduri ca are propriul thraed poolq
+   }
+   
    public Flux<Product> mainFlow(List<Long> productIds) {
        return Flux.fromIterable(productIds)
               .buffer(2)
