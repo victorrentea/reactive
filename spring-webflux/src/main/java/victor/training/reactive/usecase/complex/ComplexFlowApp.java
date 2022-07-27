@@ -71,17 +71,17 @@ public class ComplexFlowApp implements CommandLineRunner {
        return Flux.fromIterable(productIds)
               .buffer(2)
               .flatMap(ComplexFlowApp::retrieveMany, 10)
-              .flatMap(ComplexFlowApp::auditResealed)
+//              .flatMap(p -> auditResealed(p).thenReturn(p))
+              .delayUntil(ComplexFlowApp::auditResealed)
             ;
    }
 
    @NotNull
-   private static Mono<Product> auditResealed(Product p) {
+   private static Mono<Void> auditResealed(Product p) {
       if (p.isResealed()) {
-         return ExternalAPIs.auditResealedProduct(p)
-                 .thenReturn(p);
+         return ExternalAPIs.auditResealedProduct(p);
       } else {
-         return Mono.just(p);
+         return Mono.empty();
       }
    }
 
