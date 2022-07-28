@@ -24,10 +24,13 @@ class ComplexFlow(
 
     }
 
-    private fun fillRating(product: Product): Mono<Product> =
-        ExternalAPIs.getProductRating(product.id)
-//            .map { product.withRating(it) } // cand nu poti face clasa sa fie dataclass
-            .map { product.copy(rating = it) } // face exact ca witherul pt data class
+    private fun fillRating(product: Product): Mono<Product> {
+        return ExternalCacheClient.lookupInCache(product.id)
+            .switchIfEmpty( ExternalAPIs.getProductRating(product.id)) // e ok sa chem functia pentru ca returneaza in < 1ms
+            .map { product.copy(rating = it) }
+//        return ExternalAPIs.getProductRating(product.id)
+//            .map { product.copy(rating = it) }
+    }
 
 
     private fun auditResealed(p: Product) {
