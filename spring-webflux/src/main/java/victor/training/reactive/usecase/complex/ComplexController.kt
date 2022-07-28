@@ -36,7 +36,7 @@ class ComplexController(
 
     @GetMapping("complex")
     @Timed("complex") // @TimedReactive // TODO
-    fun executeAsNonBlocking(@RequestParam(value = "n", defaultValue = "100") n: Int): Mono<String> {
+    fun executeAsNonBlocking(@RequestParam(value = "n", defaultValue = "10") n: Int): Mono<String> {
         val t0 = System.currentTimeMillis()
         val productIds = (0L until n).toList()
         val listMono = complexFlow.mainFlow(productIds).collectList()

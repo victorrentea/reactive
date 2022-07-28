@@ -18,7 +18,7 @@ class ComplexFlow(
     private val log = LoggerFactory.getLogger(ComplexFlow::class.java)
 
     fun mainFlow(productIds: List<Long>): Flux<Product> {
-
+// TODO victorrentea 2022-07-29: no variables of type MONO/FLUX
         val products =
             Flux.fromIterable(productIds)
                 .buffer(2)
