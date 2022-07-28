@@ -7,6 +7,8 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import victor.training.reactive.Utils
 import victor.training.reactive.Utils.noop
+import java.time.Duration
+import java.time.Duration.ofMillis
 
 @Component
 class ComplexFlow(
@@ -24,18 +26,23 @@ class ComplexFlow(
 
     }
 
+    // daca switch if empty primeste next(rDinCache) atunci NU subscrie ci da mai jos la map un next(rDinCache)
+    // daca switch if empty primeste empty() atunci subscrie la fluxul definit in EL
+    //      (la delayUntil >>> subscribe >> getRating)
+    //      cand rating emite next(rDinCall) > next(r) > delay (asteapta put)
+    //      si emite mai jos catre map next(rPusInCache)
     private fun fillRating(product: Product): Mono<Product> {
 
         return ExternalCacheClient.lookupInCache(product.id)
-            // daca switch if empty primeste next(rDinCache) atunci NU subscrie ci da mai jos la map un next(rDinCache)
-            // daca switch if empty primeste empty() atunci subscrie la fluxul definit in EL
-            //      (la delayUntil >>> subscribe >> getRating)
-            //      cand rating emite next(rDinCall) > next(r) > delay (asteapta put)
-            //      si emite mai jos catre map next(rPusInCache)
+            .timeout(ofMillis(100))
+            .onErrorResume { Mono.empty() }
 
             .switchIfEmpty( ExternalAPIs.getProductRating(product.id)
 
-                .delayUntil{ r ->ExternalCacheClient.putInCache(product.id, r) }
+                .doOnNext{ r -> ExternalCacheClient.putInCache(product.id, r)
+                    .timeout(ofMillis(100))
+                    .subscribe({ noop() }, {Utils.handleError(it)})
+                }
 
             )
             .map { product.copy(rating = it) }
