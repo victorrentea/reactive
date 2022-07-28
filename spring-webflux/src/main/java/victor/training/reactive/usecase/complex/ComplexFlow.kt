@@ -26,7 +26,8 @@ class ComplexFlow(
 
     private fun fillRating(product: Product): Mono<Product> =
         ExternalAPIs.getProductRating(product.id)
-            .map { product.withRating(it) } // cand nu poti face clasa sa fie dataclass
+//            .map { product.withRating(it) } // cand nu poti face clasa sa fie dataclass
+            .map { product.copy(rating = it) } // face exact ca witherul pt data class
 
 
     private fun auditResealed(p: Product) {

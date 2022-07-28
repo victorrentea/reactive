@@ -5,7 +5,7 @@ data class Product(
     val name: String,
     val isActive: Boolean,
     val isResealed: Boolean,
-    var rating: ProductRatingResponse? = null,
+    val rating: ProductRatingResponse? = null,
 )
 
 fun Product.withRating(productRatingResponse: ProductRatingResponse): Product =
