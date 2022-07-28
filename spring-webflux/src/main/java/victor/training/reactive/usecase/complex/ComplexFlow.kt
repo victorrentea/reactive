@@ -3,9 +3,11 @@ package victor.training.reactive.usecase.complex
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
+import reactor.core.Disposable
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import victor.training.reactive.Utils
+import victor.training.reactive.Utils.noop
 
 @Component
 class ComplexFlow(
@@ -16,23 +18,18 @@ class ComplexFlow(
     fun mainFlow(productIds: List<Long>): Flux<Product> {
          return Flux.fromIterable(productIds)
             .buffer(2)
-            .flatMapSequential({ retrieveMany(it) }, 10)
+            .flatMap({ retrieveMany(it) }, 10)
+             .doOnNext {auditResealed(it)}
 
-        // imaginati 1000 de elem, dar primu dureaza de 100x mai mult.
-    // >>>> 1000 rezultate (MARI KB) in memorie
-            // + multe elemente
-            // + RASPUNSURI MARI
-        // ==> .flatMapSequential poate da OOME
     }
 
 
-    private fun auditResealed(p: Product) =
+    private fun auditResealed(p: Product) {
         if (p.isResealed) {
-            ExternalAPIs.auditResealedProduct(p).thenReturn(p)
-        } else {
-            Mono.just(p)
+            ExternalAPIs.auditResealedProduct(p)
+                .subscribe({noop(it)}, { Utils.handleError(it) })
         }
-//                .subscribe({ v: Void? -> Utils.noop(v) }) { error: Throwable? -> Utils.handleError(error) }
+    }
 
     private fun retrieveMany(productIds: List<Long>): Flux<Product> {
         log.info("Retrieve product IDs: $productIds")
