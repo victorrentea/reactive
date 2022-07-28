@@ -22,6 +22,7 @@ class ComplexFlow(
             .flatMap({ retrieveMany(it) }, 10)
             .doOnNext { auditResealed(it) }
             .flatMap { fillRating(it) }
+            .sort(compareBy{it.id})
 
 
     }
@@ -32,7 +33,6 @@ class ComplexFlow(
     //      cand rating emite next(rDinCall) > next(r) > delay (asteapta put)
     //      si emite mai jos catre map next(rPusInCache)
     private fun fillRating(product: Product): Mono<Product> {
-
         return ExternalCacheClient.lookupInCache(product.id)
             .timeout(ofMillis(100))
             .onErrorResume { Mono.empty() }
@@ -45,6 +45,7 @@ class ComplexFlow(
                 }
 
             )
+            .onErrorResume { Mono.empty() }
             .map { product.copy(rating = it) }
     }
 
