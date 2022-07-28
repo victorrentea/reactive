@@ -8,11 +8,24 @@ class MultipleSubscribersMono_Zip3(private val apis: Apis) {
     // from A ==> get B
     // from A and B ==> get C
     fun retrieveC(id: Long): Mono<Apis.C> {
-        // TODO fix
-        val monoA = apis!!.getA(id)
-        val monoB = apis.getB(null)
-        return apis.getC(null, null)
+        val monoA = apis.getA(id).cache()
+
+        val monoB = monoA.flatMap { a ->
+            apis.getB(a)
+        }
+
+         return monoA.zipWith(monoB) {a,b ->
+            apis.getC(a,b)
+        }.flatMap{it}
     }
+
+
+
+
+
+
+
+
 
     companion object {
         @JvmStatic
