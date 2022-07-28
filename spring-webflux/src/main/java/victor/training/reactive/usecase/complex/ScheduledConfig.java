@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Configuration
 @Slf4j
-@EnableScheduling
+//@EnableScheduling
 public class ScheduledConfig {
     AtomicInteger a = new AtomicInteger(1);
     @Scheduled(fixedRate = 1000)
