@@ -16,12 +16,13 @@ class ComplexFlow(
     fun mainFlow(productIds: List<Long>): Flux<Product> {
          return Flux.fromIterable(productIds)
             .buffer(2)
-            .flatMapSequential(::retrieveMany, 10)
+            .flatMapSequential({ retrieveMany(it) }, 10)
 
-//            .flatMap { auditResealed(it).thenReturn(it) }
-//            .sort(compareBy { it.id })
-
-            .flatMapSequential { auditResealed(it) } // preserves order
+        // imaginati 1000 de elem, dar primu dureaza de 100x mai mult.
+    // >>>> 1000 rezultate (MARI KB) in memorie
+            // + multe elemente
+            // + RASPUNSURI MARI
+        // ==> .flatMapSequential poate da OOME
     }
 
 
