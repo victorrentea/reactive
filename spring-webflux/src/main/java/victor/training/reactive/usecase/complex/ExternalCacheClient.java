@@ -10,7 +10,7 @@ public class ExternalCacheClient { // faking a remote cache (involving network =
     public static Mono<ProductRatingResponse> lookupInCache(Long productId) {
         // if (true) return Mono.error(new RuntimeException("Sh*t happens..."));
         return Mono.fromSupplier(() -> {
-            if (Math.random() < .5) {
+            if (Math.random() < 0) {
                 log.debug("Cache hit ✅: " + productId);
                 return new ProductRatingResponse(5);
             } else {
