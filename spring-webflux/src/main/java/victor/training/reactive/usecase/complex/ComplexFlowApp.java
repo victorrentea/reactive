@@ -59,7 +59,7 @@ public class ComplexFlowApp implements CommandLineRunner {
    }
 
    @GetMapping("complex")
-   public Mono<String> executeAsNonBlocking(@RequestParam(value = "n", defaultValue = "100") int n) {
+   public Mono<String> executeAsNonBlocking(@RequestParam(value = "n", defaultValue = "10") int n) {
       long t0 = currentTimeMillis();
       List<Long> productIds = LongStream.rangeClosed(1, n).boxed().collect(toList());
 
