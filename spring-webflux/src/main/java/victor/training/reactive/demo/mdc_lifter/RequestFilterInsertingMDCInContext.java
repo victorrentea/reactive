@@ -14,7 +14,7 @@ import java.util.List;
 
 @Slf4j
 @Component
-public class RequestFilter implements WebFilter {
+public class RequestFilterInsertingMDCInContext implements WebFilter {
    @Override
    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
       String requestId = getRequestId(exchange.getRequest().getHeaders());
