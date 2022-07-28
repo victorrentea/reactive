@@ -57,15 +57,15 @@ public class ComplexFlowApp implements CommandLineRunner {
     }
 
 
-    @Bean
-    public WebFilter alwaysParallelWebfluxFilter() {
-        // ⚠️ WARNING: use this only when exploring the non-block-ness of your code.
-        installBlockHound(List.of(
-                Tuples.of("io.netty.resolver.HostsFileParser", "parse"),
-                Tuples.of("victor.training.reactive.reactor.complex.ComplexFlowMain", "executeAsNonBlocking")
-        ));
-        return (exchange, chain) -> Mono.defer(() -> chain.filter(exchange)).subscribeOn(Schedulers.parallel());
-    }
+//    @Bean
+//    public WebFilter alwaysParallelWebfluxFilter() {
+//        // ⚠️ WARNING: use this only when exploring the non-block-ness of your code.
+//        installBlockHound(List.of(
+//                Tuples.of("io.netty.resolver.HostsFileParser", "parse"),
+//                Tuples.of("victor.training.reactive.reactor.complex.ComplexFlowMain", "executeAsNonBlocking")
+//        ));
+//        return (exchange, chain) -> Mono.defer(() -> chain.filter(exchange)).subscribeOn(Schedulers.parallel());
+//    }
 
     @Override
     public void run(String... args) throws Exception {
