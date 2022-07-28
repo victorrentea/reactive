@@ -15,8 +15,8 @@ class MultipleSubscribersMono_Zip3(private val apis: Apis) {
         // daca chainuiesti de 2 ori din acelasi subscriber >>>>>>>>> 2 calluri de retea invizibile
 
         return apis.getA(id)
-            .flatMap { a-> apis.getB(a).map{ b -> Tuples.of(a,b)} }
-            .flatMap { t -> apis.getC(t.t1, t.t2) }
+            .flatMap { a-> apis.getB(a).map{ b -> a to b} }
+            .flatMap { (a,b) -> apis.getC(a,b) }
 
 
 
