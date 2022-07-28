@@ -1,6 +1,7 @@
 package victor.training.reactive.usecase.zipchain
 
 import reactor.core.publisher.Mono
+import reactor.function.TupleUtils
 import reactor.util.function.Tuples
 
 class MultipleSubscribersMono_Zip3(private val apis: Apis) {
@@ -15,8 +16,8 @@ class MultipleSubscribersMono_Zip3(private val apis: Apis) {
         // daca chainuiesti de 2 ori din acelasi subscriber >>>>>>>>> 2 calluri de retea invizibile
 
     return apis.getA(id)
-        .zipWhen({ a -> apis.getB(a) }, { a, b -> apis.getC(a, b) })
-        .flatMap { it }
+        .zipWhen { a -> apis.getB(a) }
+        .flatMap(TupleUtils.function { a, b -> apis.getC(a, b) })
 
 //    return apis.getA(id)
 //            .flatMap { a-> apis.getB(a).map{ b -> a to b} }

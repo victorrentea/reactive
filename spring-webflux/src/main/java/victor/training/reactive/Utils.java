@@ -8,7 +8,6 @@ import reactor.blockhound.BlockHound.Builder;
 import reactor.blockhound.integration.BlockHoundIntegration;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
-import victor.training.reactive.usecase.complex.ComplexFlowApp;
 
 import java.util.Collections;
 import java.util.List;
