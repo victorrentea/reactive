@@ -14,9 +14,13 @@ class MultipleSubscribersMono_Zip3(private val apis: Apis) {
         // ca maine cineva vine tiptil si face si el pe acelasi mono.flatMap
         // daca chainuiesti de 2 ori din acelasi subscriber >>>>>>>>> 2 calluri de retea invizibile
 
-        return apis.getA(id)
-            .flatMap { a-> apis.getB(a).map{ b -> a to b} }
-            .flatMap { (a,b) -> apis.getC(a,b) }
+    return apis.getA(id)
+        .zipWhen({ a -> apis.getB(a) }, { a, b -> apis.getC(a, b) })
+        .flatMap { it }
+
+//    return apis.getA(id)
+//            .flatMap { a-> apis.getB(a).map{ b -> a to b} }
+//            .flatMap { (a,b) -> apis.getC(a,b) }
 
 
 
@@ -26,9 +30,9 @@ class MultipleSubscribersMono_Zip3(private val apis: Apis) {
 //            apis.getB(a)
 //        }
 
-         return monoA.zipWith(monoB) {a,b ->
-            apis.getC(a,b)
-        }.flatMap{it}
+//         return monoA.zipWith(monoB) {a,b ->
+//            apis.getC(a,b)
+//        }.flatMap{it}
     }
 
 
