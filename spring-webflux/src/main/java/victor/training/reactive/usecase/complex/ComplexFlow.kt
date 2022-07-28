@@ -7,7 +7,6 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import victor.training.reactive.Utils
 import victor.training.reactive.Utils.noop
-import java.time.Duration
 import java.time.Duration.ofMillis
 
 @Component
@@ -21,7 +20,7 @@ class ComplexFlow(
             .buffer(2)
             .flatMap({ retrieveMany(it) }, 10)
             .doOnNext { auditResealed(it) }
-            .flatMap { fillRating(it) }
+            .flatMap { fillRatingWithCache(it) }
             .sort(compareBy{it.id})
 
 
@@ -32,21 +31,19 @@ class ComplexFlow(
     //      (la delayUntil >>> subscribe >> getRating)
     //      cand rating emite next(rDinCall) > next(r) > delay (asteapta put)
     //      si emite mai jos catre map next(rPusInCache)
-    private fun fillRating(product: Product): Mono<Product> {
+    private fun fillRatingWithCache(product: Product): Mono<Product> {
         return ExternalCacheClient.lookupInCache(product.id)
-            .timeout(ofMillis(100))
-            .onErrorResume { Mono.empty() }
-
+            .timeout(ofMillis(100)) // cat las cache read
+            .onErrorResume { Mono.empty() } // sa chem totusi realu daca cacheul e jos
             .switchIfEmpty( ExternalAPIs.getProductRating(product.id)
-
                 .doOnNext{ r -> ExternalCacheClient.putInCache(product.id, r)
                     .timeout(ofMillis(100))
                     .subscribe({ noop() }, {Utils.handleError(it)})
                 }
-
             )
-            .onErrorResume { Mono.empty() }
             .map { product.copy(rating = it) }
+            .onErrorResume { Mono.empty() } // sa nu ies cu ERROR de aici
+            .defaultIfEmpty(product) // nu pierd eleemntul
     }
 
 
