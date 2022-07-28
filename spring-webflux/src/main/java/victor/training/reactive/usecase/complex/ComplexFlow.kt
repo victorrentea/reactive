@@ -15,7 +15,7 @@ import java.util.*
 class ComplexFlow(
     val webClient: WebClient
 ) {
-    private val log = LoggerFactory.getLogger(ComplexFlowApp::class.java)
+    private val log = LoggerFactory.getLogger(ComplexFlow::class.java)
 
     fun mainFlow(productIds: List<Long>): Flux<Product> {
 
