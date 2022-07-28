@@ -16,17 +16,20 @@ class ComplexFlow(
     fun mainFlow(productIds: List<Long>): Flux<Product> {
          return Flux.fromIterable(productIds)
             .buffer(2)
-            .flatMap(::retrieveMany, 10)
-            .flatMap { auditResealed(it).thenReturn(it) }
-            .sort(compareBy { it.id })
+            .flatMapSequential(::retrieveMany, 10)
+
+//            .flatMap { auditResealed(it).thenReturn(it) }
+//            .sort(compareBy { it.id })
+
+            .flatMapSequential { auditResealed(it) } // preserves order
     }
 
 
     private fun auditResealed(p: Product) =
         if (p.isResealed) {
-            ExternalAPIs.auditResealedProduct(p)
+            ExternalAPIs.auditResealedProduct(p).thenReturn(p)
         } else {
-            Mono.empty()
+            Mono.just(p)
         }
 //                .subscribe({ v: Void? -> Utils.noop(v) }) { error: Throwable? -> Utils.handleError(error) }
 
