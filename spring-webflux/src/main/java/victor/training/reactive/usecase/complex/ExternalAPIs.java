@@ -26,13 +26,11 @@ class ExternalAPIs {
         if (Math.random()<.5) {
             return Mono.error(new IllegalArgumentException("INTENTIONAT"));
         }
-        log.debug("PROST/MINCINOS: Now calling get product rating " + productId);
+//        log.debug("PROST/MINCINOS: Now calling get product rating " + productId);
         return WebClient.create().get().uri("http://localhost:9999/api/rating/{}", productId)
                 .retrieve()
                 .bodyToMono(ProductRatingResponse.class)
                 .doOnSubscribe(s -> log.info("BUN: Calling getProductRating API: " + productId))
-
-
                 ;
     }
 

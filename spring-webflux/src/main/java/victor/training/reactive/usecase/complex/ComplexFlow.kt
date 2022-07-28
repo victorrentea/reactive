@@ -9,6 +9,7 @@ import reactor.core.publisher.Mono
 import victor.training.reactive.Utils
 import victor.training.reactive.Utils.noop
 import java.time.Duration.ofMillis
+import java.util.*
 
 @Component
 class ComplexFlow(
@@ -17,14 +18,43 @@ class ComplexFlow(
     private val log = LoggerFactory.getLogger(ComplexFlowApp::class.java)
 
     fun mainFlow(productIds: List<Long>): Flux<Product> {
-        return Flux.fromIterable(productIds)
-            .buffer(2)
-            .flatMap({ retrieveMany(it) }, 10)
-            .flatMap { fillRatingWithCache(it) }
+
+        val products =
+            Flux.fromIterable(productIds)
+                .buffer(2)
+                .flatMap({ retrieveMany(it) },10)
+                .collectList()
+
+        val ratings=
+            Flux.fromIterable(productIds)
+                .flatMap { productId -> fillRatingWithCache(productId)
+                    .map { rating -> productId to rating }
+                    .onErrorResume { Mono.empty() } }
+                .collectMap({it.first}, {it.second})
+
+
+        return products.zipWith(ratings) { p, r -> combine(p, r) }
+            .flatMapMany { Flux.fromIterable(it) }
             .doOnNext { auditResealed(it) }
             .sort(compareBy{it.id})
 
 
+//    .map { product.copy(rating = it) }
+//    .onErrorResume { Mono.empty() } // sa nu ies cu ERROR de aici
+//    .defaultIfEmpty(product) // nu pierd eleemntul
+
+//        return Flux.fromIterable(productIds)
+//            .buffer(2)
+//            .flatMap({ retrieveMany(it) }, 10)
+//            .flatMap { fillRatingWithCache(it) }
+//            .doOnNext { auditResealed(it) }
+//            .sort(compareBy{it.id})
+
+
+    }
+
+    private fun combine(products: List<Product>, ratings: Map<Long, ProductRatingResponse>): List<Product> {
+        return products.map { p -> p.copy(rating = ratings[p.id]) }
     }
 
 //    @GetMapping
@@ -38,19 +68,17 @@ class ComplexFlow(
     //      (la delayUntil >>> subscribe >> getRating)
     //      cand rating emite next(rDinCall) > next(r) > delay (asteapta put)
     //      si emite mai jos catre map next(rPusInCache)
-    private fun fillRatingWithCache(product: Product): Mono<Product> {
-        return ExternalCacheClient.lookupInCache(product.id)
+    private fun fillRatingWithCache(productId: Long): Mono<ProductRatingResponse> {
+        return ExternalCacheClient.lookupInCache(productId)
             .timeout(ofMillis(100)) // cat las cache read
             .onErrorResume { Mono.empty() } // sa chem totusi realu daca cacheul e jos
-            .switchIfEmpty( ExternalAPIs.getProductRating(product.id)
-                .doOnNext{ r -> ExternalCacheClient.putInCache(product.id, r)
+            .switchIfEmpty( ExternalAPIs.getProductRating(productId)
+                .doOnNext{ r -> ExternalCacheClient.putInCache(productId, r)
                     .timeout(ofMillis(100))
                     .subscribe({ noop() }, {Utils.handleError(it)})
                 }
             )
-            .map { product.copy(rating = it) }
-            .onErrorResume { Mono.empty() } // sa nu ies cu ERROR de aici
-            .defaultIfEmpty(product) // nu pierd eleemntul
+
     }
 
 
@@ -62,7 +90,7 @@ class ComplexFlow(
     }
 
     private fun retrieveMany(productIds: List<Long>): Flux<Product> {
-        log.info("Retrieve product IDs: $productIds")
+
         return webClient
             .post()
             .uri("http://localhost:9999/api/product/many")
@@ -70,6 +98,7 @@ class ComplexFlow(
             .retrieve()
             .bodyToFlux(ProductDetailsResponse::class.java) // jackson parseaza progresiv JSONu cum vine si-ti emite semnale de date ProductDetails.
             .map { it.toEntity() }
+            .doOnSubscribe{ log.info("Retrieve product IDs: $productIds") }
     }
 
 

@@ -24,7 +24,7 @@
       }
     ],
     "transformers": ["response-template"],
-    "fixedDelayMilliseconds": 100,
+    "fixedDelayMilliseconds": 1000,
     "headers": {
       "Content-Type": "application/json"
     }
