@@ -16,18 +16,27 @@ class ComplexFlow(
     private val log = LoggerFactory.getLogger(ComplexFlowApp::class.java)
 
     fun mainFlow(productIds: List<Long>): Flux<Product> {
-         return Flux.fromIterable(productIds)
+        return Flux.fromIterable(productIds)
             .buffer(2)
             .flatMap({ retrieveMany(it) }, 10)
-             .doOnNext {auditResealed(it)}
+            .doOnNext { auditResealed(it) }
+            .flatMap { fillRating(it) }
+
 
     }
+
+    private fun fillRating(product: Product): Mono<Product> =
+        ExternalAPIs.getProductRating(product.id)
+            .map { r ->
+                product.rating = r
+                product
+            }
 
 
     private fun auditResealed(p: Product) {
         if (p.isResealed) {
             ExternalAPIs.auditResealedProduct(p)
-                .subscribe({noop(it)}, { Utils.handleError(it) })
+                .subscribe({ noop(it) }, { Utils.handleError(it) })
         }
     }
 
@@ -39,7 +48,7 @@ class ComplexFlow(
             .bodyValue(productIds)
             .retrieve()
             .bodyToFlux(ProductDetailsResponse::class.java) // jackson parseaza progresiv JSONu cum vine si-ti emite semnale de date ProductDetails.
-            .map { obj: ProductDetailsResponse -> obj.toEntity() }
+            .map { it.toEntity() }
     }
 
 

@@ -1,9 +1,9 @@
 package victor.training.reactive.usecase.complex
 
 data class Product(
-    var id: Long? = null,
-    var name: String? = null,
-    var isActive: Boolean = false,
-    var isResealed: Boolean = false,
+    val id: Long, // long
+    val name: String,
+    val isActive: Boolean,
+    val isResealed: Boolean,
     var rating: ProductRatingResponse? = null,
 )

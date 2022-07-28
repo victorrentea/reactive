@@ -1,15 +1,13 @@
-package victor.training.reactive.usecase.complex;
+package victor.training.reactive.usecase.complex
 
-import lombok.Data;
+class ProductDetailsResponse(
+    var id: Long? = null,
+    var name: String? = null,
+    var isActive:Boolean = false,
+    var isResealed:Boolean = false,
+) {
+    fun toEntity(): Product {
+        return Product(id!!, name!!, isActive, isResealed, null)
+    }
 
-@Data
-public class ProductDetailsResponse {
-   private Long id;
-   private String name;
-   private boolean active;
-   private boolean resealed;
-
-   public Product toEntity() {
-      return new Product(id,name,active,resealed, null);
-   }
 }
