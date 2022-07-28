@@ -14,20 +14,20 @@ class ComplexFlow(
     private val log = LoggerFactory.getLogger(ComplexFlowApp::class.java)
 
     fun mainFlow(productIds: List<Long>): Flux<Product> {
-        return Flux.fromIterable(productIds)
+         return Flux.fromIterable(productIds)
             .buffer(2)
             .flatMap(::retrieveMany, 10)
+            .flatMap { auditResealed(it).thenReturn(it) }
             .sort(compareBy { it.id })
-          .delayUntil(::auditResealed)
-//            .doOnNext(::auditResealed)
     }
 
 
-    private fun auditResealed(p: Product) = if (p.isResealed) {
-        ExternalAPIs.auditResealedProduct(p)
-    } else {
-        Mono.empty()
-    }
+    private fun auditResealed(p: Product) =
+        if (p.isResealed) {
+            ExternalAPIs.auditResealedProduct(p)
+        } else {
+            Mono.empty()
+        }
 //                .subscribe({ v: Void? -> Utils.noop(v) }) { error: Throwable? -> Utils.handleError(error) }
 
     private fun retrieveMany(productIds: List<Long>): Flux<Product> {
