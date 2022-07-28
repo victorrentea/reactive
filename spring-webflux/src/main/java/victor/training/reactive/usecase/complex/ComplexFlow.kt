@@ -25,11 +25,20 @@ class ComplexFlow(
     }
 
     private fun fillRating(product: Product): Mono<Product> {
+
         return ExternalCacheClient.lookupInCache(product.id)
-            .switchIfEmpty( ExternalAPIs.getProductRating(product.id)) // e ok sa chem functia pentru ca returneaza in < 1ms
+            // daca switch if empty primeste next(rDinCache) atunci NU subscrie ci da mai jos la map un next(rDinCache)
+            // daca switch if empty primeste empty() atunci subscrie la fluxul definit in EL
+            //      (la delayUntil >>> subscribe >> getRating)
+            //      cand rating emite next(rDinCall) > next(r) > delay (asteapta put)
+            //      si emite mai jos catre map next(rPusInCache)
+
+            .switchIfEmpty( ExternalAPIs.getProductRating(product.id)
+
+                .delayUntil{ r ->ExternalCacheClient.putInCache(product.id, r) }
+
+            )
             .map { product.copy(rating = it) }
-//        return ExternalAPIs.getProductRating(product.id)
-//            .map { product.copy(rating = it) }
     }
 
 
