@@ -3,7 +3,6 @@ package victor.training.reactive.usecase.complex
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
-import reactor.core.Disposable
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import victor.training.reactive.Utils
@@ -27,10 +26,7 @@ class ComplexFlow(
 
     private fun fillRating(product: Product): Mono<Product> =
         ExternalAPIs.getProductRating(product.id)
-            .map { r ->
-                product.rating = r
-                product
-            }
+            .map { product.withRating(it) } // cand nu poti face clasa sa fie dataclass
 
 
     private fun auditResealed(p: Product) {

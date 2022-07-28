@@ -7,3 +7,6 @@ data class Product(
     val isResealed: Boolean,
     var rating: ProductRatingResponse? = null,
 )
+
+fun Product.withRating(productRatingResponse: ProductRatingResponse): Product =
+    Product(this.id, this.name, this.isActive, this.isResealed, productRatingResponse)
