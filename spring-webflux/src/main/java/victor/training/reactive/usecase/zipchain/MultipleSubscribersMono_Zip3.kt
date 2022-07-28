@@ -1,18 +1,30 @@
 package victor.training.reactive.usecase.zipchain
 
 import reactor.core.publisher.Mono
+import reactor.util.function.Tuples
 
 class MultipleSubscribersMono_Zip3(private val apis: Apis) {
 
+//    data class Shaworma(val a:A, val price:B?, cc )
     // from id ==> get A
     // from A ==> get B
     // from A and B ==> get C
     fun retrieveC(id: Long): Mono<Apis.C> {
-        val monoA = apis.getA(id).cache()
+        // dupa 2 zile de debug tragi o concluzie: niciodata nu tii Mono/Flux in variabile,
+        // ca maine cineva vine tiptil si face si el pe acelasi mono.flatMap
+        // daca chainuiesti de 2 ori din acelasi subscriber >>>>>>>>> 2 calluri de retea invizibile
 
-        val monoB = monoA.flatMap { a ->
-            apis.getB(a)
-        }
+        return apis.getA(id)
+            .flatMap { a-> apis.getB(a).map{ b -> Tuples.of(a,b)} }
+            .flatMap { t -> apis.getC(t.t1, t.t2) }
+
+
+
+//        val monoA = apis.getA(id)
+//
+//        val monoB = monoA.flatMap { a ->
+//            apis.getB(a)
+//        }
 
          return monoA.zipWith(monoB) {a,b ->
             apis.getC(a,b)
