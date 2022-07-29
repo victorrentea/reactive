@@ -24,7 +24,7 @@ public class InitDatabase implements CommandLineRunner {
       DatabaseClient databaseClient = DatabaseClient.create(connectionFactory);
       List<String> sqlLines = asList(
           "DROP TABLE IF EXISTS users;",
-          "CREATE TABLE users (id serial primary key, name varchar);"
+          "CREATE TABLE users (id serial primary key, name varchar not null);"
       );
       for (String sql : sqlLines) {
          log.info("Executing {} ...", sql);
