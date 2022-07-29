@@ -16,6 +16,11 @@ import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.server.ServerRequest
+import org.springframework.web.server.WebFilter
+import reactor.core.publisher.Mono
+import reactor.core.scheduler.Schedulers
+import reactor.util.function.Tuples
+import victor.training.reactive.Utils
 
 
 @RestController
@@ -33,20 +38,22 @@ class ComplexFlowApp  {
 
 
 
-//    @Bean
-//    fun alwaysParallelWebfluxFilter(): WebFilter {
-//        // ⚠️ WARNING: use this only when exploring the non-block-ness of your code.
-//        Utils.installBlockHound(
-//            listOf(
-//                Tuples.of("io.netty.resolver.HostsFileParser", "parse"),
-//                Tuples.of("victor.training.reactive.reactor.complex.ComplexFlowMain", "executeAsNonBlocking")
-//            )
-//        )
-//        return WebFilter { exchange, chain ->
-//            Mono.defer { chain.filter(exchange) }
-//                .subscribeOn(Schedulers.parallel())
-//        }
-//    }
+    @Bean
+//    @Profile("checkF")
+    fun alwaysParallelWebfluxFilter(): WebFilter {
+        // ⚠️ WARNING: use this only when exploring the non-block-ness of your code.
+        Utils.installBlockHound(
+            listOf(
+                Tuples.of("io.netty.resolver.HostsFileParser", "parse"),
+                Tuples.of("victor.training.reactive.reactor.complex.ComplexFlowMain", "executeAsNonBlocking")
+            )
+        )
+        return WebFilter { exchange, chain ->
+            Mono.defer { chain.filter(exchange) }
+                .subscribeOn(Schedulers.parallel())
+//            chain.filter(exchange)
+        }
+    }
 
 
 

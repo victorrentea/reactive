@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Hooks
 import reactor.core.publisher.Mono
+import victor.training.reactive.Utils
 import java.lang.IllegalArgumentException
+import java.time.Duration
 import java.util.stream.Collectors
 
 @RestController
@@ -55,6 +57,25 @@ class ComplexController(
     fun met():Mono<String> {
         return Mono.error( IllegalArgumentException("vai di mine"))
 
+    }
+    @GetMapping("block")
+    fun block():Mono<String> {
+
+        log.debug("on what scheduler am I (thread pool)")
+        Utils.sleep(100); // scheduler from netty (HTTP)
+        log.debug("I should never reach thuis")
+
+        return Mono.delay(Duration.ofMillis(100))
+            .thenReturn("Hello reactive.")
+            .map { innocent(it) } // parallel Scheduler
+        ;
+
+    }
+
+    private fun innocent(it: String):String {
+        log.debug("Hey!!")
+//        Utils.sleep(1000)// easily tracked down by Blockhound as the 'parallel' scheduler contains nonBlockable threads
+        return it
     }
 
 }
