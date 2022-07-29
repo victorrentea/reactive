@@ -4,10 +4,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.CollectionOptions;
 import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRepositories;
 
 import javax.annotation.PostConstruct;
+import java.time.LocalDateTime;
+
+import static java.time.LocalDateTime.now;
 
 @RequiredArgsConstructor
 @Configuration
@@ -16,6 +20,7 @@ import javax.annotation.PostConstruct;
 public class MongoConfig {
 
    private final MongoOperations db;
+   private final EventReactiveRepo repo;
 
    @PostConstruct
    public void setupDb() {
@@ -28,5 +33,7 @@ public class MongoConfig {
       } else {
          System.out.println("Mongo collection alreay found !");
       }
+      repo.deleteAll().block();
+      repo.save(new Event("Startup at " + now())).block(); // OMG! :) but only on startup
    }
 }
