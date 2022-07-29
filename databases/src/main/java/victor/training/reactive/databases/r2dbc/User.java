@@ -11,8 +11,8 @@ public class User {
    @Id
    private Integer id;
    private String name;
-   @Version
-private Long version;
+//   @Version
+//private Long version;
    public User(String name) {
       this.name = name;
    }
