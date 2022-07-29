@@ -20,14 +20,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class InMemoryBroadcast {
    private AtomicInteger integer = new AtomicInteger(0);
 
-   private Sinks.Many<ChatMessage> sink = Sinks.many().multicast().onBackpressureBuffer();
+   private Sinks.Many<ChatMessage> sink = Sinks.many().multicast()
+           .onBackpressureBuffer();
 
    @GetMapping(value = "message/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
    public Flux<ServerSentEvent<ChatMessage>> messageStream(@RequestParam String topic) {
-
-      return sink.asFlux()
-          .log()
-
+      return sink.asFlux().log()
           .filter(message -> message.getTopic().equals(Topic.valueOf(topic)))
           .map(message -> ServerSentEvent.builder(message).build());
    }

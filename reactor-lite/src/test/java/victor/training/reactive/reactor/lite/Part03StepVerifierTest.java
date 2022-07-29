@@ -16,7 +16,10 @@
 
 package victor.training.reactive.reactor.lite;
 
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.opentest4j.AssertionFailedError;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -26,7 +29,7 @@ import victor.training.reactive.reactor.lite.domain.User;
 import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class Part03StepVerifierTest {
 
    Part03StepVerifier workshop = new Part03StepVerifier();
@@ -35,8 +38,23 @@ public class Part03StepVerifierTest {
 //========================================================================================
 
    @Test
+   @Order(1)
    public void expectFooBarComplete() {
       workshop.expectFooBarComplete(Flux.just("foo", "bar"));
+   }
+   @Test
+   @Order(2)
+   public void expectFooBarCompletethrow_ca3() {
+      assertThatThrownBy(() ->
+      workshop.expectFooBarComplete(Flux.just("foo", "bar", "oups"))
+              );
+   }
+   @Test
+   @Order(3)
+   public void expectFooBarCompletethrow_ca1() {
+      assertThatThrownBy(() ->
+      workshop.expectFooBarComplete(Flux.just("foo"))
+              );
    }
 
 //========================================================================================
@@ -57,7 +75,8 @@ public class Part03StepVerifierTest {
 
    @Test
    public void expect5Elements() {
-      workshop.expect5Elements(Flux.interval(Duration.ofSeconds(1)).take(5));
+      workshop.expect5Elements(Flux.interval(Duration.ofSeconds(1))
+              .take(5));
    }
 
 //========================================================================================
