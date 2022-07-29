@@ -29,6 +29,7 @@ public class Part01FluxTest {
 
 	@Test
 	public void fooBarFluxFromValues() {
+
 		Flux<String> flux = workshop.fooBarFluxFromValues();
 		StepVerifier.create(flux)
 				.expectNext("foo", "bar")

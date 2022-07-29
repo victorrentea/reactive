@@ -17,6 +17,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.time.Duration;
 
+import static java.lang.System.currentTimeMillis;
+
 @Component
 @Aspect
 @Slf4j
@@ -33,12 +35,18 @@ public class TimedReactiveAspect {
         Object result = pjp.proceed(); // real method call
 
         Timer timer = meterRegistry.timer(pjp.getSignature().getName() + "-elapsed");
-
         if (result instanceof Mono<?>) {
             Mono<?> mono = (Mono<?>) result;
-            timer.record(Duration.ofMillis(100)); // example: find it in /actuator/prometheus
+//            timer.record(Duration.ofMillis(100)); // example: find it in /actuator/prometheus
             // TODO #1 timer.record(...) the time elapsed between subscribe and next signals
-            return mono;
+            return mono
+                    .contextWrite(m->m.put("t0", currentTimeMillis()))
+                    .flatMap(x -> Mono.deferContextual(c -> {
+                        long t1 = currentTimeMillis();
+
+                        timer.record(Duration.ofMillis(t1 - (long) c.get("t0")));
+                        return Mono.just(x);
+                    }));
             // SOLUTION: return mono.timed().doOnNext(timed -> timer.record(timed.elapsedSinceSubscription())).map(Timed::get);
         } else if (result instanceof Flux<?>) {
             Flux<?> flux = (Flux<?>) result;

@@ -37,23 +37,23 @@ class ComplexFlowApp  {
     }
 
 
-
-    @Bean
-//    @Profile("checkF")
-    fun alwaysParallelWebfluxFilter(): WebFilter {
-        // ⚠️ WARNING: use this only when exploring the non-block-ness of your code.
-        Utils.installBlockHound(
-            listOf(
-                Tuples.of("io.netty.resolver.HostsFileParser", "parse"),
-                Tuples.of("victor.training.reactive.reactor.complex.ComplexFlowMain", "executeAsNonBlocking")
-            )
-        )
-        return WebFilter { exchange, chain ->
-            Mono.defer { chain.filter(exchange) }
-                .subscribeOn(Schedulers.parallel())
-//            chain.filter(exchange)
-        }
-    }
+//
+//    @Bean
+////    @Profile("checkF")
+//    fun alwaysParallelWebfluxFilter(): WebFilter {
+//        // ⚠️ WARNING: use this only when exploring the non-block-ness of your code.
+//        Utils.installBlockHound(
+//            listOf(
+//                Tuples.of("io.netty.resolver.HostsFileParser", "parse"),
+//                Tuples.of("victor.training.reactive.reactor.complex.ComplexFlowMain", "executeAsNonBlocking")
+//            )
+//        )
+//        return WebFilter { exchange, chain ->
+//            Mono.defer { chain.filter(exchange) }
+//                .subscribeOn(Schedulers.parallel())
+////            chain.filter(exchange)
+//        }
+//    }
 
 
 
@@ -65,10 +65,23 @@ class ComplexFlowApp  {
         return WebClient.create()
     }
 }
+//doar testele pun pe thread local
 val baseUrlFromTest = ThreadLocal.withInitial<String> { null }
 fun main() {
     SpringApplication.run(ComplexFlowApp::class.java)
 }
+
+//@Test
+//@Parallizable(false)
+//fun s(){
+//    baseUrlFromTest.set("localhost:"+portulthreadului)
+//    try {
+//        reactivechainl.block();
+//    } finally {
+//        baseUrlFromTest.remove()
+//    }
+//
+//}
 
 @Component
 class ErrorAttributes : DefaultErrorAttributes() {

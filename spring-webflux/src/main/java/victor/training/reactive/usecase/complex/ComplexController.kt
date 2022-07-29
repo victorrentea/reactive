@@ -26,7 +26,7 @@ class ComplexController(
 
     @Throws(Exception::class)
     override fun run(vararg args: String) {
-        Hooks.onOperatorDebug() // provide better stack traces
+//        Hooks.onOperatorDebug() // provide better stack traces
         log.info("Calling myself automatically once")
         webClient.get().uri("http://localhost:8080/complex").retrieve().bodyToMono(
             String::class.java
@@ -37,7 +37,7 @@ class ComplexController(
     }
 
     @GetMapping("complex")
-    @Timed("complex") // @TimedReactive // TODO
+    @Timed("complex") @TimedReactiveAspect.TimedReactive // TODO
     fun executeAsNonBlocking(@RequestParam(value = "n", defaultValue = "10") n: Int): Mono<String> {
         val t0 = System.currentTimeMillis()
         val productIds = (0L until n).toList()

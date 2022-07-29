@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory
 import reactor.core.publisher.Mono
 import java.time.Duration
 
-class Apis {
+open class Apis {
     fun apiA(oddItem: Int): Mono<Void> {
         return api("A", oddItem)
     }
@@ -14,7 +14,7 @@ class Apis {
         return api("B", oddItem)
     }
 
-    fun apiC(evenItemPage: List<Int?>): Mono<Void> {
+    fun apiC(evenItemPage: List<Int>): Mono<Void> {
         return api("C", evenItemPage)
     }
 

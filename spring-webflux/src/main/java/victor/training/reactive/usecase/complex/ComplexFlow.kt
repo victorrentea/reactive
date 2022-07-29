@@ -2,12 +2,14 @@ package victor.training.reactive.usecase.complex
 
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import reactor.core.scheduler.Schedulers
 import victor.training.reactive.Utils
 import victor.training.reactive.Utils.noop
+import victor.training.reactive.Utils.sleep
+import java.lang.RuntimeException
 import java.time.Duration.ofMillis
 import java.util.*
 
@@ -20,7 +22,9 @@ class ComplexFlow(
     fun mainFlow(productIds: List<Long>): Flux<Product> {
 // TODO victorrentea 2022-07-29: no variables of type MONO/FLUX
         val products =
+
             Flux.fromIterable(productIds)
+
                 .buffer(2)
                 .flatMap({ retrieveMany(it) },10)
                 .collectList()
@@ -32,10 +36,14 @@ class ComplexFlow(
                     .onErrorResume { Mono.empty() } }
                 .collectMap({it.first}, {it.second})
 
-
+//        Mono.fromRunnable(gunoiCaTotJavaChemi())
         return products.zipWith(ratings) { p, r -> combine(p, r) }
             .flatMapMany { Flux.fromIterable(it) }
             .doOnNext { auditResealed(it) }
+//            .log()
+            .delayUntil {
+                Mono.fromRunnable<Any> { gunoiCaTotJavaChemi() }
+                    .subscribeOn(Schedulers.boundedElastic()) }
             .sort(compareBy{it.id})
 
 
@@ -52,7 +60,11 @@ class ComplexFlow(
 
 
     }
-
+    fun gunoiCaTotJavaChemi() {
+        log.debug("pe scheduler")
+        if (true) throw RuntimeException()
+        sleep(1000*60*10) //WSDL SOAP CALL
+    }
     private fun combine(products: List<Product>, ratings: Map<Long, ProductRatingResponse>): List<Product> {
         return products.map { p -> p.copy(rating = ratings[p.id]) }
     }

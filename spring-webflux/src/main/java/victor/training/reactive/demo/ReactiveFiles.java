@@ -23,12 +23,17 @@ public class ReactiveFiles {
 
    private static Flux<String> openFluxFromFile(File file) {
       return Flux.using(
-          () -> Files.lines(file.toPath()),  // how to open the resource (Stream<String>)
-          Flux::fromStream, // Convert the Stream<String> to Flux<String>
-          Stream::close // how to close the resource (Stream<String>)
+                     () -> Files.lines(file.toPath()),  // how to open the resource (Stream<String>)
+                      s -> Flux.fromStream(s), // Convert the Stream<String> to Flux<String>
+                      stringStream -> stringStream.close() // how to close the resource (Stream<String>)
       )
+//              .parallel(8)
+//              .runOn(Schedulers.parallel())
+//              .map
+        .subscribeOn(Schedulers.boundedElastic())
           .filter(Strings::isNotBlank)
-          .map(String::toUpperCase);
+          .map(String::toUpperCase)
+              ;
    }
 
    private static void writeFluxToFile(Flux<String> stringFlux, File out) throws FileNotFoundException {
