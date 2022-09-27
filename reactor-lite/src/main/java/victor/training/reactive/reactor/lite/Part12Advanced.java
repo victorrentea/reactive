@@ -59,8 +59,12 @@ public class Part12Advanced {
 
    // TODO The returned Mono emits after 1 second "Hello " + the current username got from Reactor Context
    // Hint: Mono.deferContextual allows access to context propagated from downstream
+
    public Mono<String> reactorContext() {
-      return null;
+      return Mono.deferContextual(context -> {
+         System.out.println("Got the metadata passed upwards by my subscriber: " +context.get("username"));
+         return Mono.empty();
+      });
    }
 
    //========================================================================================

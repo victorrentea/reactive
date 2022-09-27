@@ -75,7 +75,9 @@ public class Part12AdvancedTest {
    @Test
    public void reactorContext() {
       Mono<String> withContext = workshop.reactorContext()
-          .contextWrite(context -> context.put("username", "John"));
+              // anything that used to be stored on the thread in a non-reactive app,
+              // should be passed via Reactor Context (metadata): @Transactional, Sleuth (requestId), Logback MDC, ReactiveSecurityContextHolder
+          .contextWrite(context -> context.put("transaction", "John"));
 
       Duration duration = StepVerifier.create(withContext)
           .expectNext("Hello John")

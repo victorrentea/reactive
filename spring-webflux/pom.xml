@@ -134,12 +134,6 @@
             <version>1.12.7</version>
         </dependency>
         <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-test</artifactId>
-            <version>${kotlin.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>com.ninja-squad</groupId>
             <artifactId>springmockk</artifactId>
             <version>3.1.1</version>
