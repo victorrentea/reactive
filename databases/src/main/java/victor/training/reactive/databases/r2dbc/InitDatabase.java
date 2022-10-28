@@ -35,7 +35,7 @@ public class InitDatabase implements CommandLineRunner {
              .block();
       }
       log.info("INSERT User");
-      userRepository.save(new User( "test")).log().subscribe();
+//      userRepository.save(new User( "test")).log().subscribe();
       log.info("INSERT User");
       userRepository.findAll().log().subscribe(System.out::println);
       log.info("done");
