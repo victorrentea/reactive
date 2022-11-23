@@ -25,6 +25,11 @@
             <version>1.0.6.RELEASE</version>
         </dependency>
         <dependency>
+            <groupId>io.projectreactor.tools</groupId>
+            <artifactId>blockhound-junit-platform</artifactId>
+            <version>1.0.6.RELEASE</version>
+        </dependency>
+        <dependency>
             <!-- Unchecked.* -->
             <groupId>org.jooq</groupId>
             <artifactId>jool</artifactId>
