@@ -15,7 +15,7 @@ import victor.training.reactor.workshop.SideEffects.A;
 import victor.training.reactor.workshop.SideEffects.Dependency;
 import victor.training.util.CaptureSystemOutput;
 import victor.training.util.CaptureSystemOutput.OutputCapture;
-import victor.training.util.ProbeExtension;
+import victor.training.util.SubscribedProbe;
 
 import static java.time.Duration.ofMillis;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,7 +30,7 @@ public class SideEffectsTest {
   @InjectMocks
   SideEffectsSolved workshop;
   @RegisterExtension
-  ProbeExtension subscribed = new ProbeExtension();
+  SubscribedProbe subscribed = new SubscribedProbe();
 
   private static final A a0 = new A();
   private static final A a = new A();

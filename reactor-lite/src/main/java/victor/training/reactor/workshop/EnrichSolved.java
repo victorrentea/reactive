@@ -60,10 +60,31 @@ public class EnrichSolved extends Enrich {
         return Mono.zip(ma, mb, mc).map(TupleUtils.function((a, b, c) -> new ABC(a, b, c)));
     }
 
+    public Mono<AB> p06_a_then_bMaybe(int id) {
+        return dependency.a(id)
+                .flatMap(a -> dependency.b1(a).map(b -> new AB(a, b)).defaultIfEmpty(new AB(a, null)));
+    }
 
-    public Mono<P6UseCaseContext> p06_context(int id) {
+    public Mono<AB> p07_a_par_bMaybe(int id) {
+        return dependency.a(id)
+                .zipWith(dependency.b(id)
+                                .map(b -> new AB(null, b))
+                                .defaultIfEmpty(new AB(null, null)),
+                        (a, ab) -> ab.withA(a));
+    }
+
+    public Mono<AB> p08_a_try_b(int id) {
+        return dependency.a(id)
+                .zipWith(dependency.b(id)
+                                .map(b -> new AB(null, b))
+                                .onErrorReturn(new AB(null, null)),
+                        (a, ab) -> ab.withA(a));
+    }
+
+
+    public Mono<P10UseCaseContext> p10_context(int id) {
         return dependency.a(id).zipWith(dependency.d(id),
-                        (a, d) -> new P6UseCaseContext(id).withA(a).withD(d))
+                        (a, d) -> new P10UseCaseContext(id).withA(a).withD(d))
                 .flatMap(context -> dependency.b1(context.getA()).map(context::withB))
                 .flatMap(context -> dependency.c2(context.getA(), context.getB()).map(context::withC));
     }

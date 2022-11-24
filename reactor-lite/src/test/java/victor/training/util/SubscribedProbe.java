@@ -14,7 +14,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
-public class ProbeExtension implements InvocationInterceptor {
+public class SubscribedProbe implements InvocationInterceptor {
     private final Map<PublisherProbe<?>, StackTraceElement> probes = new HashMap<>();
 
     public <T> Mono<T> once(Mono<T> mono) {

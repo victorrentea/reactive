@@ -12,7 +12,7 @@ public class Enrich {
     static class B {}
     static class C {}
     static class D {}
-    @Value
+    @Value @With
     static class AB {
         public A a;
         public B b;
@@ -151,28 +151,68 @@ public class Enrich {
     }
 
     // ==================================================================================================
+    /**
+     * a(id) then b1(a) ==> AB(a,b), but if b(id) returns empty() => AB(a,null)
+     * Hint: watch out not to lose the data signals.
+     * Challenge is that Flux/Mono cannot carry a "null" data signal.
+     * Hint: you might need an operator containing "empty" in its name
+     */
+    public Mono<AB> p06_a_then_bMaybe(int id) {
+        // equivalent blocking⛔️ code:
+         A a = dependency.a(id).block();
+         B b = dependency.b1(a).block();
+         return Mono.just(new AB(a, b));
+    }
+    // ==================================================================================================
+    /**
+     * a(id) || b(id) ==> AB(a,b), but if b(id) returns empty() => AB(a,null)
+     * Finish the flow as fast as possible by starting a() in parallel with b()
+     * Challenge is that Flux/Mono cannot carry a "null" data signal.
+     * Hint: watch out not to lose the data signals.
+     */
+    public Mono<AB> p07_a_par_bMaybe(int id) {
+        // equivalent blocking⛔️ code:
+         A a = dependency.a(id).block(); // in parallel
+         B b = dependency.b(id).block(); // in parallel
+         return Mono.just(new AB(a, b));
+    }
+
+    // ==================================================================================================
+    /**
+     * a(id) || b(id) ==> AB(a,b), but if b(id) fails => AB(a,null)
+     * Hint: watch out not to lose the data signals.
+     */
+    public Mono<AB> p08_a_try_b(int id) {
+        // equivalent blocking⛔️ code:
+         A a = dependency.a(id).block();
+         B b = null;
+         try {b= dependency.b(id).block();}catch(Exception e) {}
+         return Mono.just(new AB(a, b));
+    }
+
+    // ==================================================================================================
 
     /**
      * === UseCase Context Pattern ===
      * The moral of the above example is to avoid method variables completely.
-     * a(id), then b1(a), then c2(a,b); also d(id) ==> P6UseCaseContext(a,b,c,d)
+     * a(id), then b1(a), then c2(a,b); also d(id) ==> P10UseCaseContext(a,b,c,d)
      */
     @Value // imutable object
-    @With // public P6UseCaseContext withA(A newa) { return new P6UseCaseContext(newa, b,c,d); }
+    @With // public P10UseCaseContext withA(A newa) { return new P10UseCaseContext(newa, b,c,d); }
     @AllArgsConstructor
-    static class P6UseCaseContext {
+    static class P10UseCaseContext {
         int id;
         A a;
         B b;
         C c;
         D d;
-        public P6UseCaseContext(int id) { // initial UC parameters
+        public P10UseCaseContext(int id) { // initial UC parameters
             this(id, null, null, null, null);
         }
     }
-    public Mono<P6UseCaseContext> p06_context(int id) {
+    public Mono<P10UseCaseContext> p10_context(int id) {
         // equivalent blocking⛔️ code:
-        P6UseCaseContext context = new P6UseCaseContext(id);
+        P10UseCaseContext context = new P10UseCaseContext(id);
         context = context.withA(dependency.a(context.getId()).block());
         context = context.withB(dependency.b1(context.getA()).block());
         context = context.withC(dependency.c2(context.getA(), context.getB()).block());
