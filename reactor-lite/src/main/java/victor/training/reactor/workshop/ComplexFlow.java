@@ -1,5 +1,6 @@
 package victor.training.reactor.workshop;
 
+import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.With;
 import reactor.core.publisher.Mono;
@@ -13,17 +14,18 @@ public class ComplexFlow {
   @Value static class D {String value;}
 
   @Value
-  static class ABCContext {
-    @With
+  @With
+  @AllArgsConstructor
+  static class MyContext {
     A a;
-    @With
     B b;
-    @With
     C c;
-    @With
     D d;
+    A a1;
+    public MyContext() {
+      this(null, null, null, null, null);}
   }
-  interface Dependency {
+  public interface Dependency {
     Mono<A> a(int id);
     Mono<B> b(A a);
     Mono<C> c(A a);
