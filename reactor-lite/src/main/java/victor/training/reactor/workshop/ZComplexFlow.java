@@ -7,7 +7,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.concurrent.ExecutionException;
 
-public class ComplexFlow {
+public class ZComplexFlow {
   @Value static class A {String value;}
   @Value static class B {String value;}
   @Value static class C {String value;}
@@ -36,7 +36,7 @@ public class ComplexFlow {
   }
   protected final Dependency dependency;
 
-  public ComplexFlow(Dependency dependency) {
+  public ZComplexFlow(Dependency dependency) {
     this.dependency = dependency;
   }
 
