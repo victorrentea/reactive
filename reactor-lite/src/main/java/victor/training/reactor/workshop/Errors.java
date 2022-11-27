@@ -29,18 +29,20 @@ public class Errors {
   // HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT
   // HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT
   // HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT
+  // HINT: Most exercises in this file need operators(=methods) containing the word 'error' :)
 
-  // MOST tasks in this file need various operators(=methods) containing the word 'error' :)
+  // *** Note: methods returning Mono/Flux should never THROW Exceptions but return them in Mono.error(Ex) ***
 
   // ==================================================================================================
 
   /**
-   * Log any exception from the Mono, and rethrow the same error.
+   * TODO Log any exception from the Mono, and rethrow the same error.
    */
   public Mono<String> p01_log_rethrow() {
-    // equivalent blocking⛔️ code: in reactive code methods returning Mono/Flux never THROW Ex but return Mono.error(Ex)
+
+    // equivalent blocking⛔️ code:
     try {
-      String value = dependency.call().block();
+      String value = dependency.call().block(); // .block() [AVOID in prod] throws any exception in the Mono
       return Mono.just(value);
     } catch (Exception e) {
       log.error("Exception occurred: " + e, e);  //replace this catch with equivalent reactive code. avoid .block()
@@ -50,23 +52,18 @@ public class Errors {
 
   // ==================================================================================================
 
-  /**
-   * Wrap any exception in the Mono from call() in a new IllegalStateException("Call failed", originalException).
-   */
+  // TODO Wrap any exception in the call() in a new IllegalStateException("Call failed", originalException).
   public Mono<String> p02_wrap() {
-    // blocking⛔️ code: replace with equivalent reactive code; remove .block()
     try {
-      return Mono.just(dependency.call().block());
-    } catch (Exception originalException) {
+      return dependency.call();
+    } catch (Exception originalException) { // <-- do this on any exception in the future, then delete this USELESS catch
       throw new IllegalStateException(originalException);
     }
   }
 
   // ==================================================================================================
 
-  /**
-   * Return "default" on any exception in the future.
-   */
+  // TODO Return "default" if the call fails.
   public Mono<String> p03_defaultValue() {
     try {
       return dependency.call();
@@ -77,9 +74,7 @@ public class Errors {
 
   // ==================================================================================================
 
-  /**
-   * Call dependency#backup() on any exception in the first Mono.
-   */
+  // TODO Call dependency#backup() if call fails.
   public Mono<String> p04_fallback() {
     try {
       return dependency.call();
@@ -90,9 +85,7 @@ public class Errors {
 
   // ==================================================================================================
 
-  /**
-   * Call dependency#sendError(ex) on any exception in the first Mono, and let the error flow to the client
-   */
+  // TODO Call dependency#sendError(ex) on any exception in the call(), and then let the original error flow to the client
   public Mono<String> p05_sendError() {
     try {
       return dependency.call();

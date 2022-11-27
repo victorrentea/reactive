@@ -1,134 +1,141 @@
 package victor.training.reactor.workshop;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import victor.training.reactor.lite.Part01Flux;
-import victor.training.reactor.lite.Part02Mono;
+import victor.training.util.CaptureSystemOutput;
+import victor.training.util.CaptureSystemOutput.OutputCapture;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static java.lang.System.currentTimeMillis;
+import static java.time.Duration.ofMillis;
+import static java.time.Duration.ofSeconds;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class BasicsTest {
 
-//	Basics workshop = new Basics();
-	Basics workshop = new BasicsSolved();
+  //	Basics workshop = new Basics();
+  Basics workshop = new BasicsSolved();
 
-	//========================================================================================
 
-	@Test
-	public void emptyMono() {
-		Mono<String> mono = workshop.emptyMono();
-		StepVerifier.create(mono)
-						.verifyComplete();
-	}
+  @Test
+  public void mono1_just() {
+    Mono<String> mono = workshop.mono1_just();
+    assertThat(mono.block()).isEqualTo("foo");
+  }
 
-	//========================================================================================
+  @Test
+  public void mono2_empty() {
+    workshop.mono2_empty()
+            .as(StepVerifier::create)
+            .verifyComplete();
+  }
 
-	@Test
-	public void monoWithNoSignal() {
-		Mono<String> mono = workshop.monoWithNoSignal();
-		StepVerifier
-						.create(mono)
-						.expectSubscription()
-						.expectTimeout(Duration.ofSeconds(1))
-						.verify();
-	}
+  @Test
+  public void mono3_optional() {
+    assertThat(workshop.mono3_optional("foo").block()).isEqualTo("foo");
 
-	//========================================================================================
+    workshop.mono3_optional(null)
+            .as(StepVerifier::create)
+            .verifyComplete();
+  }
 
-	@Test
-	public void fooMono() {
-		Mono<String> mono = workshop.fooMono();
-		StepVerifier.create(mono)
-						.expectNext("foo")
-						.verifyComplete();
-	}
+  @Test
+  public void mono4_error() {
+    workshop.mono4_error()
+            .as(StepVerifier::create)
+            .verifyError(IllegalStateException.class);
+  }
 
-	//========================================================================================
+  @Test
+  public void monoWithNoSignal() {
+    workshop.mono5_noSignal()
+            .as(StepVerifier::create)
+            .expectSubscription()
+            .expectTimeout(ofSeconds(1))
+            .verify();
+  }
 
-	@Test
-	public void optionalMono() {
-		StepVerifier.create(workshop.optionalMono("foo"))
-						.expectNext("foo")
-						.verifyComplete();
 
-		StepVerifier.create(workshop.optionalMono(null))
-						.verifyComplete();
-	}
 
-	//========================================================================================
+  @Test
+  @Timeout(value = 200, unit = MILLISECONDS)
+  void mono6_delayedData() {
+    workshop.mono6_delayedData()
+            .as(StepVerifier::create)
+            .expectSubscription()
+            .expectNoEvent(ofMillis(50))
+            .expectNext("BOO")
+            .verifyComplete();
+  }
 
-	@Test
-	public void errorMono() {
-		Mono<String> mono = workshop.errorMono();
-		StepVerifier.create(mono)
-						.verifyError(IllegalStateException.class);
-	}
 
-	@Test
-	void delayedCompletion() {
-		Mono<Void> mono = workshop.delayedCompletion();
-		StepVerifier.create(mono)
-						.expectSubscription()
-						.expectNoEvent(Duration.ofMillis(50))
-						.verifyComplete();
-	}
+  @Test
+  @Timeout(value = 200, unit = MILLISECONDS)
+  void mono7_delayedCompletion() {
+    workshop.mono7_delayedCompletion()
+            .as(StepVerifier::create)
+            .expectSubscription()
+            .expectNoEvent(ofMillis(50))
+            .verifyComplete();
+  }
 
-	@Test
-	public void emptyFlux() {
-		Flux<String> flux = workshop.emptyFlux();
 
-		StepVerifier.create(flux)
-				.verifyComplete();
-	}
+  @Test
+  public void flux1_values() {
+    workshop.flux1_values()
+            .as(StepVerifier::create)
+            .expectNext("foo", "bar")
+            .verifyComplete();
+  }
 
-//========================================================================================
+  @Test
+  public void flux2_fromList() {
+    workshop.flux2_fromList(List.of("foo", "bar"))
+            .as(StepVerifier::create)
+            .expectNext("foo", "bar")
+            .verifyComplete();
+  }
+  @Test
+  public void flux3_empty() {
+    workshop.flux3_empty()
+            .as(StepVerifier::create)
+            .verifyComplete();
+  }
 
-	@Test
-	public void fooBarFluxFromValues() {
-		Flux<String> flux = workshop.fooBarFluxFromValues();
-		StepVerifier.create(flux)
-				.expectNext("foo", "bar")
-				.verifyComplete();
-	}
+  @Test
+  public void flux4_error() {
+    workshop.flux4_error()
+            .as(StepVerifier::create)
+            .verifyError(IllegalStateException.class);
+  }
 
-//========================================================================================
+  @Test
+  @Timeout(value = 1500, unit = MILLISECONDS)
+  public void flux5_delayedElements() {
+    Duration duration = workshop.flux5_delayedElements()
+            .as(StepVerifier::create)
+            .expectNext(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)
+            .verifyComplete();
+    assertThat(duration.toMillis())
+            .describedAs("Should take approx 1 second")
+            .isGreaterThan(900).isLessThan(1200);
+  }
 
-	@Test
-	public void fluxFromList() {
-		Flux<String> flux = workshop.fluxFromList(List.of("foo", "bar"));
-		StepVerifier.create(flux)
-				.expectNext("foo", "bar")
-				.verifyComplete();
-	}
 
-//========================================================================================
-
-	@Test
-	public void errorFlux() {
-		Flux<String> flux = workshop.errorFlux();
-		StepVerifier.create(flux)
-				.verifyError(IllegalStateException.class);
-	}
-
-//========================================================================================
-
-	@Test
-	public void countEach100ms() {
-		Flux<Long> flux = workshop.countEach100ms();
-		long t0 = currentTimeMillis();
-		StepVerifier.create(flux)
-				.expectNext(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)
-				.verifyComplete();
-		long t1 = currentTimeMillis();
-		assertThat(t1 - t0)
-			.describedAs("Should take approx 1 second")
-			.isGreaterThan(900).isLessThan(1200);
-	}
+  @Test
+  @CaptureSystemOutput
+  void logSignals(OutputCapture outputCapture) {
+    Flux<String> flux = Flux.just("one", "two");
+    workshop.logSignals(flux).collectList().block();
+    assertThat(outputCapture.toString())
+            .contains("onSubscribe", "request", "onNext", "onComplete");
+  }
 
 }

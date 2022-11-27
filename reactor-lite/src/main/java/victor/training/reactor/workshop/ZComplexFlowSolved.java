@@ -9,16 +9,23 @@ public class ZComplexFlowSolved extends ZComplexFlow {
   }
 
   public Mono<Void> p06_complexFlow(int id) {
-    // *** sequential
-    // .thenCompose(context -> dependency.b(context.a).thenApply(context::withB)
-    // .thenCompose(context -> dependency.c(context.a).thenApply(context::withC))
     return
             // *** parallel
-            dependency.d(id).zipWith(
+            dependency.d(id)
+                .zipWith(
                     dependency.a(id)
-                            .flatMap(a -> dependency.b(a).zipWith(dependency.c(a), (b, c) -> new MyContext().withA(a).withB(b).withC(c))),
+                            .flatMap(a -> dependency.b(a).zipWith(dependency.c(a),
+                                    (b, c) -> new MyContext().withA(a).withB(b).withC(c))),
                     (d, abc) -> abc.withD(d)
                     )
+
+    // *** SEQUENTIAL
+//          Mono.just(new MyContext())
+//            .flatMap(context -> dependency.a(id).map(context::withA))
+//            .flatMap(context -> dependency.d(id).map(context::withD))
+//            .flatMap(context -> dependency.b(context.getA()).map(context::withB))
+//            .flatMap(context -> dependency.c(context.getA()).map(context::withC))
+
             .map(context -> context.withA1(logic(context.getA(), context.getB(), context.getC(), context.getD())))
 
             .delayUntil(context -> dependency.saveA(context.getA1()))

@@ -35,4 +35,7 @@ public class SubscribedProbe implements InvocationInterceptor {
                     .isEqualTo(1);
         }
     }
+    public void clearAllProbes() {
+        probes.clear();
+    }
 }
