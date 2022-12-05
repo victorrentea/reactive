@@ -34,9 +34,12 @@ public class SideEffects {
    */
   public Mono<A> p01_sendMessageAndReturn(Mono<A> ma) {
     // equivalent blocking⛔️ code:
-    A a = ma.block();
-    dependency.sendMessage(a).block();
-    return Mono.just(a);
+//    A a = ma.block();
+//    dependency.sendMessage(a).block();
+//    return Mono.just(a);
+//    return ma.flatMap(a-> dependency.sendMessage(a).thenReturn(a));
+//    return ma.delayUntil(dependency::sendMessage);
+    return ma.delayUntil(a-> dependency.sendMessage(a));
   }
 
   // ==================================================================================================
@@ -46,22 +49,28 @@ public class SideEffects {
    */
   public Mono<A> p02_saveSendReturn(A a0) {
     // equivalent blocking⛔️ code:
-    A a = dependency.save(a0).block();
-    dependency.sendMessage(a).block();
-    return Mono.just(a);
+//    A a = dependency.save(a0).block();
+//    dependency.sendMessage(a).block();
+//    return Mono.just(a);
+//    dependency.sendMessage(a)
+    return dependency.save(a0).delayUntil(a -> dependency.sendMessage(a));
   }
 
   // ==================================================================================================
 
   /**
    * Call a = .save(a0) then .sendMessage(a) and .audit(a) and return the 'a' returned by save
+   * // req: sa vezi ca sendMessage a fost OK si apoi abia sa faci audit
    */
   public Mono<A> p03_saveSendAuditReturn(A a0) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.save(a0).block();
-    dependency.sendMessage(a).block();
-    dependency.audit(a).block();
-    return Mono.just(a);
+//    // equivalent blocking⛔️ code:
+//    A a = dependency.save(a0).block();
+//    dependency.sendMessage(a).block();
+//    dependency.audit(a).block();
+//    return Mono.just(a);
+    return dependency.save(a0)
+            .delayUntil(a -> dependency.sendMessage(a)
+                    .doOnSuccess(v -> dependency.audit(a).block()));
   }
 
   // ==================================================================================================
