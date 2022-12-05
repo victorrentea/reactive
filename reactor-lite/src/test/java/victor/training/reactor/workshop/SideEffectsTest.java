@@ -57,7 +57,9 @@ public class SideEffectsTest {
     when(dependency.sendMessage(a)).thenReturn(subscribed.once(Mono.empty()));
     when(dependency.audit(a)).thenReturn(subscribed.once(Mono.empty()));
 
-    assertThat(runsNonBlocking(() -> workshop.p03_saveSendAuditReturn(a0)).block()).isEqualTo(a);
+    assertThat(
+            // acest runsNonBlocking
+            runsNonBlocking(() -> workshop.p03_saveSendAuditReturn(a0)).block()).isEqualTo(a);
   }
 
   @Test

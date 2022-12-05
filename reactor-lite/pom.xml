@@ -25,6 +25,7 @@
             <version>1.0.6.RELEASE</version>
         </dependency>
         <dependency>
+            <!--si asta-->
             <groupId>io.projectreactor.tools</groupId>
             <artifactId>blockhound-junit-platform</artifactId>
             <version>1.0.6.RELEASE</version>
