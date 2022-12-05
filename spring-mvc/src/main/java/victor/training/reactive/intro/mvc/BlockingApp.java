@@ -60,9 +60,10 @@ public class BlockingApp {
 
       long t0 = currentTimeMillis();
 
-      Future<Beer> futureBeer = CompletableFuture.supplyAsync(() -> barman.pourBeer());
-      Future<Vodka> futureVodka = CompletableFuture.supplyAsync(() -> barman.pourVodka());
+      Future<Beer> futureBeer = CompletableFuture.supplyAsync(() -> barman.pourBeer(), threadPool);
+      Future<Vodka> futureVodka = CompletableFuture.supplyAsync(() -> barman.pourVodka(), threadPool);
       // JVM are un ForkJoinPool.commonPool default cu nCPU-1 threaduri in el.
+      // tot pe el executa si .parallelStream() (- de evitat)
       // daca executi munca de IO pe un threadpool unic global per JVM poti suferi de
       // Thread Pool Starvation = nu e fair distributia threadurile. Taskuri blocheaza th comune.
 
