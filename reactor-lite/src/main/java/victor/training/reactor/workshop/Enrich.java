@@ -212,7 +212,7 @@ public class Enrich {
 //    B b = await dependency.b1(a);
 //    C c = await dependency.c1(a); // poate in java 24 2-3 ani o sa vedem?
 
-    Mono<A> ma = dependency.a(id); // SOC: acest cache NU este INTRE requesturi,
+    Mono<A> ma = dependency.a(id).cache(); // PERICULOS SOC: acest cache NU este INTRE requesturi,
     // acest cache traieste cat traieste in heap instanta de mai sus.
     // there are only 2 things hard in programming: 1) cache invalidation  2) naiming things
     Mono<B> mb = ma.flatMap(dependency::b1);

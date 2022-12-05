@@ -73,11 +73,10 @@ public class EnrichTest {
     }
     @Test
     void p04_a_then_b1_c1_cache() {
-        //        when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
-
         // given
-        PublisherProbe<A> probe = PublisherProbe.of(just(a));
-        Mockito.when(dependency.a(1)).thenReturn(probe.mono());
+        when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
+//        PublisherProbe<A> probe = PublisherProbe.of(just(a));
+//        Mockito.when(dependency.a(1)).thenReturn(probe.mono());
         when(dependency.b1(a)).thenReturn(subscribed.once(just(b)));
         when(dependency.c1(a)).thenReturn(subscribed.once(just(c)));
 
@@ -86,7 +85,7 @@ public class EnrichTest {
 
         //then
         assertThat(result).isEqualTo(new ABC(a, b,c));
-        assertThat(probe.subscribeCount()).isEqualTo(1);
+//        assertThat(probe.subscribeCount()).isEqualTo(1);
     }
 
     @Test
