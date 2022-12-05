@@ -248,21 +248,30 @@ public class Enrich {
 //    Flux<Integer> objectFlux = objectMany.asFlux();
 //    // din alta parte
 //    objectMany.tryEmitNext(9);
+
+
+
   /**
    * a(id), then b1(a), then c2(a,b) ==> ABC(a,b,c)
    */
   public Mono<ABC> p05_a_then_b1_then_c2(int id) {
-
-
     // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block();
-    B b = dependency.b1(a).block();
-    C c = dependency.c2(a, b).block();
-    return Mono.just(new ABC(a, b, c));
-
-    // TODO Solution #1: accumulating data structures (chained flatMap)
+//    Mono<A> a = dependency.a(id);
+//    B b = dependency.b1(a).block();
+//    C c = dependency.c2(a, b).block();
+//    return Mono.just(new ABC(a, b, c));
 
     // TODO Solution #2 (geek): nested flatMap
+//    return dependency.a(id).flatMap(a -> dependency.b1(a).flatMap(b -> dependency.c2(a, b).map(c -> new ABC(a, b, c))));
+
+    // TODO Solution #1: accumulating data structures (chained flatMap)
+    return dependency.a(id)
+            .flatMap(a -> dependency.b1(a).map(b -> new AB(a, b)))
+            .flatMap(ab -> dependency.c2(ab.a, ab.b).map(c -> new ABC(ab.a, ab.b, c)));
+
+    // TODO General purpose solution:
+//    in loc de tupleuri, propagi de sus pana jos aceeasi structura de date initial cu nulluri in ea, in care tot pui ce aduci
+
 
     // TODO Solution #3 (risky): cached Mono<>
     //      eg Mono<A> ma = dependency.a(id).cache();
