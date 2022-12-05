@@ -20,6 +20,7 @@ public class Enrich {
   }
 
   static class B {
+    public static final B EMPTY = new B(); // o instanta speciala care inseamna NIMIC
   }
 
   static class C {
@@ -265,9 +266,16 @@ public class Enrich {
 //    return dependency.a(id).flatMap(a -> dependency.b1(a).flatMap(b -> dependency.c2(a, b).map(c -> new ABC(a, b, c))));
 
     // TODO Solution #1: accumulating data structures (chained flatMap)
+//    return dependency.a(id)
+//            .flatMap(a -> dependency.b1(a).map(b -> new AB(a, b)))
+//            .flatMap(ab -> dependency.c2(ab.a, ab.b).map(c -> new ABC(ab.a, ab.b, c)));
+
+    // TODO Solution #1⭐️: accumulating data structures (chained zipWhen)
     return dependency.a(id)
-            .flatMap(a -> dependency.b1(a).map(b -> new AB(a, b)))
-            .flatMap(ab -> dependency.c2(ab.a, ab.b).map(c -> new ABC(ab.a, ab.b, c)));
+            .zipWhen(a -> dependency.b1(a), (a1, b) -> new AB(a1, b))
+            .zipWhen(ab -> dependency.c2(ab.a, ab.b), (ab, c) -> new ABC(ab.a, ab.b, c))
+            ;
+
 
     // TODO General purpose solution:
 //    in loc de tupleuri, propagi de sus pana jos aceeasi structura de date initial cu nulluri in ea, in care tot pui ce aduci
@@ -280,16 +288,17 @@ public class Enrich {
   // ==================================================================================================
 
   /**
-   * a(id) then b1(a) ==> AB(a,b), but if b(id) returns empty() => AB(a,null)
+   * a(id) then b1(a) ==> AB(a,b)    , but if b(id) returns empty() => AB(a,null)
    * Hint: watch out not to lose the data signals.
    * Challenge is that Flux/Mono cannot carry a "null" data signal.
    * Hint: you might need an operator containing "empty" in its name
    */
   public Mono<AB> p06_a_then_bMaybe(int id) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block();
-    B b = dependency.b1(a).block();
-    return Mono.just(new AB(a, b));
+    return dependency.a(id)
+            .zipWhen(a -> dependency.b1(a).defaultIfEmpty(B.EMPTY),
+                    (a, b) -> new AB(a, b == B.EMPTY?null:b))
+            .doOnNext(date -> log.info("Date:  " + date));
+
   }
   // ==================================================================================================
 
