@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 import static java.lang.System.currentTimeMillis;
@@ -58,8 +60,11 @@ public class BlockingApp {
 
       long t0 = currentTimeMillis();
 
-      Future<Beer> futureBeer = threadPool.submit(() -> barman.pourBeer());
-      Future<Vodka> futureVodka = threadPool.submit(() -> barman.pourVodka());
+      Future<Beer> futureBeer = CompletableFuture.supplyAsync(() -> barman.pourBeer());
+      Future<Vodka> futureVodka = CompletableFuture.supplyAsync(() -> barman.pourVodka());
+      // JVM are un ForkJoinPool.commonPool default cu nCPU-1 threaduri in el.
+      // daca executi munca de IO pe un threadpool unic global per JVM poti suferi de
+      // Thread Pool Starvation = nu e fair distributia threadurile. Taskuri blocheaza th comune.
 
       Beer beer = futureBeer.get();// blocheaza threadul Tomcatului (1/200) pt 1 sec
       Vodka vodka = futureVodka.get(); // 0 ms blocat
