@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -107,9 +108,11 @@ class Barman {
 //      Beer beer = new Beer("blond");
 
       // 2: blocking REST call
-      Beer beer = new RestTemplate().getForEntity("http://localhost:9999/api/beer", Beer.class).getBody();
+//      Beer beer = new RestTemplate().getForEntity("http://localhost:9999/api/beer", Beer.class).getBody();
+      Mono<Beer> beerMono = WebClient.create().get().uri("http://localhost:9999/api/beer")
+              .retrieve().bodyToMono(Beer.class);
       log.info("End beer");
-      return Mono.just(beer);//.delayElement(Duration.ofSeconds(1));
+      return beerMono;//.delayElement(Duration.ofSeconds(1));
 
 
       // 3: non-blocking REST call
