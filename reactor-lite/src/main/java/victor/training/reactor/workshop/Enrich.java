@@ -13,6 +13,7 @@ import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 public class Enrich {
@@ -294,10 +295,17 @@ public class Enrich {
    * Hint: you might need an operator containing "empty" in its name
    */
   public Mono<AB> p06_a_then_bMaybe(int id) {
-    return dependency.a(id)
-            .flatMap(a -> dependency.b1(a).map(b-> new AB(a,b)).defaultIfEmpty(new AB(a, null)))
-            .doOnNext(date -> log.info("Date:  " + date));
+//    return dependency.a(id)
+//            .flatMap(a -> dependency.b1(a).map(b-> new AB(a,b))
+//                    .defaultIfEmpty(new AB(a, null)))
+//            .doOnNext(date -> log.info("Date:  " + date));
 
+    return dependency.a(id)
+            .zipWhen(a -> getbMono(a), (a, ob) -> new AB(a, ob.orElse(null)));
+  }
+
+  private Mono<Optional<B>> getbMono(A a) {
+    return dependency.b1(a).map(b->Optional.of(b)).defaultIfEmpty(Optional.empty());
   }
   // ==================================================================================================
 
