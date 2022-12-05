@@ -184,12 +184,17 @@ public class Enrich {
   // ==================================================================================================
 
   /**
-   * a(id), then b1(a) || c1(a) ==> ABC(a,b,c)
+   * a(id), then b1(a) in parallel cu c1(a) ==> ABC(a,b,c)
    * Relax, you are in Heaven😇: calling b1 and c1 return immediately, without blocking.
    */
   public Mono<ABC> p04_a_then_b1_c1(int id) {
     // Hint mono.flatMap(->mono.zipWith(mono, ->))
-    return null;
+//    return dependency.a(id)
+//            .zipWhen(a -> dependency.b1(a).zipWith(dependency.c1(a)))
+//            .map(t -> new ABC(t.getT1(), t.getT2().getT1(), t.getT2().getT2()));
+     return dependency.a(id)
+            .flatMap(a -> dependency.b1(a).zipWith(dependency.c1(a),
+                            (b,c)-> new ABC(a,b,c)) );
   }
 
   // ==================================================================================================
@@ -201,8 +206,19 @@ public class Enrich {
    * Relax, you are in Heaven😇: calling b1 and c1 return immediately, without blocking.
    */
   public Mono<ABC> p04_a_then_b1_c1_cache(int id) {
-    Mono<A> ma = dependency.a(id).cache();
-    return null;
+    // codul dinainte de curs:
+//    A a = dependency.a(id).block();
+//    B b = dependency.b1(a).block();
+//    C c = dependency.c1(a).block();
+
+    //
+    Mono<A> ma = dependency.a(id)
+            .doOnSubscribe(s-> log.info("ACUM PLEACA REQ PE RETEA"));
+    Mono<B> mb = ma.flatMap(a -> dependency.b1(a));
+    Mono<C> mc = ma.flatMap(a -> dependency.c1(a));
+    return Mono.zip(ma,mb,mc)
+            .map(TupleUtils.function((a,b,c)-> new ABC(a,b,c)));
+    // uite cum repeti apeluri de retea ca pr*stu cu WebFlux. :)
   }
 
 
