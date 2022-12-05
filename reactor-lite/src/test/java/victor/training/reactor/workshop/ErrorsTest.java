@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static reactor.core.publisher.Mono.*;
+import static victor.training.util.RunAsNonBlocking.runsNonBlocking;
 
 @ExtendWith(MockitoExtension.class)
 @TestMethodOrder(MethodName.class)
@@ -96,7 +97,7 @@ class ErrorsTest {
     @Test
     void p04_defaultFuture_OK() {
         when(dependencyMock.call()).thenReturn(just("OK"));
-        assertThat(workshop.p04_fallback().block()).isEqualTo("OK");
+        assertThat(runsNonBlocking(()->workshop.p04_fallback()).block()).isEqualTo("OK");
     }
 
     @Test
