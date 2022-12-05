@@ -60,7 +60,6 @@ public class SideEffects {
 
   /**
    * Call a = .save(a0) then .sendMessage(a) and .audit(a) and return the 'a' returned by save
-   * // req: sa vezi ca sendMessage a fost OK si apoi abia sa faci audit
    */
   public Mono<A> p03_saveSendAuditReturn(A a0) {
 //    // equivalent blocking⛔️ code:
@@ -69,9 +68,8 @@ public class SideEffects {
 //    dependency.audit(a).block();
 //    return Mono.just(a); -javaagent:blockhound.jar pe pre-prod in care mirroruiau requesturile din prod sa vanezi blochezi
     return dependency.save(a0)
-            .delayUntil(a -> dependency.sendMessage(a)
-                    .then(dependency.audit(a))
-            );
+            .delayUntil(a -> dependency.sendMessage(a).thenReturn("toAvoidCancellingTheOther")
+                    .zipWith(dependency.audit(a).thenReturn("toAvoidCancellingTheOther")));
   }
 
   // ==================================================================================================
