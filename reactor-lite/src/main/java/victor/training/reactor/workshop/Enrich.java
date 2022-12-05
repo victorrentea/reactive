@@ -369,17 +369,26 @@ public class Enrich {
   }
 
   public Mono<P10UseCaseContext> p10_context(int id) {
-//    P10UseCaseContext context = new P10UseCaseContext(id);
-//    context = context.withA(dependency.a(context.getId()).block());
-//    context = context.withB(dependency.b1(context.getA()).block());
-//    context = context.withC(dependency.c2(context.getA(), context.getB()).block());
-//    context = context.withD(dependency.d(id).block());
+    // serial code
+//    return Mono.just(new P10UseCaseContext(id))
+//            .zipWith(dependency.d(id), (context, d) -> context.withD(d))
+//            .zipWith(dependency.a(id), (context, a) -> context.withA(a))
+//            .zipWhen(context -> dependency.b1(context.a), (context, b) -> context.withB(b))
+//            .zipWhen(context -> dependency.c2(context.a, context.b), (context, c) -> context.withC(c));
 
-    return Mono.just(new P10UseCaseContext(id))
-            .zipWith(dependency.a(id), (context, a) -> context.withA(a))
-            .zipWith(dependency.d(id), (context, d) -> context.withD(d))
-            .zipWhen(context -> dependency.b1(context.a), (context, b) -> context.withB(b))
-            .zipWhen(context -> dependency.c2(context.a, context.b), (context, c) -> context.withC(c));
+    return dependency.a(id)
+            .flatMap(a -> dependency.b1(a).flatMap(b -> dependency.c2(a, b)
+                    .map(c -> new P10UseCaseContext(id).withA(a).withB(b).withC(c))))
+            .zipWith(dependency.d(id), P10UseCaseContext::withD);
+
+
+//    return Mono.just(new P10UseCaseContext(id))
+//            .flatMap(dependency.a(id)
+//                .zipWhen(a -> dependency.b1(a))
+//                .zipWhen(tab -> dependency.c2(tab.getT1(), tab.getT2()), (tab,c) ->)
+//
+//                    , P10UseCaseContext::withA)
+//            .zipWith(dependency.d(id), P10UseCaseContext::withD)
 
 
 
