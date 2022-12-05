@@ -127,5 +127,11 @@ public class SideEffects {
 
             // 2) NU se propaga .cancel signal de la Mono<A> returnat de functie. = rar util in practica in BE
             ;
+    // best practice NU subscrii tu niciodata, ci dai mai departe (cui?)  Springului. EL va subscrie, nu tu.
+
+    // Exista doar 2-3 cazuri in care NU poti da lui Spring sa subscrie la fluxul tau
+    // 1) @Scheduled <- nu prea mai e la moda in cloud elastic envs
+    // 2) consumi mesaje de pe cozi
+        // ===> in aceste 2 cazuri e ok sa faci .block()!
   }
 }
