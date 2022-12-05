@@ -68,7 +68,9 @@ public class SideEffects {
 //    dependency.audit(a).block();
 //    return Mono.just(a); -javaagent:blockhound.jar pe pre-prod in care mirroruiau requesturile din prod sa vanezi blochezi
     return dependency.save(a0)
-            .delayUntil(a -> dependency.sendMessage(a).thenReturn("toAvoidCancellingTheOther")
+            .delayUntil(a ->
+
+                    dependency.sendMessage(a).thenReturn("toAvoidCancellingTheOther")
                     .zipWith(dependency.audit(a).thenReturn("toAvoidCancellingTheOther")));
   }
 
@@ -80,13 +82,17 @@ public class SideEffects {
    */
   public Mono<A> p04_saveSendAuditKOReturn(A a0) {
     // equivalent blocking⛔️ code:
-    A a = dependency.save(a0).block();
-    try {
-      dependency.sendMessage(a).block();
-    } catch (Exception e) {
-    }
-    dependency.audit(a).block();
-    return Mono.just(a);
+//    A a = dependency.save(a0).block();
+//    try {
+//      dependency.sendMessage(a).block();
+//    } catch (Exception e) {
+//      // shaworma pattern - inghiti cu de toate
+//    }
+//    dependency.audit(a).block();
+//    return Mono.just(a);
+    return dependency.save(a0)
+            .delayUntil(a -> dependency.sendMessage(a).onErrorResume(e -> Mono.empty()))
+            .delayUntil(a -> dependency.audit(a));
   }
 
 
@@ -113,7 +119,13 @@ public class SideEffects {
    */
   public Mono<A> p06_save_sendFireAndForget(A a0) {
     return dependency.save(a0)
-            // TODO
+            .doOnNext(a -> dependency.sendMessage(a)
+                    .subscribe(v->{/*callback*/}, e->log.error("Valeu "+ e,e)))
+            // de ce .subscribe() e rau? de ce galben in IDEA?
+            // 1) promoveaza un stil de coding bazat pe callbackuri => multe side effects = rau! nu FP
+            // Functional Reactive Progamming : doar imutabile, cat mai putine side effects, pure functions toate.
+
+            // 2) NU se propaga .cancel signal de la Mono<A> returnat de functie. = rar util in practica in BE
             ;
   }
 }
