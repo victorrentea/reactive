@@ -28,7 +28,7 @@ public class SideEffectsTest {
   @Mock
   Dependency dependency;
   @InjectMocks
-  SideEffectsSolved workshop;
+  SideEffects workshop;
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();
 

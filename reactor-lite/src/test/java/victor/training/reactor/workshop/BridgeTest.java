@@ -36,7 +36,7 @@ public class BridgeTest {
   @Mock
   Dependency dependency;
   @InjectMocks
-  BridgeSolved workshop;
+  Bridge workshop;
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();
   private User user = new User();
