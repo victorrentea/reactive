@@ -4,7 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.With;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
+import reactor.core.publisher.Sinks.Many;
 import reactor.function.TupleUtils;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
@@ -235,11 +238,22 @@ public class Enrich {
 
 
   // ==================================================================================================
+//    private static final Many<Integer> objectMany = Sinks.many().multicast()
+  //    .onBackpressureBuffer();
 
+//    Flux<Integer> objectFlux = objectMany.asFlux();
+//    Flux<Integer> objectFlux = objectMany.asFlux();
+//    Flux<Integer> objectFlux = objectMany.asFlux();
+//    Flux<Integer> objectFlux = objectMany.asFlux();
+//    Flux<Integer> objectFlux = objectMany.asFlux();
+//    // din alta parte
+//    objectMany.tryEmitNext(9);
   /**
    * a(id), then b1(a), then c2(a,b) ==> ABC(a,b,c)
    */
   public Mono<ABC> p05_a_then_b1_then_c2(int id) {
+
+
     // equivalent blocking⛔️ code:
     A a = dependency.a(id).block();
     B b = dependency.b1(a).block();
