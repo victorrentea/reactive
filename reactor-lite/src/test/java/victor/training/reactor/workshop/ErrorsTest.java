@@ -37,7 +37,8 @@ class ErrorsTest {
     @Mock
     Dependency dependencyMock;
     @InjectMocks
-    ErrorsSolved workshop;
+    Errors workshop;
+//    ErrorsSolved workshop;
     @RegisterExtension
     SubscribedProbe subscribed = new SubscribedProbe();
 

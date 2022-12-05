@@ -31,8 +31,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestingTest {
 
-//   Testing workshop = new TestingSolved();
    Testing workshop = new Testing();
+//   Testing workshop = new TestingSolved();
 
 
    @Test

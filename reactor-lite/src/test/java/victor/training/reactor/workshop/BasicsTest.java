@@ -1,6 +1,8 @@
 package victor.training.reactor.workshop;
 
+import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.Timeout;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -18,10 +20,11 @@ import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@TestMethodOrder(MethodName.class)
 public class BasicsTest {
 
-  //	Basics workshop = new Basics();
-  Basics workshop = new BasicsSolved();
+  	Basics workshop = new Basics();
+//  Basics workshop = new BasicsSolved();
 
 
   @Test
@@ -54,7 +57,7 @@ public class BasicsTest {
   }
 
   @Test
-  public void monoWithNoSignal() {
+  public void mono5_noSignal() {
     workshop.mono5_noSignal()
             .as(StepVerifier::create)
             .expectSubscription()

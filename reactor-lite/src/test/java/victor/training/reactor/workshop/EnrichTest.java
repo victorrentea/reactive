@@ -28,6 +28,7 @@ public class EnrichTest {
     Dependency dependency;
     @InjectMocks
     Enrich workshop;
+//    EnrichSolved workshop;
 
     private static final A a = new A();
     private static final B b = new B();
