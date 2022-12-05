@@ -5,6 +5,11 @@ import lombok.Value;
 import lombok.With;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
+import reactor.function.TupleUtils;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuple3;
+
+import java.util.List;
 
 @Slf4j
 public class Enrich {
@@ -27,7 +32,7 @@ public class Enrich {
     public B b;
   }
 
-  @Value
+  @Value // mai bun de cat @Data: ca face si campurile finale (fara setteri)
   static class ABC {
     public A a;
     public B b;
@@ -114,9 +119,13 @@ public class Enrich {
 //            .doOnSubscribe(s -> log.info("ACUM LANSEZ ab()"));
 
 //       Mono.zip(dependency.a(id), dependency.b(id), (a, b) -> new AB(a, b));
-      return dependency.a(id).doOnSubscribe(s->log.info("A"))
+    Mono<B> mono = dependency.b(id);
+    return dependency.a(id)
+              //.doOnSubscribe(s->log.info("A"))
+              .zipWith(mono // zipWIth se va subscrie la instanta de Mono primita parametru
 
-              .zipWith(dependency.b(id).doOnSubscribe(s->log.info("B")),
+                              //.doOnSubscribe(s->log.info("B"))
+                      ,
                       (a, b) -> new AB(a, b))
               // orice operator este
               // si Subscriber(in sus,catre cine are datele)
@@ -130,16 +139,26 @@ public class Enrich {
   /**
    * a(id) || b(id) || c(id) ==> ABC(a,b,c)
    */
+  // asa NU: Mono<Tuple3<Long, String, List<Tuple2<String,Integer>>>>
   public Mono<ABC> p02_a_b_c(int id) {
     // equivalent blocking⛔️ code:
-    //A a = dependency.a(id).block();
-    //B b = dependency.b(id).block();
-    //C c = dependency.c(id).block();
-    //return Mono.just(new ABC(a, b, c));
+//    A a = dependency.a(id).block();
+//    B b = dependency.b(id).block();
+//    C c = dependency.c(id).block();
+//    return Mono.just(new ABC(a, b, c));
 
     // Hint: use Mono.zip (static method)
     // Hint: avoid tuple -> {} by using TupleUtils.function((a,b,c) -> {})
-    return null;
+
+    // Sfat din batrani: nu da afara din casa (functie) Tuple-uri ca sperii clientii
+    return Mono.zip(
+            dependency.a(id),
+            dependency.b(id),
+            dependency.c(id))
+//            .map(t3 -> new ABC(t3.getT1(), t3.getT2(), t3.getT3())) // 🤢 scarBOSS
+//            .map(TupleUtils.function((a,b,c) -> new ABC(a,b,c)))
+            .map(TupleUtils.function(ABC::new))
+            ;
   }
 
   // ==================================================================================================
@@ -150,12 +169,16 @@ public class Enrich {
    */
   public Mono<AB> p03_a_then_b1(int id) {
     // equivalent blocking⛔️ code:
-    // A a = dependency.a(id).block();
-    // B b = dependency.b1(a).block();
-    // return Mono.just(new AB(a, b));
+//     A a = dependency.a(id).block();
+//     B b = dependency.b1(a).block();
+//     return Mono.just(new AB(a, b));
 
     // Hint: Mono#flatMap
-    return null;
+     return dependency.a(id)
+//            .flatMap(a -> dependency.b1(a) .map(b -> new AB(a,b))  )
+//             .zipWhen(dependency::b1, AB::new) // rupe-i zice IDEA
+             .zipWhen(a -> dependency.b1(a), (a,b) -> new AB(a,b)) // hai ca am trait, un op dedicat pt un flux uzual
+            ;
   }
 
   // ==================================================================================================
