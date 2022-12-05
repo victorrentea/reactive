@@ -12,6 +12,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -103,12 +104,13 @@ class Barman {
 //if (true) throw new IllegalStateException("Nu mai e bere");
       // 1: pretend
 //      sleep(1000);
-      Beer beer = new Beer("blond");
+//      Beer beer = new Beer("blond");
 
       // 2: blocking REST call
-//      Beer beer = new RestTemplate().getForEntity("http://localhost:9999/api/beer", Beer.class).getBody();
+      Beer beer = new RestTemplate().getForEntity("http://localhost:9999/api/beer", Beer.class).getBody();
       log.info("End beer");
-      return Mono.just(beer).delayElement(Duration.ofSeconds(1));
+      return Mono.just(beer);//.delayElement(Duration.ofSeconds(1));
+
 
       // 3: non-blocking REST call
 //      return new AsyncRestTemplate().exchange(...).completable()....;
