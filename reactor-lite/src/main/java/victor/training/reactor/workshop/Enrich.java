@@ -192,6 +192,7 @@ public class Enrich {
 //    return dependency.a(id)
 //            .zipWhen(a -> dependency.b1(a).zipWith(dependency.c1(a)))
 //            .map(t -> new ABC(t.getT1(), t.getT2().getT1(), t.getT2().getT2()));
+
      return dependency.a(id)
             .flatMap(a -> dependency.b1(a).zipWith(dependency.c1(a),
                             (b,c)-> new ABC(a,b,c)) );
@@ -207,18 +208,29 @@ public class Enrich {
    */
   public Mono<ABC> p04_a_then_b1_c1_cache(int id) {
     // codul dinainte de curs:
-//    A a = dependency.a(id).block();
-//    B b = dependency.b1(a).block();
-//    C c = dependency.c1(a).block();
+//    A a = await dependency.a(id);
+//    B b = await dependency.b1(a);
+//    C c = await dependency.c1(a); // poate in java 24 2-3 ani o sa vedem?
 
-    //
-    Mono<A> ma = dependency.a(id)
-            .doOnSubscribe(s-> log.info("ACUM PLEACA REQ PE RETEA"));
-    Mono<B> mb = ma.flatMap(a -> dependency.b1(a));
-    Mono<C> mc = ma.flatMap(a -> dependency.c1(a));
+    Mono<A> ma = dependency.a(id); // SOC: acest cache NU este INTRE requesturi,
+    // acest cache traieste cat traieste in heap instanta de mai sus.
+    // there are only 2 things hard in programming: 1) cache invalidation  2) naiming things
+    Mono<B> mb = ma.flatMap(dependency::b1);
+    Mono<C> mc = ma.flatMap(dependency::c1);
     return Mono.zip(ma,mb,mc)
-            .map(TupleUtils.function((a,b,c)-> new ABC(a,b,c)));
+            .map(TupleUtils.function(ABC::new));
     // uite cum repeti apeluri de retea ca pr*stu cu WebFlux. :)
+    // - cum poti scrie TESTE UNITARE sa acoperi bugul asta ?
+
+    // - poti totusi hackui codul de mai sus sa NU repete apeluri de retea?
+    // da, cu .cache() da n-o face:
+    // Idee creatza: .cache() pe orice variabila Mono/Flux ai
+    // problema= tii in Heap date si DUPA ce le-ai emis mai jos = DEGEABA pt prea mult timp
+
+    // - ce coding practice poti adopta sa NU patesti asa ceva vreodata?
+      // sa nu faci vreodata variabile locale de tip Mono/Flux, ca te arzi.
+      // => un chaing enorm de apeluri de functii = "reactive chain"
+      // (horror): best practice: o functie ce intoarce Mono incepe pe 1 linie cu return.
   }
 
 

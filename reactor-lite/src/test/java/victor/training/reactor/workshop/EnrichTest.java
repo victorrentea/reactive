@@ -6,8 +6,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
+import reactor.test.publisher.PublisherProbe;
 import victor.training.reactor.workshop.Enrich.*;
 import victor.training.util.SubscribedProbe;
 
@@ -71,11 +73,20 @@ public class EnrichTest {
     }
     @Test
     void p04_a_then_b1_c1_cache() {
-        when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
+        //        when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
+
+        // given
+        PublisherProbe<A> probe = PublisherProbe.of(just(a));
+        Mockito.when(dependency.a(1)).thenReturn(probe.mono());
         when(dependency.b1(a)).thenReturn(subscribed.once(just(b)));
         when(dependency.c1(a)).thenReturn(subscribed.once(just(c)));
 
-        assertThat(workshop.p04_a_then_b1_c1_cache(1).block()).isEqualTo(new ABC(a, b,c));
+        //when
+        ABC result = workshop.p04_a_then_b1_c1_cache(1).block();
+
+        //then
+        assertThat(result).isEqualTo(new ABC(a, b,c));
+        assertThat(probe.subscribeCount()).isEqualTo(1);
     }
 
     @Test
