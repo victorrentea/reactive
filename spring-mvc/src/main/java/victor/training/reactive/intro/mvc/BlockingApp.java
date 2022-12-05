@@ -9,11 +9,14 @@ import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCusto
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.concurrent.Future;
 
 import static java.lang.System.currentTimeMillis;
 import static victor.training.reactive.intro.mvc.Utils.sleep;
@@ -41,6 +44,9 @@ public class BlockingApp {
    @Autowired
    private Barman barman;
 
+   @Autowired
+   ThreadPoolTaskExecutor threadPool;
+
    @GetMapping("fast")
    public String fast() {
       return "immediate";
@@ -52,11 +58,13 @@ public class BlockingApp {
 
       long t0 = currentTimeMillis();
 
-      Beer beer = barman.pourBeer();
+      Future<Beer> futureBeer = threadPool.submit(() -> barman.pourBeer());
+      Future<Vodka> futureVodka = threadPool.submit(() -> barman.pourVodka());
 
-      Vodka vodka = barman.pourVodka();
+      Beer beer = futureBeer.get();// blocheaza threadul Tomcatului (1/200)
+      Vodka vodka = futureVodka.get();
 
-      DillyDilly dilly = new DillyDilly(beer, vodka);
+      DillyDilly dilly = new DillyDilly(beer, vodka); // Redis a prins o scama , stai NETWORKING
 
       log.debug("HTTP thread was blocked for {} millis ", (currentTimeMillis() - t0));
       return dilly;
@@ -69,7 +77,7 @@ class Barman {
 
    public Beer pourBeer() {
       log.info("Start beer");
-
+//if (true) throw new IllegalStateException("Nu mai e bere");
       // 1: pretend
       sleep(1000);
       Beer beer = new Beer("blond");
