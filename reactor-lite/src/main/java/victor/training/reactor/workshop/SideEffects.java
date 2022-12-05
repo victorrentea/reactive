@@ -70,7 +70,8 @@ public class SideEffects {
 //    return Mono.just(a); -javaagent:blockhound.jar pe pre-prod in care mirroruiau requesturile din prod sa vanezi blochezi
     return dependency.save(a0)
             .delayUntil(a -> dependency.sendMessage(a)
-                    .doOnSuccess(v -> dependency.audit(a).block()));
+                    .then(dependency.audit(a))
+            );
   }
 
   // ==================================================================================================
