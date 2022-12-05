@@ -99,14 +99,13 @@ class X {
 class Barman {
    private static final Logger log = LoggerFactory.getLogger(Barman.class);
 
-//   @Timed("beer-api-call")
    public Mono<Beer> pourBeer() {
-      log.info("Start beer");
+      log.info("Start beer"); // NU AICI se trimite de fapt GET-ul pe retea
       // log mincinos !!!
       Mono<Beer> beerMono = WebClient.create().get().uri("http://localhost:9999/api/beer")
               .retrieve().bodyToMono(Beer.class);
 
-      log.info("End beer");
+      log.info("End beer"); // NU AICI a venit raspunsul!
       return beerMono;
    }
 
