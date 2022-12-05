@@ -17,6 +17,7 @@ import victor.training.util.RunAsNonBlocking;
 import victor.training.util.SubscribedProbe;
 
 import java.time.Duration;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static java.time.Duration.ofMillis;
@@ -30,7 +31,7 @@ public class ZComplexFlowTest {
   @Mock
   Dependency dependency;
   @InjectMocks
-  ZComplexFlowSolved workshop;
+  ZComplexFlow workshop;
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();
 
@@ -45,18 +46,18 @@ public class ZComplexFlowTest {
   }
 
   @Test
-  void functionalCorrect() {
+  void functionalCorrect() throws ExecutionException, InterruptedException {
     workshop.p06_complexFlow(ID).block();
   }
 
   @Test
   @Timeout(value = 150, unit = TimeUnit.MILLISECONDS)
-  void doesNotWaitForAudit() {
+  void doesNotWaitForAudit() throws ExecutionException, InterruptedException {
     workshop.p06_complexFlow(ID).block();
   }
 
   @Test
-  void doesNotFailForAudit() {
+  void doesNotFailForAudit() throws ExecutionException, InterruptedException {
     subscribed.clearAllProbes();
     when(dependency.auditA(new A("aBcd"), new A("a"))).thenReturn(Mono.error(new RuntimeException()));
     workshop.p06_complexFlow(ID).block();
@@ -64,12 +65,18 @@ public class ZComplexFlowTest {
 
   @Test
   public void doesNotBlock() {
-    RunAsNonBlocking.runsNonBlocking(() -> workshop.p06_complexFlow(ID)).block();
+    RunAsNonBlocking.runsNonBlocking(() -> {
+      try {
+        return workshop.p06_complexFlow(ID);
+      } catch (ExecutionException | InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }).block();
   }
 
   @Test
   @Timeout(value = 500, unit = TimeUnit.MILLISECONDS)
-  public void callsB_parallel_C() {
+  public void callsB_parallel_C() throws ExecutionException, InterruptedException {
     subscribed.clearAllProbes();
     when(dependency.b(new A("a"))).thenReturn(Mono.just(new B("b")).delayElement(ofMillis(300)));
     when(dependency.c(new A("a"))).thenReturn(Mono.just(new C("c")).delayElement(ofMillis(300)));
