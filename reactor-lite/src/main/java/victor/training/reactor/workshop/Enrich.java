@@ -316,10 +316,11 @@ public class Enrich {
    * Hint: watch out not to lose the data signals.
    */
   public Mono<AB> p07_a_par_bMaybe(int id) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block(); // in parallel
-    B b = dependency.b(id).block(); // in parallel
-    return Mono.just(new AB(a, b));
+
+    return dependency.a(id)
+            .zipWith(dependency.b(id).map(Optional::of).defaultIfEmpty(Optional.empty()),
+            (a, bo) -> new AB(a, bo.orElse(null)));
+
   }
 
   // ==================================================================================================
@@ -330,13 +331,19 @@ public class Enrich {
    */
   public Mono<AB> p08_a_try_b(int id) {
     // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block();
-    B b = null;
-    try {
-      b = dependency.b(id).block();
-    } catch (Exception e) {
-    }
-    return Mono.just(new AB(a, b));
+//    A a = dependency.a(id).block();
+//    B b = null;
+//    try {
+//      b = dependency.b(id).block();
+//    } catch (Exception e) {
+//    }
+//    return Mono.just(new AB(a, b));
+
+    return dependency.a(id)
+            .zipWith(dependency.b(id)
+                            .map(Optional::of)
+                            .onErrorReturn(Optional.empty()),
+                    (a, bo) -> new AB(a, bo.orElse(null)));
   }
 
   // ==================================================================================================
@@ -362,14 +369,22 @@ public class Enrich {
   }
 
   public Mono<P10UseCaseContext> p10_context(int id) {
-    // equivalent blocking⛔️ code:
-    P10UseCaseContext context = new P10UseCaseContext(id);
-    context = context.withA(dependency.a(context.getId()).block());
-    context = context.withB(dependency.b1(context.getA()).block());
-    context = context.withC(dependency.c2(context.getA(), context.getB()).block());
-    context = context.withD(dependency.d(id).block());
+//    P10UseCaseContext context = new P10UseCaseContext(id);
+//    context = context.withA(dependency.a(context.getId()).block());
+//    context = context.withB(dependency.b1(context.getA()).block());
+//    context = context.withC(dependency.c2(context.getA(), context.getB()).block());
+//    context = context.withD(dependency.d(id).block());
+
+    return Mono.just(new P10UseCaseContext(id))
+            .zipWith(dependency.a(id), (context, a) -> context.withA(a))
+            .zipWith(dependency.d(id), (context, d) -> context.withD(d))
+            .zipWhen(context -> dependency.b1(context.a), (context, b) -> context.withB(b))
+            .zipWhen(context -> dependency.c2(context.a, context.b), (context, c) -> context.withC(c));
+
+
+
     // TODO non-blocking and in parallel as many as possible
-    return Mono.just(context);
+//    return Mono.just(context);
   }
 
 }

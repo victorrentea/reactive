@@ -15,6 +15,7 @@ import victor.training.util.SubscribedProbe;
 
 import java.time.Duration;
 
+import static java.time.Duration.ofMillis;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -41,8 +42,8 @@ public class EnrichTest {
 
     @Test
     void p01_a_par_b() {
-        when(dependency.a(1)).thenReturn(subscribed.once(just(a).delayElement(Duration.ofMillis(1000))));
-        when(dependency.b(1)).thenReturn(subscribed.once(just(b).delayElement(Duration.ofMillis(1000))));
+        when(dependency.a(1)).thenReturn(subscribed.once(just(a).delayElement(ofMillis(1000))));
+        when(dependency.b(1)).thenReturn(subscribed.once(just(b).delayElement(ofMillis(1000))));
 
         assertThat(workshop.p01_a_par_b(1).block()).isEqualTo(new AB(a, b));
     }
@@ -120,8 +121,8 @@ public class EnrichTest {
     @Test
     @Timeout(1)
     void p07_a_par_bMaybe_inparallel() {
-        when(dependency.a(1)).thenReturn(subscribed.once(just(a).delayElement(Duration.ofMillis(700))));
-        when(dependency.b(1)).thenReturn(subscribed.once(just(b).delayElement(Duration.ofMillis(700))));
+        when(dependency.a(1)).thenReturn(subscribed.once(just(a).delayElement(ofMillis(700))));
+        when(dependency.b(1)).thenReturn(subscribed.once(just(b).delayElement(ofMillis(700))));
 
         Mono<AB> mono = runsNonBlocking(() -> workshop.p07_a_par_bMaybe(1));
 
@@ -161,6 +162,18 @@ public class EnrichTest {
         when(dependency.b1(a)).thenReturn(subscribed.once(just(b)));
         when(dependency.c2(a, b)).thenReturn(subscribed.once(just(c)));
         when(dependency.d(1)).thenReturn(subscribed.once(just(d)));
+
+        Mono<P10UseCaseContext> mono = runsNonBlocking(() -> workshop.p10_context(1));
+
+        assertThat(mono.block()).isEqualTo(new P10UseCaseContext(1, a,b,c,d));
+    }
+    @Test
+    @Timeout(1)
+    void p10_context_in_parallel() {
+        when(dependency.a(1)).thenReturn(subscribed.once(just(a).delayElement(ofMillis(300))));
+        when(dependency.b1(a)).thenReturn(subscribed.once(just(b).delayElement(ofMillis(300))));
+        when(dependency.c2(a, b)).thenReturn(subscribed.once(just(c).delayElement(ofMillis(300))));
+        when(dependency.d(1)).thenReturn(subscribed.once(just(d).delayElement(ofMillis(600))));
 
         Mono<P10UseCaseContext> mono = runsNonBlocking(() -> workshop.p10_context(1));
 
