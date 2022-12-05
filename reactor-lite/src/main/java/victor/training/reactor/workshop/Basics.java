@@ -3,6 +3,7 @@ package victor.training.reactor.workshop;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.List;
 
 public class Basics {
@@ -70,54 +71,61 @@ public class Basics {
   //========================================================================================
   // TODO Create a Mono that emits "BOO" after 100ms
   public Mono<String> mono6_delayedData() {
-    return Mono.just("BOO");
+    return Mono.just("BOO")
+            .delayElement(Duration.ofMillis(100));
   }
 
   //========================================================================================
   // TODO Create a Mono that emits only completion after 100ms (with no value)
-  // NOTE: the return type is Mono<Void>, indicating there is no data emitted to subscriber.
+  // NOTE: the return type is Mono<Void>, indicating there is no data signal emitted to subscriber.
   public Mono<Void> mono7_delayedCompletion() {
-    return Mono.empty();
+//    Void v = new Void();
+    // singurul motiv de a folosi Void este pt a-l returna dintr-o metoda asincrona care NU intoarce date utile.
+//     Mono.empty().delayElement(Duration.ofMillis(100));
+
+    return Mono.delay(Duration.ofMillis(100)).then();
   }
 
 
   //========================================================================================
 
-  // TODO Return a Flux that contains 2 values "foo" and "bar" without using an array or a collection
+  // TODO Return a Flux that contains 2 values "foo" and "bar"
+  //  without using an array or a collection
   public Flux<String> flux1_values() {
-    return null;
+    return Flux.just("foo","bar");
   }
 
   //========================================================================================
 
   // TODO Create a Flux from a List that contains 2 values "foo" and "bar"
   public Flux<String> flux2_fromList(List<String> list) {
-    return null;
+    return Flux.fromIterable(list);
   }
 
   //========================================================================================
   // TODO Return an empty Flux
   public Flux<String> flux3_empty() {
-    return null;
+    return Flux.empty();
   }
 
   //========================================================================================
   // TODO Create a Flux that emits an IllegalStateException ERROR SIGNAL
   public Flux<String> flux4_error() {
-    return null;
+    return Flux.error(new IllegalStateException());
   }
 
   //========================================================================================
   // TODO Create a Flux that emits increasing values from 0 to 9 every 100ms
   public Flux<Long> flux5_delayedElements() {
-    return null;
+    // Stream<>.take primele 10
+    return Flux.interval(Duration.ofMillis(100)).take(10);
   }
 
   //========================================================================================
   // TODO print to console all signals going up (from Subscriber->Publisher)
   //  or down (from Publisher->Subscriber)
   public Flux<String> logSignals(Flux<String> flux) {
-    return flux;
+    return flux.log("de.enablat.in.caz.de.panica.in.prod"); // te ajuta in practica sa vezi cancel/error sau sa debugezi backpressure
   }
 
 }
