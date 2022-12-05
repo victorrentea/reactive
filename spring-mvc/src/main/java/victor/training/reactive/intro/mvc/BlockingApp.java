@@ -61,8 +61,8 @@ public class BlockingApp {
       Future<Beer> futureBeer = threadPool.submit(() -> barman.pourBeer());
       Future<Vodka> futureVodka = threadPool.submit(() -> barman.pourVodka());
 
-      Beer beer = futureBeer.get();// blocheaza threadul Tomcatului (1/200)
-      Vodka vodka = futureVodka.get();
+      Beer beer = futureBeer.get();// blocheaza threadul Tomcatului (1/200) pt 1 sec
+      Vodka vodka = futureVodka.get(); // 0 ms blocat
 
       DillyDilly dilly = new DillyDilly(beer, vodka); // Redis a prins o scama , stai NETWORKING
 
