@@ -8,17 +8,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.AsyncRestTemplate;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 import static java.lang.System.currentTimeMillis;
 import static victor.training.reactive.intro.mvc.Utils.sleep;
@@ -71,25 +67,26 @@ class X {
    }
 
    @GetMapping("drink")
-   public DillyDilly drink() throws Exception {
+   public CompletableFuture<DillyDilly> drink() throws Exception {
       log.info("Talking to barman: " + barman.getClass());
 
       long t0 = currentTimeMillis();
-
-      Future<Beer> futureBeer = CompletableFuture.supplyAsync(() -> barman.pourBeer(), threadPool);
-      Future<Vodka> futureVodka = CompletableFuture.supplyAsync(() -> barman.pourVodka(), threadPool);
+      CompletableFuture<Beer> futureBeer = CompletableFuture.supplyAsync(() -> barman.pourBeer(), threadPool);
+      CompletableFuture<Vodka> futureVodka = CompletableFuture.supplyAsync(() -> barman.pourVodka(), threadPool);
       // JVM are un ForkJoinPool.commonPool default cu nCPU-1 threaduri in el.
       // tot pe el executa si .parallelStream() (- de evitat)
       // daca executi munca de IO pe un threadpool unic global per JVM poti suferi de
       // Thread Pool Starvation = nu e fair distributia threadurile. Taskuri blocheaza th comune.
 
-      Beer beer = futureBeer.get();// blocheaza threadul Tomcatului (1/200) pt 1 sec
-      Vodka vodka = futureVodka.get(); // 0 ms blocat
+//      Beer beer = futureBeer.get();// blocheaza threadul Tomcatului (1/200) pt 1 sec -- n-ai voie sa faci .get pe CF
+      // de ce ?
+      // CF = "promise" === CompletableFuture
+//      Vodka vodka = futureVodka.get(); // 0 ms blocat
 
-      DillyDilly dilly = new DillyDilly(beer, vodka); // Redis a prins o scama , stai NETWORKING
+      CompletableFuture<DillyDilly> futureDilly = futureBeer.thenCombine(futureVodka, (beer, vodka) -> new DillyDilly(beer, vodka));
 
       log.debug("HTTP thread was blocked for {} millis ", (currentTimeMillis() - t0));
-      return dilly;
+      return futureDilly;
    }
 }
 
