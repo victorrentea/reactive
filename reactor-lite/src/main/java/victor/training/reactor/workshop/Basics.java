@@ -11,34 +11,36 @@ public class Basics {
   // TODO Return a Mono that emits a "foo" value (DATA SIGNAL)
   //  eg when a repo.findById(id) finds data.
   public Mono<String> mono1_just() {
-    return null;
+    return Mono.just("foo");
   }
 
   //========================================================================================
   // TODO Return an empty Mono (COMPLETION SIGNAL)
   //   eg for reporting completion of a task not returning any data
   public Mono<String> mono2_empty() {
-    return null;
+    return Mono.empty();
   }
 
   //========================================================================================
   // TODO Return a Mono of the data passed as parameter.
   //  NOTE: data can come null => if null, emit no DATA SIGNAL, but only COMPLETION.
   public Mono<String> mono3_optional(String data) {
-    return null;
+    return Mono.justOrEmpty(data);
   }
 
   //========================================================================================
   // TODO Create a Mono that completes with an ERROR SIGNAL of IllegalStateException
   public Mono<String> mono4_error() {
-    return null;
+    // Breaking news: in Reactive Programming daca o metoda intoarce Mono/Flux/CompletableFuture
+    // ea nu are voie sa faca throw!!!! in schimb ea intoarce Mono.error
+    return Mono.error(new IllegalStateException());
   }
 
   //========================================================================================
 
   // TODO Return a Mono that never emits any signal (eg for testing)
   public Mono<String> mono5_noSignal() {
-    return null;
+    return Mono.never();
   }
 
   // TODO ⭐️ CHALLENGE: to understand the signals,
