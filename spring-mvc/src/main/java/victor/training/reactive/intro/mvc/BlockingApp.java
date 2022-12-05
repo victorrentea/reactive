@@ -100,12 +100,16 @@ class Barman {
    private static final Logger log = LoggerFactory.getLogger(Barman.class);
 
    public Mono<Beer> pourBeer() {
-      log.info("Start beer"); // NU AICI se trimite de fapt GET-ul pe retea
+//      log.info("Start beer"); // NU AICI se trimite de fapt GET-ul pe retea
       // log mincinos !!!
       Mono<Beer> beerMono = WebClient.create().get().uri("http://localhost:9999/api/beer")
-              .retrieve().bodyToMono(Beer.class);
+              .retrieve().bodyToMono(Beer.class)
+              .doOnSubscribe(s -> log.info("Start beer"))
+              .doOnNext(e -> log.info("End beer : " + e))
+              .doOnTerminate(() -> log.info("End beer anyway + errros")) //
+              ;
 
-      log.info("End beer"); // NU AICI a venit raspunsul!
+//      log.info("End beer"); // NU AICI a venit raspunsul!
       return beerMono;
    }
 
