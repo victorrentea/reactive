@@ -31,6 +31,17 @@ public class BlockingApp {
    private static final Logger log = LoggerFactory.getLogger(BlockingApp.class);
 
    @Bean
+   public ThreadPoolTaskExecutor executor() {
+      ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+      executor.setCorePoolSize(400);
+      executor.setMaxPoolSize(400);
+      executor.setQueueCapacity(500);
+      executor.setThreadNamePrefix("bar-");
+      executor.initialize();
+      return executor;
+   }
+
+   @Bean
    MeterRegistryCustomizer<MeterRegistry> metricsCommonTags() {
       // expose tomcat metrics (threads, connections) to prometheus via /actuator/prometheus
       return registry -> registry.config().commonTags(
@@ -43,6 +54,11 @@ public class BlockingApp {
       org.springframework.boot.SpringApplication.run(BlockingApp.class, args);
    }
 
+}
+@RestController
+class X {
+
+   private static final Logger log = LoggerFactory.getLogger(X.class);
    @Autowired
    private Barman barman;
 
