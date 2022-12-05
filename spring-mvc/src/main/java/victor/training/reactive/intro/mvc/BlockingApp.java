@@ -81,6 +81,9 @@ class Barman {
 
       // 3: non-blocking REST call
 //      return new AsyncRestTemplate().exchange(...).completable()....;
+
+      // 4: non-blocking REST call via WebClient
+      // return WebClient.create().get()...
    }
 
    public Vodka pourVodka() {
