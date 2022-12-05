@@ -1,6 +1,5 @@
 package victor.training.reactive.intro.mvc;
 
-import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,8 +11,6 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.AsyncRestTemplate;
-import org.springframework.web.client.RestTemplate;
 
 import static java.lang.System.currentTimeMillis;
 import static victor.training.reactive.intro.mvc.Utils.sleep;
@@ -56,11 +53,12 @@ public class BlockingApp {
 
       Vodka vodka = barman.pourVodka();
 
-      DillyDilly dilly = new DillyDilly(beer, vodka);
+      DillyDilly dilly = barman.mixCocktail(beer, vodka);
 
       log.debug("HTTP thread was blocked for {} millis ", (currentTimeMillis() - t0));
       return dilly;
    }
+
 }
 
 @Service
@@ -92,6 +90,13 @@ class Barman {
       log.info("End vodka");
       return new Vodka();
    }
+
+
+   public DillyDilly mixCocktail(Beer beer, Vodka vodka) {
+      log.info("Mixing {} with {} (takes time) ...", beer, vodka);
+      sleep(500);
+      return new DillyDilly(beer, vodka);
+   }
 }
 
 
@@ -121,8 +126,6 @@ class DillyDilly {
    public DillyDilly(Beer beer, Vodka vodka) {
       this.beer = beer;
       this.vodka = vodka;
-      log.info("Mixing {} with {} (takes time) ...", beer, vodka);
-      sleep(500);
    }
 
    public Beer getBeer() {
