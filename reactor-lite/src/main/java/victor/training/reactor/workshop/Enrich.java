@@ -95,24 +95,33 @@ public class Enrich {
     //                .map(tuple2 -> new AB(tuple2.getT1(), tuple2.getT2()))
     //                ;
 
-    return Mono.zip(dependency.a(id)
-                            .doOnSubscribe(s -> log.info("ACUM LANSEZ a()"))
-                            // SURSA la >50% din bugurile din reactive chains este ca
-                            // subscrierea se intampla sau niciodata sau repetat
+//    return Mono.zip(dependency.a(id)
+//                            .doOnSubscribe(s -> log.info("ACUM LANSEZ a()"))
+//                            // SURSA la >50% din bugurile din reactive chains este ca
+//                            // subscrierea se intampla sau niciodata sau repetat
+//
+//            // FAPTUL ca tu chemi o functie care iti da un Mono/Flux,
+//            // NU INSEAMNA ca a si inceput executia pe retea a acelui call.
+//            // nici o crerere nu se trimite pe retea pana cand cineva nu face subscribe()!!!
+//
+//            // PRIN CONTRAST, CompletableFuture.supplyAsync(() -> {} ), odata ce a fost creat, a si inceput executia
+//                            .log("a"),
+//                    dependency.b(id)
+//                            .log("b")
+//                            .doOnSubscribe(s -> log.info("ACUM LANSEZ b()")),
+//                    (a, b) -> new AB(a, b))
+//            .log("ab")
+//            .doOnSubscribe(s -> log.info("ACUM LANSEZ ab()"));
 
-            // FAPTUL ca tu chemi o functie care iti da un Mono/Flux,
-            // NU INSEAMNA ca a si inceput executia pe retea a acelui call.
-            // nici o crerere nu se trimite pe retea pana cand cineva nu face subscribe()!!!
+//       Mono.zip(dependency.a(id), dependency.b(id), (a, b) -> new AB(a, b));
+      return dependency.a(id).doOnSubscribe(s->log.info("A"))
 
-            // PRIN CONTRAST, CompletableFuture.supplyAsync(() -> {} ), odata ce a fost creat, a si inceput executia
-
-                            .log("a"),
-                    dependency.b(id)
-                            .log("b")
-                            .doOnSubscribe(s -> log.info("ACUM LANSEZ b()")),
-                    (a, b) -> new AB(a, b))
-            .log("ab")
-            .doOnSubscribe(s -> log.info("ACUM LANSEZ ab()"));
+              .zipWith(dependency.b(id).doOnSubscribe(s->log.info("B")),
+                      (a, b) -> new AB(a, b))
+              // orice operator este
+              // si Subscriber(in sus,catre cine are datele)
+              // si Publisher (in jos, cine VREA datele)
+              .doOnSubscribe(s->log.info("AB"));
   }
 
 
