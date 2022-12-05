@@ -67,7 +67,7 @@ public class SideEffects {
 //    A a = dependency.save(a0).block();
 //    dependency.sendMessage(a).block();
 //    dependency.audit(a).block();
-//    return Mono.just(a);
+//    return Mono.just(a); -javaagent:blockhound.jar pe pre-prod in care mirroruiau requesturile din prod sa vanezi blochezi
     return dependency.save(a0)
             .delayUntil(a -> dependency.sendMessage(a)
                     .doOnSuccess(v -> dependency.audit(a).block()));
