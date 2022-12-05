@@ -1,6 +1,5 @@
 package victor.training.reactive.intro.mvc;
 
-import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,8 +12,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
-import java.util.concurrent.CompletableFuture;
+import java.time.Duration;
 
 import static java.lang.System.currentTimeMillis;
 import static victor.training.reactive.intro.mvc.Utils.sleep;
@@ -63,16 +63,16 @@ class X {
 
    @GetMapping("fast")
    public String fast() {
-      return "immediate";
+      return "immediate"; // raspuns din memorie (eg din vreun HashMap, counter) 0.1%
    }
 
    @GetMapping("drink")
-   public CompletableFuture<DillyDilly> drink() throws Exception {
+   public Mono<DillyDilly> drink() throws Exception { // 99% din cazuri intorci Mono/Flux
       log.info("Talking to barman: " + barman.getClass());
 
       long t0 = currentTimeMillis();
-      CompletableFuture<Beer> futureBeer = CompletableFuture.supplyAsync(() -> barman.pourBeer(), threadPool);
-      CompletableFuture<Vodka> futureVodka = CompletableFuture.supplyAsync(() -> barman.pourVodka(), threadPool);
+      Mono<Beer> futureBeer = barman.pourBeer();
+      Mono<Vodka> futureVodka = barman.pourVodka();
       // JVM are un ForkJoinPool.commonPool default cu nCPU-1 threaduri in el.
       // tot pe el executa si .parallelStream() (- de evitat)
       // daca executi munca de IO pe un threadpool unic global per JVM poti suferi de
@@ -83,7 +83,10 @@ class X {
       // CF = "promise" === CompletableFuture
 //      Vodka vodka = futureVodka.get(); // 0 ms blocat
 
-      CompletableFuture<DillyDilly> futureDilly = futureBeer.thenCombine(futureVodka, (beer, vodka) -> new DillyDilly(beer, vodka));
+      // Tomcat nu mai e cu noi. Netty este acum sub. Un app server non-blocant.
+      // N CPU * 10 threaduri = 100
+
+      Mono<DillyDilly> futureDilly = futureBeer.zipWith(futureVodka, (beer, vodka) -> new DillyDilly(beer, vodka));
 
       log.debug("HTTP thread was blocked for {} millis ", (currentTimeMillis() - t0));
       return futureDilly;
@@ -94,18 +97,18 @@ class X {
 class Barman {
    private static final Logger log = LoggerFactory.getLogger(Barman.class);
 
-   @Timed("beer-api-call")
-   public Beer pourBeer() {
+//   @Timed("beer-api-call")
+   public Mono<Beer> pourBeer() {
       log.info("Start beer");
 //if (true) throw new IllegalStateException("Nu mai e bere");
       // 1: pretend
-      sleep(1000);
+//      sleep(1000);
       Beer beer = new Beer("blond");
 
       // 2: blocking REST call
 //      Beer beer = new RestTemplate().getForEntity("http://localhost:9999/api/beer", Beer.class).getBody();
       log.info("End beer");
-      return beer;
+      return Mono.just(beer).delayElement(Duration.ofSeconds(1));
 
       // 3: non-blocking REST call
 //      return new AsyncRestTemplate().exchange(...).completable()....;
@@ -114,11 +117,11 @@ class Barman {
       // return WebClient.create().get()...
    }
 
-   public Vodka pourVodka() {
+   public Mono<Vodka> pourVodka() {
       log.info("Start vodka");
-      sleep(200);  // imagine blocking DB call
+//      sleep(200);  // imagine blocking DB call
       log.info("End vodka");
-      return new Vodka();
+      return Mono.just(new Vodka()).delayElement(Duration.ofMillis(200));
    }
 }
 
@@ -150,7 +153,8 @@ class DillyDilly {
       this.beer = beer;
       this.vodka = vodka;
       log.info("Mixing {} with {} (takes time) ...", beer, vodka);
-      sleep(500);
+      // repo call blocant, rest Template ; orice bloca threadul
+//      sleep(500); // NU ARE VOIE SA SE INTAMPLE AICI: sunt intr-un thread in care nu am voie sa ma blochez. (nu boundedElastic)
    }
 
    public Beer getBeer() {
