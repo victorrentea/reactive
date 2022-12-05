@@ -40,13 +40,19 @@ public class ErrorsSolved extends Errors {
         return dependency.call().onErrorResume(e -> dependency.sendError(e).then(Mono.error(e)));
     }
 
-    public Mono<Void> p06_try_with_resources() throws IOException {
-      return dependency.call()
-              .flatMap(s -> Mono.<Void, Writer>using(
-                      () -> new FileWriter("out.txt"), // create resource
-                      writer -> Mono.fromRunnable(Unchecked.runnable(() -> writer.write(s))), // use
-                      Unchecked.consumer(Writer::close) // close resource
-              ))
-              ;
+    public Mono<Void> p06_usingResourceThatNeedsToBeClosed() throws IOException {
+      return Mono.<Void, Writer>using(
+
+              // create resource:
+              () -> new FileWriter("out.txt"),
+
+              // use resource:
+              writer -> dependency.downloadLargeData()
+                      .doOnNext(Unchecked.consumer(s -> writer.write(s)))
+                      .then(),
+
+              // close resource
+              Unchecked.consumer(Writer::close)
+          );
     }
 }

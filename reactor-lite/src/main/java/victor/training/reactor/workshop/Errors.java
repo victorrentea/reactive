@@ -3,6 +3,7 @@ package victor.training.reactor.workshop;
 import org.jooq.lambda.Unchecked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.FileWriter;
@@ -24,6 +25,8 @@ public class Errors {
     Mono<String> backup();
 
     Mono<Void> sendError(Throwable e);
+
+    Flux<String> downloadLargeData();
   }
 
   // HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT
@@ -74,7 +77,7 @@ public class Errors {
 
   // ==================================================================================================
 
-  // TODO Call dependency#backup() if call fails.
+  // TODO Call dependency#backup() if #call() fails.
   public Mono<String> p04_fallback() {
     try {
       return dependency.call();
@@ -90,7 +93,7 @@ public class Errors {
     try {
       return dependency.call();
     } catch (Exception e) {
-      dependency.backup().block(); // <-- do this on any exception in the future, then delete this USELESS catch
+      dependency.sendError(e).block(); // <-- do this on any exception in the future, then delete this USELESS catch
       throw e;
     }
   }
@@ -99,12 +102,12 @@ public class Errors {
 
   /**
    * === Try-With-Resources (aka cleanup) ===
-   * Close the resource (Writer) after the future completes.
+   * Close the resource (Writer) *after* the future completes.
    */
-  public Mono<Void> p06_try_with_resources() throws IOException {
+  public Mono<Void> p06_usingResourceThatNeedsToBeClosed() throws IOException {
     try (Writer writer = new FileWriter("out.txt")) {// <-- make sure you close the writer AFTER the Mono completes
-      return dependency.call()
-              .map(s -> Unchecked.runnable(() -> writer.write(s))) // Unchecked.consumer converts any exception into a runtime one
+      return dependency.downloadLargeData()
+              .doOnNext(Unchecked.consumer(s -> writer.write(s))) // Unchecked.consumer converts any exception into a runtime one
               .then();
     }
   }

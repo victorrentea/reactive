@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import victor.training.reactor.workshop.Errors.Dependency;
 import victor.training.util.CaptureSystemOutput;
@@ -20,7 +21,6 @@ import victor.training.util.SubscribedProbe;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -37,8 +37,8 @@ class ErrorsTest {
     @Mock
     Dependency dependencyMock;
     @InjectMocks
-    Errors workshop;
-//    ErrorsSolved workshop;
+//    Errors workshop;
+    ErrorsSolved workshop;
     @RegisterExtension
     SubscribedProbe subscribed = new SubscribedProbe();
 
@@ -125,13 +125,13 @@ class ErrorsTest {
 
 
     @Test
-    void p06_cleanup() throws IOException {
-        when(dependencyMock.call()).thenReturn(just("abc"));
+    void p06_usingResourceThatNeedsToBeClosed() throws IOException {
+        when(dependencyMock.downloadLargeData()).thenReturn(Flux.just("abc","def"));
 
-        workshop.p06_try_with_resources().block();
+        workshop.p06_usingResourceThatNeedsToBeClosed().block();
 
         File file = new File("out.txt");
-        assertThat(Files.readString(file.toPath())).isEqualTo("abc");
+        assertThat(Files.readString(file.toPath())).isEqualTo("abcdef");
         assertThat(file.delete()).isTrue();
     }
 
