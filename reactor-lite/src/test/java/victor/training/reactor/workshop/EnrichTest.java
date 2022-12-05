@@ -39,8 +39,8 @@ public class EnrichTest {
 
     @Test
     void p01_a_par_b() {
-        when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
-        when(dependency.b(1)).thenReturn(subscribed.once(just(b)));
+        when(dependency.a(1)).thenReturn(subscribed.once(just(a).delayElement(Duration.ofMillis(100))));
+        when(dependency.b(1)).thenReturn(subscribed.once(just(b).delayElement(Duration.ofMillis(100))));
 
         assertThat(workshop.p01_a_par_b(1).block()).isEqualTo(new AB(a, b));
     }

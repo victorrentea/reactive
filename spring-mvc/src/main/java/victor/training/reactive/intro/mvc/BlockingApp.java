@@ -102,24 +102,12 @@ class Barman {
 //   @Timed("beer-api-call")
    public Mono<Beer> pourBeer() {
       log.info("Start beer");
-//if (true) throw new IllegalStateException("Nu mai e bere");
-      // 1: pretend
-//      sleep(1000);
-//      Beer beer = new Beer("blond");
-
-      // 2: blocking REST call
-//      Beer beer = new RestTemplate().getForEntity("http://localhost:9999/api/beer", Beer.class).getBody();
+      // log mincinos !!!
       Mono<Beer> beerMono = WebClient.create().get().uri("http://localhost:9999/api/beer")
               .retrieve().bodyToMono(Beer.class);
+
       log.info("End beer");
-      return beerMono;//.delayElement(Duration.ofSeconds(1));
-
-
-      // 3: non-blocking REST call
-//      return new AsyncRestTemplate().exchange(...).completable()....;
-
-      // 4: non-blocking REST call via WebClient
-      // return WebClient.create().get()...
+      return beerMono;
    }
 
    public Mono<Vodka> pourVodka() {
