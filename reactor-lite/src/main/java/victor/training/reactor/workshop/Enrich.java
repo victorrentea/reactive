@@ -295,8 +295,7 @@ public class Enrich {
    */
   public Mono<AB> p06_a_then_bMaybe(int id) {
     return dependency.a(id)
-            .zipWhen(a -> dependency.b1(a).defaultIfEmpty(B.EMPTY),
-                    (a, b) -> new AB(a, b == B.EMPTY?null:b))
+            .flatMap(a -> dependency.b1(a).map(b-> new AB(a,b)).defaultIfEmpty(new AB(a, null)))
             .doOnNext(date -> log.info("Date:  " + date));
 
   }
