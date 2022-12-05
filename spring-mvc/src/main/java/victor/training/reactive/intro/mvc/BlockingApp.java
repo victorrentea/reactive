@@ -97,6 +97,7 @@ class X {
 class Barman {
    private static final Logger log = LoggerFactory.getLogger(Barman.class);
 
+   @Timed("beer-api-call")
    public Beer pourBeer() {
       log.info("Start beer");
 //if (true) throw new IllegalStateException("Nu mai e bere");
