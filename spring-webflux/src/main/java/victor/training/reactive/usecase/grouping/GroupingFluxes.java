@@ -6,6 +6,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
+import java.time.Duration;
 import java.util.List;
 
 @Slf4j
@@ -43,19 +44,31 @@ public class GroupingFluxes {
 
 
       return messageStream
-              .flatMap(m -> {
-                 switch (MessageType.forMessage(m)){
-                    case TYPE1_NEGATIVE:
-                       System.out.println("ceva in memorie" + m);
-                       return Mono.empty();
-                    case TYPE2_ODD:
-                       return Mono.zip(apis.apiA(m), apis.apiB(m));
-                    case TYPE3_EVEN:
-                       return apis.apiC(List.of(m));
+              .groupBy(m -> MessageType.forMessage(m))
+              .flatMap(gf -> {
+                 switch (gf.key()) {
+                    case TYPE1_NEGATIVE: return gf.doOnNext( m-> System.out.println("ceva in memorie" + m));
+                    case TYPE2_ODD: return gf.flatMap( m-> Mono.zip(apis.apiA(m), apis.apiB(m)));
+                    case TYPE3_EVEN: return gf
+                            .bufferTimeout(3, Duration.ofMillis(500))
+                            .flatMap(page->apis.apiC(page));
                     default:
-                       return Mono.error(new IllegalStateException("Unexpected value: " + MessageType.forMessage(m)));
+                       throw new IllegalStateException("Unexpected value: " + gf.key());
                  }
               })
+//              .flatMap(m -> {
+//                 switch (MessageType.forMessage(m)){
+//                    case TYPE1_NEGATIVE:
+//                       System.out.println("ceva in memorie" + m);
+//                       return Mono.empty();
+//                    case TYPE2_ODD:
+//                       return Mono.zip(apis.apiA(m), apis.apiB(m));
+//                    case TYPE3_EVEN:
+//                       return apis.apiC(List.of(m));
+//                    default:
+//                       return Mono.error(new IllegalStateException("Unexpected value: " + MessageType.forMessage(m)));
+//                 }
+//              })
           .then()
           ;
    }
