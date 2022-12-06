@@ -6,6 +6,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -35,8 +36,8 @@ public class GroupingFluxes {
       //Depending on the message type, run one of the following flows:
       //TYPE1: Do nothing (ignore the message), sau niste treaba in memorie (put ntr-un map)
       //TYPE2: Call apiA(message) and apiB(message) in parallel
+      //TYPE3: Call apiC(List.of(message))
       // -- done
-      //TYPE3: Call apiC(List.of(message)
       //TYPE3(HARD): Call apiC(messageList), buffering together requests such that
       //HARD: send max 3 IDs, but an ID waits max 500 millis
 
@@ -49,8 +50,10 @@ public class GroupingFluxes {
                        return Mono.empty();
                     case TYPE2_ODD:
                        return Mono.zip(apis.apiA(m), apis.apiB(m));
+                    case TYPE3_EVEN:
+                       return apis.apiC(List.of(m));
                     default:
-                       throw new IllegalStateException("Unexpected value: " + MessageType.forMessage(m));
+                       return Mono.error(new IllegalStateException("Unexpected value: " + MessageType.forMessage(m)));
                  }
               })
           .then()
