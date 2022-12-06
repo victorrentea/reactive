@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.PostConstruct;
+
 @Slf4j
 @RequiredArgsConstructor
 public class GroupingFluxes {
@@ -18,16 +20,36 @@ public class GroupingFluxes {
 
    private final Apis apis;
 
-   public Mono<Void> processMessageStream(Flux<Integer> messageStream) {
-      //Depending on the message type, run one of the following flows:
-      //TYPE1: Do nothing (ignore the message)
-      //TYPE2: Call apiA(message) and apiB(message) in parallel
-      //TYPE3: Call apiC(List.of(message)
+//   @PostConstruct
+//   public void atStartup() {
+//      processMessageStream(mq).subscribe();
+//   }
 
+
+   public Mono<Void> processMessageStream(Flux<Integer> messageStream) {
+      // mesaje de diferite tipuri venite de pe websocket
+
+//      Integer message;
+//      MessageType type = MessageType.forMessage(message);
+
+      //Depending on the message type, run one of the following flows:
+      //TYPE1: Do nothing (ignore the message), sau niste treaba in memorie (put ntr-un map)
+      // -- done
+
+      //TYPE2: Call apiA(message) and apiB(message) in parallel
+
+
+      //TYPE3: Call apiC(List.of(message)
       //TYPE3(HARD): Call apiC(messageList), buffering together requests such that
       //HARD: send max 3 IDs, but an ID waits max 500 millis
 
+
       return messageStream
+              .filter(m -> MessageType.forMessage(m) == MessageType.TYPE1_NEGATIVE)
+              .doOnNext(m-> System.out.println("ceva in memorie" + m))
+
+
+
           .then()
           ;
    }
