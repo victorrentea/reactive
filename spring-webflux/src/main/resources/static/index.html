@@ -1,0 +1,142 @@
+<html>
+<head>
+    <title>Chat WebSocket</title>
+
+    <script src="resources/js/sockjs-0.3.4.js"></script>
+    <script src="resources/js/stomp.js"></script>
+
+    <script type="text/javascript">
+
+        let stompClient = null;
+        let clientWebSocket = null;
+
+        function setConnected(connected) {
+            document.getElementById('from').disabled = connected;
+            document.getElementById('connect').disabled = connected;
+            document.getElementById('disconnect').disabled = !connected;
+            document.getElementById('conversationDiv').style.visibility = connected ? 'visible' : 'hidden';
+            if (connected) document.getElementById('text').focus();
+            document.getElementById('response').innerHTML = '';
+        }
+
+        function connect() {
+            let from = document.getElementById('from').value;
+            if (from === '') {
+                alert("Please enter a nick name");
+                return
+            }
+
+            clientWebSocket = new WebSocket("ws://localhost:8080/chat")
+
+            clientWebSocket.onopen = function() {
+                setConnected(true);
+                console.log("clientWebSocket.onopen", clientWebSocket);
+                console.log("clientWebSocket.readyState", "websocketstatus");
+                // clientWebSocket.send("event-me-from-browser");
+            }
+            clientWebSocket.onclose = function(error) {
+                console.log("clientWebSocket.onclose", clientWebSocket, error);
+                events("Closing connection");
+                setConnected(false);
+            }
+            clientWebSocket.onerror = function(error) {
+                console.log("clientWebSocket.onerror", clientWebSocket, error);
+                events("An error occured");
+                setConnected(false);
+            }
+            clientWebSocket.onmessage = function(message) {
+                // console.log("clientWebSocket.onmessage", clientWebSocket, error);
+                // events(error.data);
+                showMessageOutput(JSON.parse(message.data))
+            }
+            function events(responseEvent) {
+                document.querySelector(".events").innerHTML += responseEvent + "<br>";
+            }
+
+            // const socket = new SockJS('/chat');
+            // stompClient = Stomp.over(socket);
+            // stompClient.connect({"user":from}, function (frame) {
+            //     setConnected(true); // ui
+            //     stompClient.subscribe('/topic/chat', function (messageOutput) {
+            //         showMessageOutput(JSON.parse(messageOutput.body));
+            //     });
+            //     //stompClient.send("/app/chat", {}, JSON.stringify({'from': "sys", 'text': "Welcome " +from}));
+            //
+            // }, function() {
+            //     console.log("Lost connection!");
+            //     setConnected(false);
+            // });
+        }
+
+        function disconnect() {
+            if (stompClient != null) {
+                stompClient.disconnect();
+            }
+
+            setConnected(false);
+            console.log("Disconnected");
+        }
+
+        function sendMessage() {
+            const from = document.getElementById('from').value;
+            const text = document.getElementById('text').value;
+            if (text === '') {
+                alert("please type a message");
+                return
+            }
+            clientWebSocket.send(JSON.stringify({'from': from, 'text': text}));
+            // stompClient.send("/app/chat", {}, JSON.stringify({'from': from, 'text': text}));
+        }
+
+        function showMessageOutput(messageOutput) {
+            const response = document.getElementById('response');
+            const p = document.createElement('p');
+            p.style.wordWrap = 'break-word';
+            p.appendChild(document.createTextNode(messageOutput.from + ": " + messageOutput.text + " (" + messageOutput.time + ")"));
+            response.appendChild(p);
+        }
+
+    </script>
+
+</head>
+
+<body onload="disconnect()">
+
+<div>
+    <h2> Chat app</h2>
+
+    <div>(see also the <a href="task.html">Task notification app</a>, using Spring Security)<br><br></div>
+    <div>
+        <label for="from">Connect as: </label>
+        <input type="text" autofocus id="from" placeholder="Choose a nickname" value="Nick"/>
+    </div>
+    <br/>
+    <div>
+        <button id="connect" onclick="connect();">Connect</button>
+        <button id="disconnect" disabled="disabled" onclick="disconnect();">Disconnect</button>
+    </div>
+    <br/>
+    <div id="conversationDiv">
+        <input type="text" id="text" placeholder="Write a message..."/>
+        <button id="sendMessage" onclick="sendMessage();">Send</button>
+        <p id="response"></p>
+    </div>
+</div>
+<script>
+
+    function onEnterClickButton(inputTextId, buttonId) {
+        document.getElementById(inputTextId).addEventListener("keypress", function (event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                document.getElementById(buttonId).click();
+            }
+        });
+    }
+    onEnterClickButton("from", "connect");
+    onEnterClickButton("text", "sendMessage");
+</script>
+</script>
+
+<div class="events"></div>
+</body>
+</html>

@@ -23,6 +23,7 @@
         <module>reactor-lite</module>
         <module>spring-mvc</module>
         <module>spring-webflux</module>
+        <module>wiremock</module>
     </modules>
 
     <dependencies>
