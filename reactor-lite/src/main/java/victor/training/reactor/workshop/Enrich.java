@@ -4,16 +4,19 @@ import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.With;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
+import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
-import reactor.core.publisher.Sinks.Many;
 import reactor.function.TupleUtils;
 import reactor.util.function.Tuple2;
-import reactor.util.function.Tuple3;
+import reactor.util.function.Tuples;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
+
+import static java.util.Optional.ofNullable;
 
 @Slf4j
 public class Enrich {
@@ -105,37 +108,37 @@ public class Enrich {
     //                .map(tuple2 -> new AB(tuple2.getT1(), tuple2.getT2()))
     //                ;
 
-//    return Mono.zip(dependency.a(id)
-//                            .doOnSubscribe(s -> log.info("ACUM LANSEZ a()"))
-//                            // SURSA la >50% din bugurile din reactive chains este ca
-//                            // subscrierea se intampla sau niciodata sau repetat
-//
-//            // FAPTUL ca tu chemi o functie care iti da un Mono/Flux,
-//            // NU INSEAMNA ca a si inceput executia pe retea a acelui call.
-//            // nici o crerere nu se trimite pe retea pana cand cineva nu face subscribe()!!!
-//
-//            // PRIN CONTRAST, CompletableFuture.supplyAsync(() -> {} ), odata ce a fost creat, a si inceput executia
-//                            .log("a"),
-//                    dependency.b(id)
-//                            .log("b")
-//                            .doOnSubscribe(s -> log.info("ACUM LANSEZ b()")),
-//                    (a, b) -> new AB(a, b))
-//            .log("ab")
-//            .doOnSubscribe(s -> log.info("ACUM LANSEZ ab()"));
+    //    return Mono.zip(dependency.a(id)
+    //                            .doOnSubscribe(s -> log.info("ACUM LANSEZ a()"))
+    //                            // SURSA la >50% din bugurile din reactive chains este ca
+    //                            // subscrierea se intampla sau niciodata sau repetat
+    //
+    //            // FAPTUL ca tu chemi o functie care iti da un Mono/Flux,
+    //            // NU INSEAMNA ca a si inceput executia pe retea a acelui call.
+    //            // nici o crerere nu se trimite pe retea pana cand cineva nu face subscribe()!!!
+    //
+    //            // PRIN CONTRAST, CompletableFuture.supplyAsync(() -> {} ), odata ce a fost creat, a si inceput executia
+    //                            .log("a"),
+    //                    dependency.b(id)
+    //                            .log("b")
+    //                            .doOnSubscribe(s -> log.info("ACUM LANSEZ b()")),
+    //                    (a, b) -> new AB(a, b))
+    //            .log("ab")
+    //            .doOnSubscribe(s -> log.info("ACUM LANSEZ ab()"));
 
-//       Mono.zip(dependency.a(id), dependency.b(id), (a, b) -> new AB(a, b));
+    //       Mono.zip(dependency.a(id), dependency.b(id), (a, b) -> new AB(a, b));
     Mono<B> mono = dependency.b(id);
     return dependency.a(id)
-              //.doOnSubscribe(s->log.info("A"))
-              .zipWith(mono // zipWIth se va subscrie la instanta de Mono primita parametru
+            //.doOnSubscribe(s->log.info("A"))
+            .zipWith(mono // zipWIth se va subscrie la instanta de Mono primita parametru
 
-                              //.doOnSubscribe(s->log.info("B"))
-                      ,
-                      (a, b) -> new AB(a, b))
-              // orice operator este
-              // si Subscriber(in sus,catre cine are datele)
-              // si Publisher (in jos, cine VREA datele)
-              .doOnSubscribe(s->log.info("AB"));
+                    //.doOnSubscribe(s->log.info("B"))
+                    ,
+                    (a, b) -> new AB(a, b))
+            // orice operator este
+            // si Subscriber(in sus,catre cine are datele)
+            // si Publisher (in jos, cine VREA datele)
+            .doOnSubscribe(s -> log.info("AB"));
   }
 
 
@@ -147,21 +150,21 @@ public class Enrich {
   // asa NU: Mono<Tuple3<Long, String, List<Tuple2<String,Integer>>>>
   public Mono<ABC> p02_a_b_c(int id) {
     // equivalent blocking⛔️ code:
-//    A a = dependency.a(id).block();
-//    B b = dependency.b(id).block();
-//    C c = dependency.c(id).block();
-//    return Mono.just(new ABC(a, b, c));
+    //    A a = dependency.a(id).block();
+    //    B b = dependency.b(id).block();
+    //    C c = dependency.c(id).block();
+    //    return Mono.just(new ABC(a, b, c));
 
     // Hint: use Mono.zip (static method)
     // Hint: avoid tuple -> {} by using TupleUtils.function((a,b,c) -> {})
 
     // Sfat din batrani: nu da afara din casa (functie) Tuple-uri ca sperii clientii
     return Mono.zip(
-            dependency.a(id),
-            dependency.b(id),
-            dependency.c(id))
-//            .map(t3 -> new ABC(t3.getT1(), t3.getT2(), t3.getT3())) // 🤢 scarBOSS
-//            .map(TupleUtils.function((a,b,c) -> new ABC(a,b,c)))
+                    dependency.a(id),
+                    dependency.b(id),
+                    dependency.c(id))
+            //            .map(t3 -> new ABC(t3.getT1(), t3.getT2(), t3.getT3())) // 🤢 scarBOSS
+            //            .map(TupleUtils.function((a,b,c) -> new ABC(a,b,c)))
             .map(TupleUtils.function(ABC::new))
             ;
   }
@@ -174,15 +177,15 @@ public class Enrich {
    */
   public Mono<AB> p03_a_then_b1(int id) {
     // equivalent blocking⛔️ code:
-//     A a = dependency.a(id).block();
-//     B b = dependency.b1(a).block();
-//     return Mono.just(new AB(a, b));
+    //     A a = dependency.a(id).block();
+    //     B b = dependency.b1(a).block();
+    //     return Mono.just(new AB(a, b));
 
     // Hint: Mono#flatMap
-     return dependency.a(id)
-//            .flatMap(a -> dependency.b1(a) .map(b -> new AB(a,b))  )
-//             .zipWhen(dependency::b1, AB::new) // rupe-i zice IDEA
-             .zipWhen(a -> dependency.b1(a), (a,b) -> new AB(a,b)) // hai ca am trait, un op dedicat pt un flux uzual
+    return dependency.a(id)
+            //            .flatMap(a -> dependency.b1(a) .map(b -> new AB(a,b))  )
+            //             .zipWhen(dependency::b1, AB::new) // rupe-i zice IDEA
+            .zipWhen(a -> dependency.b1(a), (a, b) -> new AB(a, b)) // hai ca am trait, un op dedicat pt un flux uzual
             ;
   }
 
@@ -194,13 +197,13 @@ public class Enrich {
    */
   public Mono<ABC> p04_a_then_b1_c1(int id) {
     // Hint mono.flatMap(->mono.zipWith(mono, ->))
-//    return dependency.a(id)
-//            .zipWhen(a -> dependency.b1(a).zipWith(dependency.c1(a)))
-//            .map(t -> new ABC(t.getT1(), t.getT2().getT1(), t.getT2().getT2()));
+    //    return dependency.a(id)
+    //            .zipWhen(a -> dependency.b1(a).zipWith(dependency.c1(a)))
+    //            .map(t -> new ABC(t.getT1(), t.getT2().getT1(), t.getT2().getT2()));
 
-     return dependency.a(id)
+    return dependency.a(id)
             .flatMap(a -> dependency.b1(a).zipWith(dependency.c1(a),
-                            (b,c)-> new ABC(a,b,c)) );
+                    (b, c) -> new ABC(a, b, c)));
   }
 
   // ==================================================================================================
@@ -213,16 +216,16 @@ public class Enrich {
    */
   public Mono<ABC> p04_a_then_b1_c1_cache(int id) {
     // codul dinainte de curs:
-//    A a = await dependency.a(id);
-//    B b = await dependency.b1(a);
-//    C c = await dependency.c1(a); // poate in java 24 2-3 ani o sa vedem?
+    //    A a = await dependency.a(id);
+    //    B b = await dependency.b1(a);
+    //    C c = await dependency.c1(a); // poate in java 24 2-3 ani o sa vedem?
 
     Mono<A> ma = dependency.a(id).cache(); // PERICULOS SOC: acest cache NU este INTRE requesturi,
     // acest cache traieste cat traieste in heap instanta de mai sus.
     // there are only 2 things hard in programming: 1) cache invalidation  2) naiming things
     Mono<B> mb = ma.flatMap(dependency::b1);
     Mono<C> mc = ma.flatMap(dependency::c1);
-    return Mono.zip(ma,mb,mc)
+    return Mono.zip(ma, mb, mc)
             .map(TupleUtils.function(ABC::new));
     // uite cum repeti apeluri de retea ca pr*stu cu WebFlux. :)
     // - cum poti scrie TESTE UNITARE sa acoperi bugul asta ?
@@ -233,24 +236,23 @@ public class Enrich {
     // problema= tii in Heap date si DUPA ce le-ai emis mai jos = DEGEABA pt prea mult timp
 
     // - ce coding practice poti adopta sa NU patesti asa ceva vreodata?
-      // sa nu faci vreodata variabile locale de tip Mono/Flux, ca te arzi.
-      // => un chaing enorm de apeluri de functii = "reactive chain"
-      // (horror): best practice: o functie ce intoarce Mono incepe pe 1 linie cu return.
+    // sa nu faci vreodata variabile locale de tip Mono/Flux, ca te arzi.
+    // => un chaing enorm de apeluri de functii = "reactive chain"
+    // (horror): best practice: o functie ce intoarce Mono incepe pe 1 linie cu return.
   }
 
 
   // ==================================================================================================
-//    private static final Many<Integer> objectMany = Sinks.many().multicast()
+  //    private static final Many<Integer> objectMany = Sinks.many().multicast()
   //    .onBackpressureBuffer();
 
-//    Flux<Integer> objectFlux = objectMany.asFlux();
-//    Flux<Integer> objectFlux = objectMany.asFlux();
-//    Flux<Integer> objectFlux = objectMany.asFlux();
-//    Flux<Integer> objectFlux = objectMany.asFlux();
-//    Flux<Integer> objectFlux = objectMany.asFlux();
-//    // din alta parte
-//    objectMany.tryEmitNext(9);
-
+  //    Flux<Integer> objectFlux = objectMany.asFlux();
+  //    Flux<Integer> objectFlux = objectMany.asFlux();
+  //    Flux<Integer> objectFlux = objectMany.asFlux();
+  //    Flux<Integer> objectFlux = objectMany.asFlux();
+  //    Flux<Integer> objectFlux = objectMany.asFlux();
+  //    // din alta parte
+  //    objectMany.tryEmitNext(9);
 
 
   /**
@@ -258,18 +260,18 @@ public class Enrich {
    */
   public Mono<ABC> p05_a_then_b1_then_c2(int id) {
     // equivalent blocking⛔️ code:
-//    Mono<A> a = dependency.a(id);
-//    B b = dependency.b1(a).block();
-//    C c = dependency.c2(a, b).block();
-//    return Mono.just(new ABC(a, b, c));
+    //    Mono<A> a = dependency.a(id);
+    //    B b = dependency.b1(a).block();
+    //    C c = dependency.c2(a, b).block();
+    //    return Mono.just(new ABC(a, b, c));
 
     // TODO Solution #2 (geek): nested flatMap
-//    return dependency.a(id).flatMap(a -> dependency.b1(a).flatMap(b -> dependency.c2(a, b).map(c -> new ABC(a, b, c))));
+    //    return dependency.a(id).flatMap(a -> dependency.b1(a).flatMap(b -> dependency.c2(a, b).map(c -> new ABC(a, b, c))));
 
     // TODO Solution #1: accumulating data structures (chained flatMap)
-//    return dependency.a(id)
-//            .flatMap(a -> dependency.b1(a).map(b -> new AB(a, b)))
-//            .flatMap(ab -> dependency.c2(ab.a, ab.b).map(c -> new ABC(ab.a, ab.b, c)));
+    //    return dependency.a(id)
+    //            .flatMap(a -> dependency.b1(a).map(b -> new AB(a, b)))
+    //            .flatMap(ab -> dependency.c2(ab.a, ab.b).map(c -> new ABC(ab.a, ab.b, c)));
 
     // TODO Solution #1⭐️: accumulating data structures (chained zipWhen)
     return dependency.a(id)
@@ -279,7 +281,7 @@ public class Enrich {
 
 
     // TODO General purpose solution:
-//    in loc de tupleuri, propagi de sus pana jos aceeasi structura de date initial cu nulluri in ea, in care tot pui ce aduci
+    //    in loc de tupleuri, propagi de sus pana jos aceeasi structura de date initial cu nulluri in ea, in care tot pui ce aduci
 
 
     // TODO Solution #3 (risky): cached Mono<>
@@ -295,17 +297,17 @@ public class Enrich {
    * Hint: you might need an operator containing "empty" in its name
    */
   public Mono<AB> p06_a_then_bMaybe(int id) {
-//    return dependency.a(id)
-//            .flatMap(a -> dependency.b1(a).map(b-> new AB(a,b))
-//                    .defaultIfEmpty(new AB(a, null)))
-//            .doOnNext(date -> log.info("Date:  " + date));
+    //    return dependency.a(id)
+    //            .flatMap(a -> dependency.b1(a).map(b-> new AB(a,b))
+    //                    .defaultIfEmpty(new AB(a, null)))
+    //            .doOnNext(date -> log.info("Date:  " + date));
 
     return dependency.a(id)
             .zipWhen(a -> getbMono(a), (a, ob) -> new AB(a, ob.orElse(null)));
   }
 
   private Mono<Optional<B>> getbMono(A a) {
-    return dependency.b1(a).map(b->Optional.of(b)).defaultIfEmpty(Optional.empty());
+    return dependency.b1(a).map(b -> Optional.of(b)).defaultIfEmpty(Optional.empty());
   }
   // ==================================================================================================
 
@@ -319,7 +321,7 @@ public class Enrich {
 
     return dependency.a(id)
             .zipWith(dependency.b(id).map(Optional::of).defaultIfEmpty(Optional.empty()),
-            (a, bo) -> new AB(a, bo.orElse(null)));
+                    (a, bo) -> new AB(a, bo.orElse(null)));
 
   }
 
@@ -331,13 +333,13 @@ public class Enrich {
    */
   public Mono<AB> p08_a_try_b(int id) {
     // equivalent blocking⛔️ code:
-//    A a = dependency.a(id).block();
-//    B b = null;
-//    try {
-//      b = dependency.b(id).block();
-//    } catch (Exception e) {
-//    }
-//    return Mono.just(new AB(a, b));
+    //    A a = dependency.a(id).block();
+    //    B b = null;
+    //    try {
+    //      b = dependency.b(id).block();
+    //    } catch (Exception e) {
+    //    }
+    //    return Mono.just(new AB(a, b));
 
     return dependency.a(id)
             .zipWith(dependency.b(id)
@@ -370,11 +372,11 @@ public class Enrich {
 
   public Mono<P10UseCaseContext> p10_context(int id) {
     // serial code
-//    return Mono.just(new P10UseCaseContext(id))
-//            .zipWith(dependency.d(id), (context, d) -> context.withD(d))
-//            .zipWith(dependency.a(id), (context, a) -> context.withA(a))
-//            .zipWhen(context -> dependency.b1(context.a), (context, b) -> context.withB(b))
-//            .zipWhen(context -> dependency.c2(context.a, context.b), (context, c) -> context.withC(c));
+    //    return Mono.just(new P10UseCaseContext(id))
+    //            .zipWith(dependency.d(id), (context, d) -> context.withD(d))
+    //            .zipWith(dependency.a(id), (context, a) -> context.withA(a))
+    //            .zipWhen(context -> dependency.b1(context.a), (context, b) -> context.withB(b))
+    //            .zipWhen(context -> dependency.c2(context.a, context.b), (context, c) -> context.withC(c));
 
     return dependency.a(id)
             .flatMap(a -> dependency.b1(a).flatMap(b -> dependency.c2(a, b)
@@ -382,18 +384,61 @@ public class Enrich {
             .zipWith(dependency.d(id), P10UseCaseContext::withD);
 
 
-//    return Mono.just(new P10UseCaseContext(id))
-//            .flatMap(dependency.a(id)
-//                .zipWhen(a -> dependency.b1(a))
-//                .zipWhen(tab -> dependency.c2(tab.getT1(), tab.getT2()), (tab,c) ->)
-//
-//                    , P10UseCaseContext::withA)
-//            .zipWith(dependency.d(id), P10UseCaseContext::withD)
-
+    //    return Mono.just(new P10UseCaseContext(id))
+    //            .flatMap(dependency.a(id)
+    //                .zipWhen(a -> dependency.b1(a))
+    //                .zipWhen(tab -> dependency.c2(tab.getT1(), tab.getT2()), (tab,c) ->)
+    //
+    //                    , P10UseCaseContext::withA)
+    //            .zipWith(dependency.d(id), P10UseCaseContext::withD)
 
 
     // TODO non-blocking and in parallel as many as possible
-//    return Mono.just(context);
+    //    return Mono.just(context);
   }
+
+
+//  WebClient webClient;
+//  private  Map<String, Consumer<EvoBaseGameEventDTO>> subscriptions;
+//  private Disposable listener;
+//
+//
+//  public void start() {
+//    listener = webClient.get()
+//            .retrieve()
+//            .bodyToFlux(String.class)
+//            .flatMap(this::deserializeDTO)
+//            .flatMap(dto -> Mono.justOrEmpty(subscriptions.get(dto.getTableId())).map(consumer -> Tuples.of(dto, consumer)))
+//            .doOnNext(t -> logEventDelay(t.getT1()))
+//            .doOnNext(tuple -> pushEventToConsumer(tuple))
+//            .doOnComplete(this::handleListenerStopped)
+//            .doOnError(e -> log.error("An error occurred while receiving events from Evolution", e))
+//            .doOnError(e -> this.handleListenerStopped())
+//            .doOnSubscribe(s -> log.info("Listening to the Evolution event streaming API"))
+//            .subscribe();
+//  }
+//
+//  private static void pushEventToConsumer(Tuple2<EvoBaseGameEventDTO, Consumer<EvoBaseGameEventDTO>> tuple) {
+//    try {
+//      tuple.getT2().accept(tuple.getT1());
+//    } catch (Exception e) {
+//      log.error("", e);
+//    }
+//  }
+//
+//
+//  private Mono<EvoBaseGameEventDTO> deserializeDTO(String json) {
+//    if (StringUtils.isEmpty(json)) {
+//      return Mono.empty();
+//    }
+//    EvoBaseGameEventDTO gameEventDTO = null;
+//    try {
+//      gameEventDTO = JsonUtils.fromJson(json, EvoGameEventOuterDTO.class).getEvent();
+//    } catch (Exception e) {
+//      log.error("Could not deserialize JSON: {}", json, e);
+//    }
+//    return Mono.justOrEmpty(gameEventDTO);
+//  }
+
 
 }

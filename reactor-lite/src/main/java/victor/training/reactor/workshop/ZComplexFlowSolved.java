@@ -26,7 +26,7 @@ public class ZComplexFlowSolved extends ZComplexFlow {
 //            .flatMap(context -> dependency.b(context.getA()).map(context::withB))
 //            .flatMap(context -> dependency.c(context.getA()).map(context::withC))
 
-            .map(context -> context.withA1(logic(context.getA(), context.getB(), context.getC(), context.getD())))
+//            .map(context -> context.withA1(logic(context.getA(), context.getB(), context.getC(), context.getD())))
 
             .delayUntil(context -> dependency.saveA(context.getA1()))
 

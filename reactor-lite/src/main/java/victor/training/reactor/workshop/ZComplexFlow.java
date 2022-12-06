@@ -3,10 +3,13 @@ package victor.training.reactor.workshop;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.With;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.test.annotation.Timed;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.ExecutionException;
 
+@Slf4j
 public class ZComplexFlow {
   @Value static class A {String value;}
   @Value static class B {String value;}
@@ -29,6 +32,7 @@ public class ZComplexFlow {
     Mono<A> a(int id);
     Mono<B> b(A a);
     Mono<C> c(A a);
+//    @Timed()
     Mono<D> d(int id);
 
     Mono<A> saveA(A a);
@@ -56,25 +60,31 @@ public class ZComplexFlow {
    * Play: redesign to propagate an Immutable Context (pattern) around
    */
   public Mono<Void> p06_complexFlow(int id) throws ExecutionException, InterruptedException {
+    return Mono.zip(dependency.a(id), dependency.d(id), (a, d) -> new MyContext().withA(a).withD(d))
+            .flatMap(context -> dependency.b(context.a)
+                    .zipWith(dependency.c(context.a), (b, c) -> context.withB(b).withC(c)))
+            .map(context -> logic(context))
+            .delayUntil(context -> dependency.saveA(context.a1))
+            .doOnNext(context -> dependency.auditA(context.getA1(), context.a).doOnError(e -> log.error("Valeu " + e)).subscribe())
+            .then();
+
+
     // equivalent blocking⛔️ code:
     // 1. data fetching
-    A a0 = dependency.a(id).block();
-    B b = dependency.b(a0).block();
-    C c = dependency.c(a0).block();
-    D d = dependency.d(id).block();
 
     // 2. logic
-    A a1 = logic(a0, b, c, d);
-
-    // 3. save & side effects
-    dependency.saveA(a1).block();
-    dependency.auditA(a1, a0); // <- don't wait for this to complete
-    return Mono.just(null);
+//    A a1 = logic(a0, b, c, d);
+//
+//    // 3. save & side effects
+//    dependency.saveA(a1).block();
+//    dependency.auditA(a1, a0); // <- don't wait for this to complete
+//    return Mono.just(null);
   }
 
-  public A logic(A a, B b, C c, D d) {
+  public MyContext logic(MyContext context) {
+
     // Imagine Dragons (logic)
-    A a1 = new A(a.value + b.value.toUpperCase() + c.value + d.value);
-    return a1;
+    A a1 = new A(context.a.value + context.b.value.toUpperCase() + context.c.value + context.d.value);
+    return context.withA1(a1);
   }
 }
