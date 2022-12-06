@@ -54,8 +54,8 @@ public class SideEffectsTest {
   @Test
   void p03_saveSendAuditReturn() {
     when(dependency.save(a0)).thenReturn(subscribed.once(Mono.just(a)));
-    when(dependency.sendMessage(a)).thenReturn(subscribed.once(Mono.empty()));
-    when(dependency.audit(a)).thenReturn(subscribed.once(Mono.empty()));
+    when(dependency.sendMessage(a)).thenReturn(subscribed.once(Mono.delay(ofMillis(10)).then()));
+    when(dependency.audit(a)).thenReturn(subscribed.once(Mono.delay(ofMillis(10)).then()));
 
     assertThat(
             // acest runsNonBlocking

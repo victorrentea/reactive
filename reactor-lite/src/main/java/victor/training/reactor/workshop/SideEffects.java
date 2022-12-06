@@ -69,9 +69,11 @@ public class SideEffects {
 //    return Mono.just(a); -javaagent:blockhound.jar pe pre-prod in care mirroruiau requesturile din prod sa vanezi blochezi
     return dependency.save(a0)
             .delayUntil(a ->
-
-                    dependency.sendMessage(a).thenReturn("toAvoidCancellingTheOther")
-                    .zipWith(dependency.audit(a).thenReturn("toAvoidCancellingTheOther")));
+                    Mono.zip(
+                          dependency.sendMessage(a),
+                          dependency.audit(a)
+                    )
+                  );
   }
 
   // ==================================================================================================
