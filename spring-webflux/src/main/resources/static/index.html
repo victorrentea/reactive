@@ -7,8 +7,7 @@
 
     <script type="text/javascript">
 
-        let stompClient = null;
-        let clientWebSocket = null;
+        let webSocket = null;
 
         function setConnected(connected) {
             document.getElementById('from').disabled = connected;
@@ -26,51 +25,37 @@
                 return
             }
 
-            clientWebSocket = new WebSocket("ws://localhost:8080/chat")
+            webSocket = new WebSocket("ws://localhost:8080/chat")
 
-            clientWebSocket.onopen = function() {
+            webSocket.onopen = function() {
                 setConnected(true);
-                console.log("clientWebSocket.onopen", clientWebSocket);
+                console.log("clientWebSocket.onopen", webSocket);
                 console.log("clientWebSocket.readyState", "websocketstatus");
-                // clientWebSocket.send("event-me-from-browser");
+                // webSocket.send("event-me-from-browser");
             }
-            clientWebSocket.onclose = function(error) {
-                console.log("clientWebSocket.onclose", clientWebSocket, error);
+            webSocket.onclose = function(error) {
+                console.log("clientWebSocket.onclose", webSocket, error);
                 events("Closing connection");
                 setConnected(false);
             }
-            clientWebSocket.onerror = function(error) {
-                console.log("clientWebSocket.onerror", clientWebSocket, error);
+            webSocket.onerror = function(error) {
+                console.log("clientWebSocket.onerror", webSocket, error);
                 events("An error occured");
                 setConnected(false);
             }
-            clientWebSocket.onmessage = function(message) {
-                // console.log("clientWebSocket.onmessage", clientWebSocket, error);
+            webSocket.onmessage = function(message) {
+                // console.log("webSocket.onmessage", webSocket, error);
                 // events(error.data);
                 showMessageOutput(JSON.parse(message.data))
             }
             function events(responseEvent) {
                 document.querySelector(".events").innerHTML += responseEvent + "<br>";
             }
-
-            // const socket = new SockJS('/chat');
-            // stompClient = Stomp.over(socket);
-            // stompClient.connect({"user":from}, function (frame) {
-            //     setConnected(true); // ui
-            //     stompClient.subscribe('/topic/chat', function (messageOutput) {
-            //         showMessageOutput(JSON.parse(messageOutput.body));
-            //     });
-            //     //stompClient.send("/app/chat", {}, JSON.stringify({'from': "sys", 'text': "Welcome " +from}));
-            //
-            // }, function() {
-            //     console.log("Lost connection!");
-            //     setConnected(false);
-            // });
         }
 
         function disconnect() {
-            if (stompClient != null) {
-                stompClient.disconnect();
+            if (webSocket != null) {
+                webSocket.close();
             }
 
             setConnected(false);
@@ -84,8 +69,7 @@
                 alert("please type a message");
                 return
             }
-            clientWebSocket.send(JSON.stringify({'from': from, 'text': text}));
-            // stompClient.send("/app/chat", {}, JSON.stringify({'from': from, 'text': text}));
+            webSocket.send(JSON.stringify({'from': from, 'text': text}));
         }
 
         function showMessageOutput(messageOutput) {
