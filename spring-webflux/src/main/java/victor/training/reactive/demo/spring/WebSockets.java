@@ -41,7 +41,12 @@ public class WebSockets implements WebSocketHandler {
                     // daca mesajul contine vreun @xyz, atunci tre livrat la un user doar daca user din ses = 'xyz'
                     .filter(m -> filterOutPrivateMessagesNotForMe(m, (String) webSocketSession.getAttributes().get("user")))
                     .map(Unchecked.function(jackson::writeValueAsString))
-                    .map(webSocketSession::textMessage);
+                    .map(webSocketSession::textMessage)
+                    .onErrorContinue(Exception.class, (e,o) -> {
+                      log.warn("Tocmai am inghitit o " +
+                               "exceptie aparute ORIUNDE deasupra in chain, lasand chainul sa emita mai departe" +
+                               e + " la procesarea measajului  " + o);
+                    });
 
     Flux<ChatMessage> inboundFlux = webSocketSession.receive()
             .map(WebSocketMessage::getPayloadAsText)
@@ -64,6 +69,7 @@ public class WebSockets implements WebSocketHandler {
   }
 
   private boolean filterOutPrivateMessagesNotForMe(ChatMessage m, String user) {
+    if (Math.random() > .5)throw new IllegalArgumentException();
     Optional<String> tokenAt = Stream.of(m.text.split("\\s+"))
             .filter(token -> token.contains("@"))
             .findFirst();

@@ -56,6 +56,8 @@ public class GroupingFluxes {
                        throw new IllegalStateException("Unexpected value: " + gf.key());
                  }
               })
+
+              .doOnError(e -> log.error("DACA VEZI ASTA, fluxul tau infinit A MURIT (a dat CANCEL mai sus): " +e))
 //              .flatMap(m -> {
 //                 switch (MessageType.forMessage(m)){
 //                    case TYPE1_NEGATIVE:
