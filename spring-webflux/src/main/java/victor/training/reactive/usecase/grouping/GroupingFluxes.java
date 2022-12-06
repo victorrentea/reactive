@@ -34,22 +34,25 @@ public class GroupingFluxes {
 
       //Depending on the message type, run one of the following flows:
       //TYPE1: Do nothing (ignore the message), sau niste treaba in memorie (put ntr-un map)
-      // -- done
-
       //TYPE2: Call apiA(message) and apiB(message) in parallel
-
-
+      // -- done
       //TYPE3: Call apiC(List.of(message)
       //TYPE3(HARD): Call apiC(messageList), buffering together requests such that
       //HARD: send max 3 IDs, but an ID waits max 500 millis
 
 
       return messageStream
-              .filter(m -> MessageType.forMessage(m) == MessageType.TYPE1_NEGATIVE)
-              .doOnNext(m-> System.out.println("ceva in memorie" + m))
-
-
-
+              .flatMap(m -> {
+                 switch (MessageType.forMessage(m)){
+                    case TYPE1_NEGATIVE:
+                       System.out.println("ceva in memorie" + m);
+                       return Mono.empty();
+                    case TYPE2_ODD:
+                       return Mono.zip(apis.apiA(m), apis.apiB(m));
+                    default:
+                       throw new IllegalStateException("Unexpected value: " + MessageType.forMessage(m));
+                 }
+              })
           .then()
           ;
    }
