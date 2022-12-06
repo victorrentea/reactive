@@ -41,7 +41,7 @@ public class ComplexFlowApp implements CommandLineRunner {
    // e doar pt debugging. e un filtru care obliga toate req http sa execute pe .parallel nu pe Schedulerul netty
    // pentru ca Blockhound (care vaneaza .block()) arunca EX DOAR DACA blochezi in .parallel
    // nu pt prod
-//   @Bean
+   @Bean
    public WebFilter alwaysParallelWebfluxFilter() {
       // ⚠️ WARNING: use this only when exploring the non-block-ness of your code. Inspired from: https://gitter.im/reactor/BlockHound?at=5dc023b4e1c5e91508300190
       installBlockHound(List.of(
@@ -50,7 +50,7 @@ public class ComplexFlowApp implements CommandLineRunner {
       ));
       return (exchange, chain) -> Mono.defer(() -> chain.filter(exchange))
 //              .subscribeOn(Schedulers.single()); // welcome to NodeJS
-              .subscribeOn(Schedulers.parallel()); // sa folosesti toate core-urile
+              .subscribeOn(Schedulers.parallel()); // ia req de pe schedulerul netty default is il subscrie pe .parallle()
    }
 
    @Override
@@ -80,7 +80,8 @@ public class ComplexFlowApp implements CommandLineRunner {
               "Requested " + n + " (add ?n=1000 to url to change), " +
               "returning " + list.size() + " products " +
               "after " + (currentTimeMillis() - t0) + " ms: <br>\n<br>\n" +
-              list.stream().map(Product::toString).collect(joining("<br>\n")));
+              list.stream().map(Product::toString).collect(joining("<br>\n")))
+              .doOnNext(s -> log.info("Da aici ?"));
    }
 
    @Autowired

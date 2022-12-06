@@ -6,6 +6,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.List;
 
 @Slf4j
@@ -18,10 +19,17 @@ public class ComplexFlowSolved {
                 .buffer(2)
                 .name("mainFlow")
                 .metrics()
+
                 .flatMap(ComplexFlowSolved::retrieveMultipleProducts, 4)
+
                 .doOnNext(ComplexFlowSolved::auditProduct)
                 .flatMap(this::enhanceWithRating)
-                .collectList();
+                .collectList()
+
+                .doOnNext(e -> log.info("Inainte " + e))
+                .delayElement(Duration.ofMillis(100))
+                .doOnNext(e -> log.info("Dupa " + e))
+                ;
     }
 
     private static void auditProduct(Product product) {
