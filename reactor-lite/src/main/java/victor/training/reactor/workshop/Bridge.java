@@ -2,9 +2,11 @@ package victor.training.reactor.workshop;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -35,9 +37,12 @@ public class Bridge {
 
 
   // ==================================================================================
-  // TODO call dependency#save and block the current thread until it completes, then log.info the returned value
+  // TODO call dependency#save and block the current thread until it completes,
+  //  then log.info the returned value
   // Use-Case: hang a Kafka Listener thread that would otherwise consume a new message
   public void p01_blockForMono(String message) {
+    String v = dependency.save(message).block();
+    log.info(v);
   }
 
   // ==================================================================================
@@ -45,6 +50,9 @@ public class Bridge {
   // Use-Case: find all items to process in a table / write a test.
   public void p02_blockForFlux() {
     List<String> list = dependency.findAll().collectList().block();
+    // 1) @Scheduled(rate=2000) task() { reactive.block(); } <- e BINE✅ ASA!, si nu .subscribe();
+  // 2) Message Listeneri pe cozi (eg Kafka) in modul traditional mesaj cu mesaj
+    // 3) @Test ! e mai simplu decat StepVerifier
     log.info("List:" + list);
   }
 
@@ -52,7 +60,23 @@ public class Bridge {
   // TODO call dependency#legacyBlockingCall() and return its result in a Mono.
   //  NOTE: you are only allowed to block threads from Schedulers.boundedElastic()
   public Mono<String> p03_blockingCalls() {
-    return null;
+
+    return
+//            Mono.fromSupplier(() -> dependency.legacyBlockingCall()) // return valoarea direct
+
+            Mono.defer(() -> Mono.just(dependency.legacyBlockingCall())) // return mono
+
+            // pe ce threadpool chem lambda "DE MAI SUS?"
+            .log("Deasupra subscribe")
+            .subscribeOn(Schedulers.boundedElastic())
+            .log("Sub subscribe")
+            .publishOn(Schedulers.parallel())
+            // sa eviti context switching
+            .map(d -> "munca groaznica de CPU bitcoin mining, generezi pdf, calcule, randezi grafive, cript asym ")
+//            .subscribeOn(Schedulers.parallel())
+            ;
+    // mono returnat emite datele pe .parallel() =>
+    // daca faci .block mai tarziu intr-un .map => potential thread starvation issues: Blockhound va sari in aer.
   }
 
   // ==================================================================================
