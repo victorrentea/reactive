@@ -55,7 +55,10 @@ public class ComplexFlowApp implements CommandLineRunner {
 
    @Override
    public void run(String... args) throws Exception {
+
+      // linia asta salveaza vieti: orice exceptie este urmata de o lista cu toti operatorii reactivi prin care ai trecut
       Hooks.onOperatorDebug(); // provide better stack traces
+
       log.info("Calling myself automatically once at startup");
       WebClient.create().get().uri("http://localhost:8080/complex").retrieve().bodyToMono(String.class)
           .subscribe(
@@ -70,7 +73,7 @@ public class ComplexFlowApp implements CommandLineRunner {
       List<Long> productIds = LongStream.rangeClosed(1, n).boxed().collect(toList());
 
       log.info("Pe ce thread sunt aici?");
-      sleep(100);// BUM block hound latra aici !
+//      sleep(100);// BUM block hound latra aici !
       log.info("Dupa sleep. am paralizat 1 thread netty");
 
       Mono<List<Product>> listMono = complexFlow.mainFlow(productIds);

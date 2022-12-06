@@ -22,8 +22,9 @@ public class ComplexFlowSolved {
                 .metrics()
                 .doOnNext(x -> log.info("Deasupra call retea"))
                 .flatMap(ComplexFlowSolved::retrieveMultipleProducts, 4)
+                .delayElements(Duration.ofMillis(1))
                 .doOnNext(x -> {
-//                    Utils.sleep(100);
+                    Utils.sleep(100);
                     log.info("Sub call retea");
                 })
 
