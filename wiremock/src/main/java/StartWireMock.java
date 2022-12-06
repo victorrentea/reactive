@@ -1,5 +1,3 @@
-package victor.training.reactive;
-
 import com.github.tomakehurst.wiremock.standalone.WireMockServerRunner;
 
 import java.io.File;

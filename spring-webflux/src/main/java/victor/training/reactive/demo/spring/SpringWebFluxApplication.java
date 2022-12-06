@@ -6,10 +6,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 
 @SpringBootApplication
-public class ReactiveSpringApplication {
+public class SpringWebFluxApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(ReactiveSpringApplication.class, args);
+		SpringApplication.run(SpringWebFluxApplication.class, args);
 	}
 
 	@Bean
