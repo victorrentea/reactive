@@ -104,6 +104,10 @@ class Barman {
       // log mincinos !!!
       Mono<Beer> beerMono = WebClient.create().get().uri("http://localhost:9999/api/beer")
               .retrieve().bodyToMono(Beer.class)
+
+              .name("Beer-Flux")
+              .metrics()
+
               .doOnSubscribe(s -> log.info("Start beer"))
               .doOnNext(e -> log.info("End beer : " + e))
               .doOnTerminate(() -> log.info("End beer anyway + errros")) //

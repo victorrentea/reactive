@@ -21,7 +21,7 @@ import static reactor.core.scheduler.Schedulers.parallel;
 
 public class RunAsNonBlocking {
 
-   // paired with the dependency blockhound-junit-platform, checks that you don't block() in the called method
+   // paired with the dependency blockhound-junit-platform, checks that you don't block() in the called saveAudit
    public static <T> Mono<T> runsNonBlocking(Supplier<Mono<T>> monoSupplier) {
      return Mono.defer(monoSupplier)
              .subscribeOn(parallel()); // blockhound detects any blocking in threads of this scheduler

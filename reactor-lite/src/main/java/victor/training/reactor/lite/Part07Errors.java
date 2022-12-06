@@ -49,8 +49,8 @@ public class Part07Errors {
 
 //========================================================================================
 
-   // TODO Implement a method that capitalizes each user of the incoming flux using the
-   // #capitalizeUser method and emits an error containing a GetOutOfHereException error
+   // TODO Implement a saveAudit that capitalizes each user of the incoming flux using the
+   // #capitalizeUser saveAudit and emits an error containing a GetOutOfHereException error
    public Flux<User> capitalizeMany(Flux<User> flux) {
       return null;
    }

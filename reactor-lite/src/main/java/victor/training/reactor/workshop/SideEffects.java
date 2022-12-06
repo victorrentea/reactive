@@ -3,6 +3,8 @@ package victor.training.reactor.workshop;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.BufferOverflowStrategy;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class SideEffects {
@@ -120,8 +122,13 @@ public class SideEffects {
    * Extra: Make sure any error from sendMessage is logged in the console.
    */
   public Mono<A> p06_save_sendFireAndForget(A a0) {
+
+//    Flux<Integer> f;
+//    f.onBackpressureBuffer(100, BufferOverflowStrategy.DROP_OLDEST)
     return dependency.save(a0)
             .doOnNext(a -> dependency.sendMessage(a)
+
+
                     .subscribe(v->{/*callback*/}, e->log.error("Valeu "+ e,e)))
             // de ce .subscribe() e rau? de ce galben in IDEA?
             // 1) promoveaza un stil de coding bazat pe callbackuri => multe side effects = rau! nu FP

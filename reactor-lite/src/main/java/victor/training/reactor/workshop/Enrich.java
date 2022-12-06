@@ -155,7 +155,7 @@ public class Enrich {
     //    C c = dependency.c(id).block();
     //    return Mono.just(new ABC(a, b, c));
 
-    // Hint: use Mono.zip (static method)
+    // Hint: use Mono.zip (static saveAudit)
     // Hint: avoid tuple -> {} by using TupleUtils.function((a,b,c) -> {})
 
     // Sfat din batrani: nu da afara din casa (functie) Tuple-uri ca sperii clientii
@@ -352,7 +352,7 @@ public class Enrich {
 
   /**
    * === UseCase Context Pattern ===
-   * The moral of the above example is to avoid method variables completely.
+   * The moral of the above example is to avoid saveAudit variables completely.
    * a(id), then b1(a), then c2(a,b); also d(id) ==> P10UseCaseContext(a,b,c,d)
    */
   @Value // imutable object
@@ -398,47 +398,6 @@ public class Enrich {
   }
 
 
-//  WebClient webClient;
-//  private  Map<String, Consumer<EvoBaseGameEventDTO>> subscriptions;
-//  private Disposable listener;
-//
-//
-//  public void start() {
-//    listener = webClient.get()
-//            .retrieve()
-//            .bodyToFlux(String.class)
-//            .flatMap(this::deserializeDTO)
-//            .flatMap(dto -> Mono.justOrEmpty(subscriptions.get(dto.getTableId())).map(consumer -> Tuples.of(dto, consumer)))
-//            .doOnNext(t -> logEventDelay(t.getT1()))
-//            .doOnNext(tuple -> pushEventToConsumer(tuple))
-//            .doOnComplete(this::handleListenerStopped)
-//            .doOnError(e -> log.error("An error occurred while receiving events from Evolution", e))
-//            .doOnError(e -> this.handleListenerStopped())
-//            .doOnSubscribe(s -> log.info("Listening to the Evolution event streaming API"))
-//            .subscribe();
-//  }
-//
-//  private static void pushEventToConsumer(Tuple2<EvoBaseGameEventDTO, Consumer<EvoBaseGameEventDTO>> tuple) {
-//    try {
-//      tuple.getT2().accept(tuple.getT1());
-//    } catch (Exception e) {
-//      log.error("", e);
-//    }
-//  }
-//
-//
-//  private Mono<EvoBaseGameEventDTO> deserializeDTO(String json) {
-//    if (StringUtils.isEmpty(json)) {
-//      return Mono.empty();
-//    }
-//    EvoBaseGameEventDTO gameEventDTO = null;
-//    try {
-//      gameEventDTO = JsonUtils.fromJson(json, EvoGameEventOuterDTO.class).getEvent();
-//    } catch (Exception e) {
-//      log.error("Could not deserialize JSON: {}", json, e);
-//    }
-//    return Mono.justOrEmpty(gameEventDTO);
-//  }
 
 
 }
