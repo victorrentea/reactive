@@ -17,10 +17,11 @@ public class ComplexFlowSolved {
     //   @Timed
     public Mono<List<Product>> mainFlow(List<Long> productIds) {
         return Flux.fromIterable(productIds)
-                .buffer(2)
+                .buffer(200)
                 .name("mainFlow")
                 .metrics()
                 .doOnNext(x -> log.info("Deasupra call retea"))
+                // asa da: in pagini si cu concurrency limitat!
                 .flatMap(ComplexFlowSolved::retrieveMultipleProducts, 4)
                 .delayElements(Duration.ofMillis(1))
                 .doOnNext(x -> {

@@ -1,12 +1,16 @@
 package victor.training.reactive.usecase.monitoringinfinite;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.security.SecurityProperties.User;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import victor.training.reactive.Utils;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 @Service // imagine
@@ -24,9 +28,24 @@ public class MonitoringInfinite {
    //You are monitoring an infinite flux of order ids (think Kafka stream)
    //Each id is checked in the apis.isOrderPresent(id):Mono<Boolean>
    //If it is NOT found, or an error occurs, the id is sent to AuditApi.
-   //  (In case of error, the AuditApi is retried once.)
    @PostConstruct
    private void monitor(Flux<Long> orderIdInfiniteStream) {
+
+//      Flux<Boolean> booleanFlux = orderIdInfiniteStream
+////              .flatMapSequential(id -> apis.isOrderPresent(id)) // reordoneaza rez dar bufferizeaza -mem
+////              .concatMap(id -> apis.isOrderPresent(id)) // nu paralelizeaza -timp -mem
+////              .flatMap(id -> apis.isOrderPresent(id)) // bad practice-> nu limiteaza nicicum nr de apeluri paralele
+//
+//              .buffer(1000)
+////              .flatMap(id -> apis.isOrderPresent(id), 3) // max 2 in paralel - tot prost
+//
+//              ;
+//      List<Integer> userIds = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+//      List<User> useri = new ArrayList<>();
+//      for (Integer id : userIds) {
+//         var user = rest.get(id); // platesti retea 10-20-5 ms x N elemente (1000)
+//         useri.add(user);
+//      }
 
    }
 }

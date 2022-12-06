@@ -27,75 +27,74 @@ import java.util.stream.Stream;
 @Component
 public class WebSockets implements WebSocketHandler {
 
-    private static final ObjectMapper jackson = new ObjectMapper();
+  private static final ObjectMapper jackson = new ObjectMapper();
 
-    private static final Sinks.Many<ChatMessage> sink = Sinks.many().multicast().onBackpressureBuffer(100);
+  private static final Sinks.Many<ChatMessage> sink = Sinks.many().multicast().onBackpressureBuffer(100);
 
-    @Override
-    public Mono<Void> handle(WebSocketSession webSocketSession) {
-// asa se ia userul pe bune
-//        Mono<String> username = webSocketSession.getHandshakeInfo().getPrincipal().map(Principal::getName);
+  @Override
+  public Mono<Void> handle(WebSocketSession webSocketSession) {
+    // asa se ia userul pe bune: Mono<String> username = webSocketSession.getHandshakeInfo().getPrincipal().map(Principal::getName);
 
-        log.info("Opened WS session: " + webSocketSession.getHandshakeInfo().getAttributes());
-        Flux<WebSocketMessage> outboundFlux =
-//                Flux.interval(Duration.ofMillis(1000)).map(i -> "Salut sunt un BOT💃 " + i).map(s -> new ChatMessage("me❤️", s))
-                sink.asFlux()
-                        .filter(m -> filterOutPrivateMessagesNotForMe(m, (String) webSocketSession.getAttributes().get("user")))
-                .map(Unchecked.function(jackson::writeValueAsString))
-                .map(webSocketSession::textMessage);
+    log.info("Opened WS session: " + webSocketSession.getHandshakeInfo().getAttributes());
+    Flux<WebSocketMessage> outboundFlux =
+            sink.asFlux()
+                    // daca mesajul contine vreun @xyz, atunci tre livrat la un user doar daca user din ses = 'xyz'
+                    .filter(m -> filterOutPrivateMessagesNotForMe(m, (String) webSocketSession.getAttributes().get("user")))
+                    .map(Unchecked.function(jackson::writeValueAsString))
+                    .map(webSocketSession::textMessage);
 
-        // daca mesajul contine vreun @xyz, atunci tre livrat la un user doar daca user din ses = 'xyz'
+    Flux<ChatMessage> inboundFlux = webSocketSession.receive()
+            .map(WebSocketMessage::getPayloadAsText)
+            .map(Unchecked.function(json -> jackson.readValue(json, ChatMessage.class)))
+            .filter(m -> {
+              if (m.from.equals("sys")) {
+                String nick = m.text;
+                log.info("A venit user " + nick);
+                webSocketSession.getAttributes().put("user", nick);
+                return false;
+              } else {
+                return true;
+              }
+            })
 
-        Flux<ChatMessage> inboundFlux = webSocketSession.receive()
-                .map(WebSocketMessage::getPayloadAsText)
-                .map(Unchecked.function(json -> jackson.readValue(json, ChatMessage.class)))
-                .filter(m -> {
-                    if (m.from.equals("sys")) {
-                        String nick = m.text;
-                        log.info("A venit user " + nick);
-                        webSocketSession.getAttributes().put("user", nick);
-                        return false;
-                    } else {
-                        return true;
-                    }
-                })
+            .doOnNext(m -> sink.tryEmitNext(m))
+            .log();
 
-                .doOnNext(m -> sink.tryEmitNext(m))
-                .log();
+    return webSocketSession.send(outboundFlux).and(inboundFlux);
+  }
 
-        return webSocketSession.send(outboundFlux).and(inboundFlux);
+  private boolean filterOutPrivateMessagesNotForMe(ChatMessage m, String user) {
+    Optional<String> tokenAt = Stream.of(m.text.split("\\s+"))
+            .filter(token -> token.contains("@"))
+            .findFirst();
+    if (tokenAt.isEmpty()) return true;
+    return tokenAt.get().equals("@" + user);
+  }
+
+
+  @Bean
+  public HandlerMapping webSocketHandlerMapping() {
+    Map<String, WebSocketHandler> map = new HashMap<>();
+    map.put("/chat", this);
+
+    SimpleUrlHandlerMapping handlerMapping = new SimpleUrlHandlerMapping();
+    handlerMapping.setOrder(1);
+    handlerMapping.setUrlMap(map);
+    return handlerMapping;
+  }
+
+  @Getter
+  public static class ChatMessage {
+    private String from;
+    private String text;
+    private String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+
+    public ChatMessage() {
     }
 
-    private boolean filterOutPrivateMessagesNotForMe(ChatMessage m, String user) {
-        Optional<String> tokenAt = Stream.of(m.text.split("\\s+"))
-                .filter(token -> token.contains("@"))
-                .findFirst();
-        if (tokenAt.isEmpty()) return true;
-        return tokenAt.get().equals("@"+user);
+    public ChatMessage(String from, String text) {
+      this.from = from;
+      this.text = text;
     }
-
-
-    @Bean
-    public HandlerMapping webSocketHandlerMapping() {
-        Map<String, WebSocketHandler> map = new HashMap<>();
-        map.put("/chat", this);
-
-        SimpleUrlHandlerMapping handlerMapping = new SimpleUrlHandlerMapping();
-        handlerMapping.setOrder(1);
-        handlerMapping.setUrlMap(map);
-        return handlerMapping;
-    }
-
-    @Getter
-    public static class ChatMessage {
-        private String from;
-        private String text;
-        private String time =  LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-
-        public ChatMessage() {}
-        public ChatMessage(String from, String text) {
-            this.from = from;
-            this.text = text;
-        }
-    }
+  }
 }
