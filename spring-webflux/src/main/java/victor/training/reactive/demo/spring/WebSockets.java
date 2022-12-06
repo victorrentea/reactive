@@ -11,6 +11,7 @@ import org.springframework.web.reactive.handler.SimpleUrlHandlerMapping;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
@@ -18,6 +19,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 
 @Slf4j
@@ -26,24 +29,49 @@ public class WebSockets implements WebSocketHandler {
 
     private static final ObjectMapper jackson = new ObjectMapper();
 
-    private static final Sinks.Many<ChatMessage> sink = Sinks.many().multicast().onBackpressureBuffer();
+    private static final Sinks.Many<ChatMessage> sink = Sinks.many().multicast().onBackpressureBuffer(100);
 
     @Override
     public Mono<Void> handle(WebSocketSession webSocketSession) {
+// asa se ia userul pe bune
+//        Mono<String> username = webSocketSession.getHandshakeInfo().getPrincipal().map(Principal::getName);
+
         log.info("Opened WS session: " + webSocketSession.getHandshakeInfo().getAttributes());
-        return webSocketSession.send(
-//                Flux.interval(Duration.ofMillis(100)).map(i-> "Message " + i).map(s -> new ChatMessage("me", s))
+        Flux<WebSocketMessage> outboundFlux =
+//                Flux.interval(Duration.ofMillis(1000)).map(i -> "Salut sunt un BOT💃 " + i).map(s -> new ChatMessage("me❤️", s))
+                sink.asFlux()
+                        .filter(m -> filterOutPrivateMessagesNotForMe(m, (String) webSocketSession.getAttributes().get("user")))
+                .map(Unchecked.function(jackson::writeValueAsString))
+                .map(webSocketSession::textMessage);
 
-                        sink.asFlux()
-                        .map(Unchecked.function(jackson::writeValueAsString))
-                        .map(webSocketSession::textMessage)
-                )
+        // daca mesajul contine vreun @xyz, atunci tre livrat la un user doar daca user din ses = 'xyz'
 
-          .and(webSocketSession.receive()
-            .map(WebSocketMessage::getPayloadAsText)
-            .map(Unchecked.function(json-> jackson.readValue(json, ChatMessage.class)))
-            .doOnNext(message-> sink.tryEmitNext(message))
-            .log());
+        Flux<ChatMessage> inboundFlux = webSocketSession.receive()
+                .map(WebSocketMessage::getPayloadAsText)
+                .map(Unchecked.function(json -> jackson.readValue(json, ChatMessage.class)))
+                .filter(m -> {
+                    if (m.from.equals("sys")) {
+                        String nick = m.text;
+                        log.info("A venit user " + nick);
+                        webSocketSession.getAttributes().put("user", nick);
+                        return false;
+                    } else {
+                        return true;
+                    }
+                })
+
+                .doOnNext(m -> sink.tryEmitNext(m))
+                .log();
+
+        return webSocketSession.send(outboundFlux).and(inboundFlux);
+    }
+
+    private boolean filterOutPrivateMessagesNotForMe(ChatMessage m, String user) {
+        Optional<String> tokenAt = Stream.of(m.text.split("\\s+"))
+                .filter(token -> token.contains("@"))
+                .findFirst();
+        if (tokenAt.isEmpty()) return true;
+        return tokenAt.get().equals("@"+user);
     }
 
 

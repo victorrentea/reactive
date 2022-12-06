@@ -31,7 +31,8 @@
                 setConnected(true);
                 console.log("clientWebSocket.onopen", webSocket);
                 console.log("clientWebSocket.readyState", "websocketstatus");
-                // webSocket.send("event-me-from-browser");
+
+                webSocket.send(JSON.stringify({'from': 'sys', 'text': from}));
             }
             webSocket.onclose = function(error) {
                 console.log("clientWebSocket.onclose", webSocket, error);
