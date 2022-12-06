@@ -26,6 +26,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static victor.training.reactive.Utils.installBlockHound;
+import static victor.training.reactive.Utils.sleep;
 
 @RestController
 @Slf4j
@@ -58,11 +59,15 @@ public class ComplexFlowApp implements CommandLineRunner {
           );
    }
 
+   @Autowired
+   private ComplexFlow complexFlow;
+
    @GetMapping("complex")
    public Mono<String> executeAsNonBlocking(@RequestParam(value = "n", defaultValue = "10") int n) {
       long t0 = currentTimeMillis();
       List<Long> productIds = LongStream.rangeClosed(1, n).boxed().collect(toList());
 
+      // sleep(100); // what if... can BlockHound detect this ?
       Mono<List<Product>> listMono = complexFlow.mainFlow(productIds);
 
       return listMono.map(list ->
@@ -72,9 +77,6 @@ public class ComplexFlowApp implements CommandLineRunner {
               "after " + (currentTimeMillis() - t0) + " ms: <br>\n<br>\n" +
               list.stream().map(Product::toString).collect(joining("<br>\n")));
    }
-
-   @Autowired
-   private ComplexFlow complexFlow;
 
 
 
