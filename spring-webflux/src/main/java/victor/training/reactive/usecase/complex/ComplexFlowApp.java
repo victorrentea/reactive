@@ -70,7 +70,7 @@ public class ComplexFlowApp implements CommandLineRunner {
       List<Long> productIds = LongStream.rangeClosed(1, n).boxed().collect(toList());
 
       log.info("Pe ce thread sunt aici?");
-      sleep(100);// BUM block hound latra aici !
+//      sleep(100);// BUM block hound latra aici !
       log.info("Dupa sleep. am paralizat 1 thread netty");
 
       Mono<List<Product>> listMono = complexFlow.mainFlow(productIds);

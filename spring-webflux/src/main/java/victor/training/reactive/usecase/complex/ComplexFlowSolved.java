@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import victor.training.reactive.Utils;
 
 import java.time.Duration;
 import java.util.List;
@@ -19,8 +20,12 @@ public class ComplexFlowSolved {
                 .buffer(2)
                 .name("mainFlow")
                 .metrics()
-
+                .doOnNext(x -> log.info("Deasupra call retea"))
                 .flatMap(ComplexFlowSolved::retrieveMultipleProducts, 4)
+                .doOnNext(x -> {
+//                    Utils.sleep(100);
+                    log.info("Sub call retea");
+                })
 
                 .doOnNext(ComplexFlowSolved::auditProduct)
                 .flatMap(this::enhanceWithRating)
