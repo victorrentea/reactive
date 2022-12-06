@@ -26,6 +26,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static victor.training.reactive.Utils.installBlockHound;
+import static victor.training.reactive.Utils.sleep;
 
 @RestController
 @Slf4j
@@ -35,21 +36,26 @@ public class ComplexFlowApp implements CommandLineRunner {
       SpringApplication.run(ComplexFlowApp.class);
    }
 
-   @Bean
+
+   // CE vezi mai jos e o mizerie!
+   // e doar pt debugging. e un filtru care obliga toate req http sa execute pe .parallel nu pe Schedulerul netty
+   // pentru ca Blockhound (care vaneaza .block()) arunca EX DOAR DACA blochezi in .parallel
+   // nu pt prod
+//   @Bean
    public WebFilter alwaysParallelWebfluxFilter() {
       // ⚠️ WARNING: use this only when exploring the non-block-ness of your code. Inspired from: https://gitter.im/reactor/BlockHound?at=5dc023b4e1c5e91508300190
       installBlockHound(List.of(
               Tuples.of("io.netty.resolver.HostsFileParser", "parse"),
               Tuples.of("victor.training.reactive.reactor.complex.ComplexFlowMain", "executeAsNonBlocking")
       ));
-      return (exchange, chain) -> Mono.defer(() -> chain.filter(exchange)).subscribeOn(Schedulers.parallel());
+      return (exchange, chain) -> Mono.defer(() -> chain.filter(exchange))
+//              .subscribeOn(Schedulers.single()); // welcome to NodeJS
+              .subscribeOn(Schedulers.parallel()); // sa folosesti toate core-urile
    }
 
    @Override
    public void run(String... args) throws Exception {
-
       Hooks.onOperatorDebug(); // provide better stack traces
-
       log.info("Calling myself automatically once at startup");
       WebClient.create().get().uri("http://localhost:8080/complex").retrieve().bodyToMono(String.class)
           .subscribe(
@@ -63,6 +69,10 @@ public class ComplexFlowApp implements CommandLineRunner {
       long t0 = currentTimeMillis();
       List<Long> productIds = LongStream.rangeClosed(1, n).boxed().collect(toList());
 
+      log.info("Pe ce thread sunt aici?");
+      sleep(100);// BUM block hound latra aici !
+      log.info("Dupa sleep. am paralizat 1 thread netty");
+
       Mono<List<Product>> listMono = complexFlow.mainFlow(productIds);
 
       return listMono.map(list ->
@@ -74,7 +84,7 @@ public class ComplexFlowApp implements CommandLineRunner {
    }
 
    @Autowired
-   private ComplexFlow complexFlow;
+   private ComplexFlowSolved complexFlow;
 
 
 

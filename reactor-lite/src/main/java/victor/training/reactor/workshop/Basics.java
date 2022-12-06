@@ -125,7 +125,8 @@ public class Basics {
   // TODO print to console all signals going up (from Subscriber->Publisher)
   //  or down (from Publisher->Subscriber)
   public Flux<String> logSignals(Flux<String> flux) {
-    return flux.log("de.enablat.in.caz.de.panica.in.prod"); // te ajuta in practica sa vezi cancel/error sau sa debugezi backpressure
+    return flux
+            .log("de.enablat.in.caz.de.panica.in.prod"); // te ajuta in practica sa vezi cancel/error sau sa debugezi backpressure
   }
 
 }

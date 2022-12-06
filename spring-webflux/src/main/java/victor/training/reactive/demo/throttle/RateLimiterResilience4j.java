@@ -18,6 +18,7 @@ public class RateLimiterResilience4j {
 
    public RateLimiterResilience4j(String url, int rps) {
       this.url = url;
+      // foarte simplu rate limiterul asta poate fi setat intr-un REDIS comun intre instante!!
       InMemoryRateLimiterRegistry rateLimiterRegistry = new InMemoryRateLimiterRegistry(RateLimiterConfig.ofDefaults());
       rateLimiter = rateLimiterRegistry.rateLimiter("test", RateLimiterConfig.custom()
           .limitRefreshPeriod(Duration.ofSeconds(1))
