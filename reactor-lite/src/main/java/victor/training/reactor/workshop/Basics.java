@@ -3,6 +3,7 @@ package victor.training.reactor.workshop;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class Basics {
@@ -53,9 +54,16 @@ public class Basics {
   }
 
   //========================================================================================
+  // TODO Create a Mono that emits LocalDateTime.now() when subscribed to.
+  // Hint: do NOT use .just() -> now() should be called later, when subscribed!
+  public Mono<LocalDateTime> mono7_fromCallable() {
+    return Mono.just(LocalDateTime.now());
+  }
+
+  //========================================================================================
   // TODO Create a Mono that emits only completion after 100ms (with no value)
   // NOTE: the return type is Mono<Void>, indicating there is no data emitted to subscriber.
-  public Mono<Void> mono7_delayedCompletion() {
+  public Mono<Void> mono8_delayedCompletion() {
     return Mono.empty();
   }
 

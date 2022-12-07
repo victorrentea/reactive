@@ -11,14 +11,15 @@ import victor.training.util.CaptureSystemOutput;
 import victor.training.util.CaptureSystemOutput.OutputCapture;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import static java.lang.System.currentTimeMillis;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.byLessThan;
 
 @TestMethodOrder(MethodName.class)
 public class BasicsTest {
@@ -78,11 +79,19 @@ public class BasicsTest {
             .verifyComplete();
   }
 
+  @Test
+  void mono7_fromCallable() throws InterruptedException {
+    Mono<LocalDateTime> resultMono = workshop.mono7_fromCallable();
+    Thread.sleep(110);
+    LocalDateTime time = resultMono.block();
+    assertThat(time).isCloseTo(LocalDateTime.now(), byLessThan(100, ChronoUnit.MILLIS));
+  }
+
 
   @Test
   @Timeout(value = 200, unit = MILLISECONDS)
-  void mono7_delayedCompletion() {
-    workshop.mono7_delayedCompletion()
+  void mono8_delayedCompletion() {
+    workshop.mono8_delayedCompletion()
             .as(StepVerifier::create)
             .expectSubscription()
             .expectNoEvent(ofMillis(50))

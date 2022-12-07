@@ -4,6 +4,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static java.time.Duration.ofMillis;
@@ -44,7 +45,11 @@ public class BasicsSolved extends Basics {
     return Mono.just("BOO").delayElement(ofMillis(100));
   }
 
-  public Mono<Void> mono7_delayedCompletion() {
+  public Mono<LocalDateTime> mono7_fromCallable() {
+    return Mono.fromCallable(() -> LocalDateTime.now());
+  }
+
+  public Mono<Void> mono8_delayedCompletion() {
     return Mono.delay(ofMillis(100)).then();
   }
 
