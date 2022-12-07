@@ -5,10 +5,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.time.Duration;
 
 public class P3_Errors {
   protected final Logger log = LoggerFactory.getLogger(getClass());
@@ -26,7 +28,7 @@ public class P3_Errors {
 
     Mono<Void> sendError(Throwable e);
 
-    Flux<String> downloadLargeData();
+    Flux<String> downloadManyElements();
   }
 
   // HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT
@@ -59,7 +61,8 @@ public class P3_Errors {
   public Mono<String> p02_wrap() {
     try {
       return dependency.call();
-    } catch (Exception originalException) { // <-- do this on any exception in the future, then delete this USELESS catch
+    } catch (
+            Exception originalException) { // <-- do this on any exception in the future, then delete this USELESS catch
       throw new IllegalStateException(originalException);
     }
   }
@@ -100,13 +103,30 @@ public class P3_Errors {
 
   // ==================================================================================================
 
+  // TODO Call dependency#call() again on error, maximum 4 times in total.
+  //  If last retry is still error, log it along with the text "SCRAP LOGS FOR ME"
+  // If needed, investingate using .log("above") / .log("below")
+  public Mono<String> p06_retryThenLogError() {
+    return dependency.call();
+  }
+
+  // ==================================================================================================
+
+  // TODO Call dependency#call() again on error, maximum 4 times in total (as above)
+  //  but leave 500 millis backoff between the calls.
+  public Mono<String> p07_retryWithBackoff() {
+    return dependency.call();
+  }
+
+  // ==================================================================================================
+
   /**
    * === Try-With-Resources (aka cleanup) ===
    * Close the resource (Writer) *after* the future completes.
    */
-  public Mono<Void> p06_usingResourceThatNeedsToBeClosed() throws IOException {
+  public Mono<Void> p08_usingResourceThatNeedsToBeClosed() throws IOException {
     try (Writer writer = new FileWriter("out.txt")) {// <-- make sure you close the writer AFTER the Mono completes
-      return dependency.downloadLargeData()
+      return dependency.downloadManyElements()
               .doOnNext(Unchecked.consumer(s -> writer.write(s))) // Unchecked.consumer converts any exception into a runtime one
               .then();
     }

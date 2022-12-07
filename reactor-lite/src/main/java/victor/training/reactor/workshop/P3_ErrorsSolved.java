@@ -4,10 +4,12 @@ import org.jooq.lambda.Unchecked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.time.Duration;
 
 
 public class P3_ErrorsSolved extends P3_Errors {
@@ -38,14 +40,27 @@ public class P3_ErrorsSolved extends P3_Errors {
         return dependency.call().onErrorResume(e -> dependency.sendError(e).then(Mono.error(e)));
     }
 
-    public Mono<Void> p06_usingResourceThatNeedsToBeClosed() throws IOException {
+    public Mono<String> p06_retryThenLogError() {
+        return dependency.call()
+                .log("above")
+                .retry(3)
+                .log("below")
+                .doOnError(e -> log.error("Final fail (SCRAP LOGS FOR ME): " + e));
+    }
+
+    public Mono<String> p07_retryWithBackoff() {
+        return dependency.call()
+                .retryWhen(Retry.backoff(3, Duration.ofMillis(200)));
+    }
+
+    public Mono<Void> p08_usingResourceThatNeedsToBeClosed() throws IOException {
       return Mono.<Void, Writer>using(
 
               // create resource:
               () -> new FileWriter("out.txt"),
 
               // use resource:
-              writer -> dependency.downloadLargeData()
+              writer -> dependency.downloadManyElements()
                       .doOnNext(Unchecked.consumer(s -> writer.write(s)))
                       .then(),
 

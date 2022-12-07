@@ -29,7 +29,7 @@ public class P4_SideEffectsTest {
   Dependency dependency;
   @InjectMocks
   P4_SideEffects workshop;
-//  SideEffectsSolved workshop;
+//  P4_SideEffectsSolved workshop;
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();
 

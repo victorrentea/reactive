@@ -37,7 +37,7 @@ public class P6_BridgeTest {
   Dependency dependency;
   @InjectMocks
   P6_Bridge workshop;
-//  BridgeSolved workshop;
+//  P6_BridgeSolved workshop;
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();
   private User user = new User();

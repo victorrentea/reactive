@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.byLessThan;
 public class P1_CreationTest {
 
   	P1_Creation workshop = new P1_Creation();
-//  Basics workshop = new BasicsSolved();
+//  P1_Creation workshop = new P1_CreationSolved();
 
 
   @Test

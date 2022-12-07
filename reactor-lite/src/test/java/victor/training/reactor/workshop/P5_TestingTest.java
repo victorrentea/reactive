@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class P5_TestingTest {
 
    P5_Testing workshop = new P5_Testing();
-//   Testing workshop = new TestingSolved();
+//   Testing workshop = new P5_TestingSolved();
 
 
    @Test

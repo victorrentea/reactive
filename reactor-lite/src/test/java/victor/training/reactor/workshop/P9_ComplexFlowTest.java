@@ -30,7 +30,7 @@ public class P9_ComplexFlowTest {
   Dependency dependency;
   @InjectMocks
   P9_ComplexFlow workshop;
-//  ZComplexFlowSolved workshop;
+//  P9_ComplexFlowSolved workshop;
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();
 

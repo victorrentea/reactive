@@ -1,41 +1,70 @@
 package victor.training.util;
 
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.publisher.PublisherProbe;
 
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class SubscribedProbe implements InvocationInterceptor {
-    private final Map<PublisherProbe<?>, StackTraceElement> probes = new HashMap<>();
+  @Value
+  private static class ProbeSpec {
+    PublisherProbe<?> probe;
+    String testClassLine;
+    int times;
+  }
 
-    public <T> Mono<T> once(Mono<T> mono) {
-        PublisherProbe<T> probe = PublisherProbe.of(mono);
-        StackTraceElement place = new RuntimeException().getStackTrace()[1];
-        probes.put(probe, place);
-        return probe.mono();
-    }
+  private final List<ProbeSpec> probes = new ArrayList<>();
 
-    @Override
-    public void interceptTestMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
-        invocation.proceed();
+  public <T> Mono<T> once(Mono<T> mono) {
+    PublisherProbe<T> probe = createAndRecordProbe(mono, 1);
+    return probe.mono();
+  }
+  public <T> Flux<T> once(Flux<T> mono) {
+    PublisherProbe<T> probe = createAndRecordProbe(mono, 1);
+    return probe.flux();
+  }
 
-        for (PublisherProbe<?> probe : probes.keySet()) {
-            StackTraceElement place = probes.get(probe);
-            assertThat(probe.subscribeCount())
-                    .describedAs("Mono probed at " + place + " was subscribed multiple times")
-                    .isEqualTo(1);
-        }
+  public <T> Mono<T> times(int subscribed, Mono<T> mono) {
+    PublisherProbe<T> probe = createAndRecordProbe(mono, subscribed);
+    return probe.mono();
+  }
+  public <T> Flux<T> times(int subscribed, Flux<T> mono) {
+    PublisherProbe<T> probe = createAndRecordProbe(mono, subscribed);
+    return probe.flux();
+  }
+
+  private <T> PublisherProbe<T> createAndRecordProbe(Publisher<T> mono, int times) {
+    StackTraceElement callerStackTraceElement = new RuntimeException().getStackTrace()[2];
+    PublisherProbe<T> probe = PublisherProbe.of(mono);
+    String testClassLine = callerStackTraceElement.getClassName().substring(callerStackTraceElement.getClassName().lastIndexOf('.') + 1) + ":" + callerStackTraceElement.getLineNumber();
+    probes.add(new ProbeSpec(probe, testClassLine, times));
+    return probe;
+  }
+
+  @Override
+  public void interceptTestMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
+    invocation.proceed();
+
+    for (ProbeSpec probeSpec : probes) {
+      assertThat(probeSpec.probe.subscribeCount())
+              .describedAs("Mono probed at " + probeSpec.testClassLine + " was subscribed too many (or few) times")
+              .isEqualTo(probeSpec.times);
     }
-    public void clearAllProbes() {
-        probes.clear();
-    }
+  }
+
+  public void clearAllProbes() {
+    probes.clear();
+  }
 }
