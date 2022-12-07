@@ -11,8 +11,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import victor.training.reactor.lite.Utils;
-import victor.training.reactor.workshop.SideEffects.A;
-import victor.training.reactor.workshop.SideEffects.Dependency;
+import victor.training.reactor.workshop.P4_SideEffects.A;
+import victor.training.reactor.workshop.P4_SideEffects.Dependency;
 import victor.training.util.CaptureSystemOutput;
 import victor.training.util.CaptureSystemOutput.OutputCapture;
 import victor.training.util.SubscribedProbe;
@@ -24,11 +24,11 @@ import static victor.training.util.RunAsNonBlocking.runsNonBlocking;
 
 @TestMethodOrder(MethodName.class)
 @ExtendWith(MockitoExtension.class)
-public class SideEffectsTest {
+public class P4_SideEffectsTest {
   @Mock
   Dependency dependency;
   @InjectMocks
-  SideEffects workshop;
+  P4_SideEffects workshop;
 //  SideEffectsSolved workshop;
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();

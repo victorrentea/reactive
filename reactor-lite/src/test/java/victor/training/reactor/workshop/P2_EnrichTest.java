@@ -8,7 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
-import victor.training.reactor.workshop.Enrich.*;
+import victor.training.reactor.workshop.P2_Enrich.*;
 import victor.training.util.SubscribedProbe;
 
 import java.time.Duration;
@@ -23,11 +23,11 @@ import static victor.training.util.RunAsNonBlocking.runsNonBlocking;
 
 @ExtendWith(MockitoExtension.class)
 @TestMethodOrder(MethodName.class)
-public class EnrichTest {
+public class P2_EnrichTest {
     @Mock
     Dependency dependency;
     @InjectMocks
-    Enrich workshop;
+    P2_Enrich workshop;
 //    EnrichSolved workshop;
 
     private static final A a = new A();
@@ -147,13 +147,13 @@ public class EnrichTest {
     }
 
     @Test
-    void p10_context() {
+    void p10_contextPattern() {
         when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
         when(dependency.b1(a)).thenReturn(subscribed.once(just(b)));
         when(dependency.c2(a, b)).thenReturn(subscribed.once(just(c)));
         when(dependency.d(1)).thenReturn(subscribed.once(just(d)));
 
-        Mono<P10UseCaseContext> mono = runsNonBlocking(() -> workshop.p10_context(1));
+        Mono<P10UseCaseContext> mono = runsNonBlocking(() -> workshop.p10_contextPattern(1));
 
         assertThat(mono.block()).isEqualTo(new P10UseCaseContext(1, a,b,c,d));
     }

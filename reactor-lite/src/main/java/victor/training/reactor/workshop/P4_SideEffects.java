@@ -1,12 +1,11 @@
 package victor.training.reactor.workshop;
 
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
-public class SideEffects {
-  protected final Logger log = LoggerFactory.getLogger(SideEffects.class);
+public class P4_SideEffects {
+  protected final Logger log = LoggerFactory.getLogger(P4_SideEffects.class);
   static class A {
   }
 
@@ -20,7 +19,7 @@ public class SideEffects {
 
   protected final Dependency dependency;
 
-  public SideEffects(Dependency dependency) {
+  public P4_SideEffects(Dependency dependency) {
     this.dependency = dependency;
   }
 

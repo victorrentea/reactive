@@ -5,8 +5,8 @@ import reactor.function.TupleUtils;
 
 import java.util.function.Function;
 
-public class EnrichSolved extends Enrich {
-    public EnrichSolved(Dependency dependency) {
+public class P2_EnrichSolved extends P2_Enrich {
+    public P2_EnrichSolved(Dependency dependency) {
         super(dependency);
     }
 
@@ -82,7 +82,7 @@ public class EnrichSolved extends Enrich {
     }
 
 
-    public Mono<P10UseCaseContext> p10_context(int id) {
+    public Mono<P10UseCaseContext> p10_contextPattern(int id) {
         return dependency.a(id).zipWith(dependency.d(id),
                         (a, d) -> new P10UseCaseContext(id).withA(a).withD(d))
                 .flatMap(context -> dependency.b1(context.getA()).map(context::withB))

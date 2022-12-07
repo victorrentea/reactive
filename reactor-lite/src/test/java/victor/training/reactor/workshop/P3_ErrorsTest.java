@@ -12,7 +12,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import victor.training.reactor.workshop.Errors.Dependency;
+import victor.training.reactor.workshop.P3_Errors.Dependency;
 import victor.training.util.CaptureSystemOutput;
 import victor.training.util.CaptureSystemOutput.OutputCapture;
 import victor.training.util.NamedThreadFactory;
@@ -33,12 +33,12 @@ import static reactor.core.publisher.Mono.*;
 @ExtendWith(MockitoExtension.class)
 @TestMethodOrder(MethodName.class)
 @Timeout(1)
-class ErrorsTest {
+class P3_ErrorsTest {
     @Mock
     Dependency dependencyMock;
     @InjectMocks
 //    Errors workshop;
-    ErrorsSolved workshop;
+    P3_ErrorsSolved workshop;
     @RegisterExtension
     SubscribedProbe subscribed = new SubscribedProbe();
 

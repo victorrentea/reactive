@@ -2,8 +2,8 @@ package victor.training.reactor.workshop;
 
 import reactor.core.publisher.Mono;
 
-public class SideEffectsSolved extends SideEffects {
-  public SideEffectsSolved(Dependency dependency) {
+public class P4_SideEffectsSolved extends P4_SideEffects {
+  public P4_SideEffectsSolved(Dependency dependency) {
     super(dependency);
   }
 

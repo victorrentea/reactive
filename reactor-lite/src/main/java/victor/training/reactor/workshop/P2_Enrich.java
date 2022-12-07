@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 @Slf4j
-public class Enrich {
+public class P2_Enrich {
     static class A {}
     static class B {}
     static class C {}
@@ -40,7 +40,7 @@ public class Enrich {
     }
     protected final Dependency dependency;
 
-    public Enrich(Dependency dependency) {
+    public P2_Enrich(Dependency dependency) {
         this.dependency = dependency;
     }
 
@@ -210,7 +210,7 @@ public class Enrich {
             this(id, null, null, null, null);
         }
     }
-    public Mono<P10UseCaseContext> p10_context(int id) {
+    public Mono<P10UseCaseContext> p10_contextPattern(int id) {
         // equivalent blocking⛔️ code:
         P10UseCaseContext context = new P10UseCaseContext(id);
         context = context.withA(dependency.a(context.getId()).block());

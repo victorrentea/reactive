@@ -22,9 +22,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.byLessThan;
 
 @TestMethodOrder(MethodName.class)
-public class BasicsTest {
+public class P1_CreationTest {
 
-  	Basics workshop = new Basics();
+  	P1_Creation workshop = new P1_Creation();
 //  Basics workshop = new BasicsSolved();
 
 

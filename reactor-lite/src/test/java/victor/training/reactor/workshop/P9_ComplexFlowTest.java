@@ -11,12 +11,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
-import victor.training.reactor.workshop.ZComplexFlow.*;
+import victor.training.reactor.workshop.P9_ComplexFlow.*;
 import victor.training.util.RunAsNonBlocking;
 import victor.training.util.SubscribedProbe;
 
-import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -26,12 +24,12 @@ import static org.mockito.Mockito.when;
 
 @TestMethodOrder(MethodName.class)
 @ExtendWith(MockitoExtension.class)
-public class ZComplexFlowTest {
+public class P9_ComplexFlowTest {
   public static final int ID = 13;
   @Mock
   Dependency dependency;
   @InjectMocks
-  ZComplexFlow workshop;
+  P9_ComplexFlow workshop;
 //  ZComplexFlowSolved workshop;
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();

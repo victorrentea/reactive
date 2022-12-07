@@ -8,14 +8,12 @@ import reactor.core.publisher.Mono;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 
 
-public class ErrorsSolved extends Errors {
-    private static final Logger log = LoggerFactory.getLogger(ErrorsSolved.class);
+public class P3_ErrorsSolved extends P3_Errors {
+    private static final Logger log = LoggerFactory.getLogger(P3_ErrorsSolved.class);
 
-    public ErrorsSolved(Dependency dependency) {
+    public P3_ErrorsSolved(Dependency dependency) {
         super(dependency);
     }
 

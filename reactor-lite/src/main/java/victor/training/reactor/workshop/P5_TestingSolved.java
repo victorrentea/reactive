@@ -4,7 +4,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
-import victor.training.reactor.lite.Part03StepVerifier;
 import victor.training.reactor.lite.domain.User;
 
 import java.time.Duration;
@@ -14,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class TestingSolved extends Testing {
+public class P5_TestingSolved extends P5_Testing {
    @Override
    public void expectFooBarComplete(Flux<String> flux) {
       StepVerifier.create(flux)

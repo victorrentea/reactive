@@ -2,9 +2,9 @@ package victor.training.reactor.workshop;
 
 import reactor.core.publisher.Mono;
 
-public class ZComplexFlowSolved extends ZComplexFlow {
+public class P9_ComplexFlowSolved extends P9_ComplexFlow {
 
-  public ZComplexFlowSolved(Dependency dependency) {
+  public P9_ComplexFlowSolved(Dependency dependency) {
     super(dependency);
   }
 

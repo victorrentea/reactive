@@ -3,13 +3,12 @@ package victor.training.reactor.workshop;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static java.time.Duration.ofMillis;
 
-public class BasicsSolved extends Basics {
+public class P1_CreationSolved extends P1_Creation {
 
   public Mono<String> mono1_just() {
     return Mono.just("foo");

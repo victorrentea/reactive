@@ -13,9 +13,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import victor.training.reactor.lite.Utils;
-import victor.training.reactor.workshop.Bridge.Dependency;
-import victor.training.reactor.workshop.Bridge.ResponseMessage;
-import victor.training.reactor.workshop.Bridge.User;
+import victor.training.reactor.workshop.P6_Bridge.Dependency;
+import victor.training.reactor.workshop.P6_Bridge.ResponseMessage;
+import victor.training.reactor.workshop.P6_Bridge.User;
 import victor.training.util.CaptureSystemOutput;
 import victor.training.util.CaptureSystemOutput.OutputCapture;
 import victor.training.util.RunAsNonBlocking;
@@ -32,11 +32,11 @@ import static org.mockito.Mockito.when;
 
 @TestMethodOrder(MethodName.class)
 @ExtendWith(MockitoExtension.class)
-public class BridgeTest {
+public class P6_BridgeTest {
   @Mock
   Dependency dependency;
   @InjectMocks
-  Bridge workshop;
+  P6_Bridge workshop;
 //  BridgeSolved workshop;
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();

@@ -20,18 +20,16 @@ import org.junit.jupiter.api.Test;
 import org.opentest4j.AssertionFailedError;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import victor.training.reactor.lite.Part03StepVerifier;
 import victor.training.reactor.lite.domain.User;
-import victor.training.reactor.lite.solved.Part03StepVerifierSolved;
-import victor.training.reactor.workshop.Testing.TestedProdClass;
+import victor.training.reactor.workshop.P5_Testing.TestedProdClass;
 
 import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TestingTest {
+public class P5_TestingTest {
 
-   Testing workshop = new Testing();
+   P5_Testing workshop = new P5_Testing();
 //   Testing workshop = new TestingSolved();
 
 

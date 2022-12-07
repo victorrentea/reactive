@@ -10,8 +10,8 @@ import reactor.core.scheduler.Schedulers;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class BridgeSolved extends Bridge {
-  public BridgeSolved(Dependency dependency) {
+public class P6_BridgeSolved extends P6_Bridge {
+  public P6_BridgeSolved(Dependency dependency) {
     super(dependency);
   }
 

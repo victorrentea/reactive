@@ -10,10 +10,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 
-public class Errors {
+public class P3_Errors {
   protected final Logger log = LoggerFactory.getLogger(getClass());
 
-  public Errors(Dependency dependency) {
+  public P3_Errors(Dependency dependency) {
     this.dependency = dependency;
   }
 

@@ -27,7 +27,7 @@ import java.time.Duration;
 import java.util.function.Function;
 
 
-public class Testing {
+public class P5_Testing {
 
 //========================================================================================
 
@@ -61,7 +61,7 @@ public class Testing {
 //========================================================================================
 
    // TODO Expect the value "later" to arrive 1 hour after subscribe(). Make the test complete in <1 second
-   // Manipiulate virtual with StepVerifier#withVirtualTime/.thenAwait
+   // Manipulate virtual with StepVerifier#withVirtualTime/.thenAwait
    // TODO expect no signal for 30 minutes
    public void expectDelayedElement() {
       StepVerifier.create(timeBoundFlow())

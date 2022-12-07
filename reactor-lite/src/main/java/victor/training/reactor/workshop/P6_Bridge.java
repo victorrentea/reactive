@@ -9,9 +9,9 @@ import reactor.core.publisher.Sinks;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class Bridge {
+public class P6_Bridge {
 
-  protected Logger log = LoggerFactory.getLogger(Bridge.class);
+  protected Logger log = LoggerFactory.getLogger(P6_Bridge.class);
 
   static class User {
   }
@@ -29,7 +29,7 @@ public class Bridge {
 
   protected final Dependency dependency;
 
-  public Bridge(Dependency dependency) {
+  public P6_Bridge(Dependency dependency) {
     this.dependency = dependency;
   }
 
