@@ -42,6 +42,7 @@ public class P3_ErrorsSolved extends P3_Errors {
 
     public Mono<String> p06_retryThenLogError() {
         return dependency.call()
+                .timeout(Duration.ofMillis(200))
                 .log("above")
                 .retry(3)
                 .log("below")

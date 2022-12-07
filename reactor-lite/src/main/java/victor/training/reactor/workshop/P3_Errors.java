@@ -105,6 +105,7 @@ public class P3_Errors {
 
   // TODO Call dependency#call() again on error, maximum 4 times in total.
   //  If last retry is still error, log it along with the text "SCRAP LOGS FOR ME"
+  //  If a call takes more than 200 millis, consider it to be failure and retry.
   // If needed, investingate using .log("above") / .log("below")
   public Mono<String> p06_retryThenLogError() {
     return dependency.call();
@@ -113,7 +114,7 @@ public class P3_Errors {
   // ==================================================================================================
 
   // TODO Call dependency#call() again on error, maximum 4 times in total (as above)
-  //  but leave 500 millis backoff between the calls.
+  //  but leave 200 millis backoff between the calls.
   public Mono<String> p07_retryWithBackoff() {
     return dependency.call();
   }

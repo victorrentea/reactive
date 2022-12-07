@@ -40,12 +40,12 @@ class P3_ErrorsTest {
   @Mock
   Dependency dependencyMock;
   @InjectMocks
-    P3_Errors workshop;
-//  P3_ErrorsSolved workshop;
+  P3_Errors workshop;
+//    P3_ErrorsSolved workshop;
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();
 
-    public static class TestRootCauseException extends RuntimeException {
+  public static class TestRootCauseException extends RuntimeException {
   }
 
 
@@ -159,19 +159,19 @@ class P3_ErrorsTest {
     assertThat(outputCapture.toString()).doesNotContain("SCRAP LOGS FOR ME");
   }
 
-    private static Mono<String> failingMonoTimes(int timesFailing, String result) {
-      AtomicInteger iteration = new AtomicInteger(0);
-      return create(sink -> {
-            if (iteration.incrementAndGet() <= timesFailing) {
-                sink.error(new TestRootCauseException());
-            } else {
-                sink.success(result);
-            }
-        });
-    }
+  private static Mono<String> failingMonoTimes(int timesFailing, String result) {
+    AtomicInteger iteration = new AtomicInteger(0);
+    return create(sink -> {
+      if (iteration.incrementAndGet() <= timesFailing) {
+        sink.error(new TestRootCauseException());
+      } else {
+        sink.success(result);
+      }
+    });
+  }
 
 
-    @Test
+  @Test
   @CaptureSystemOutput
   void p06_retryThenLogError_failing0x(OutputCapture outputCapture) {
     when(dependencyMock.call())
@@ -183,43 +183,54 @@ class P3_ErrorsTest {
   }
 
 
+  @Test
+  @CaptureSystemOutput
+  void p06_retryThenLogError_timeout(OutputCapture outputCapture) {
+    when(dependencyMock.call()).thenReturn(subscribed.times(4, never()));
 
-    @Test
-    @Timeout(5)
-    void p07_retryWithBackoff_failingAlways() {
-        TestRootCauseException ex = new TestRootCauseException();
-        when(dependencyMock.call()).thenReturn(subscribed.times(4, error(ex)));
+    assertThatThrownBy(() -> workshop.p06_retryThenLogError().block());
+    assertThat(outputCapture.toString()).contains("SCRAP LOGS FOR ME");
+  }
 
-        Duration delta = workshop.p07_retryWithBackoff()
-                .as(StepVerifier::create)
-                .expectError().verify();
 
-        assertThat(delta.toMillis()).isCloseTo(200 + 400 + 800, byLessThan(750L));
-    }
-    @Test
-    @Timeout(5)
-    void p07_retryWithBackoff_failing2x() {
-        when(dependencyMock.call()).thenReturn(subscribed.times(3, failingMonoTimes(2, "result")));
+  @Test
+  @Timeout(5)
+  void p07_retryWithBackoff_failingAlways() {
+    TestRootCauseException ex = new TestRootCauseException();
+    when(dependencyMock.call()).thenReturn(subscribed.times(4, error(ex)));
 
-        Duration delta = workshop.p07_retryWithBackoff()
-                .as(StepVerifier::create)
-                .expectNext("result")
-                .verifyComplete();
+    Duration delta = workshop.p07_retryWithBackoff()
+            .as(StepVerifier::create)
+            .expectError().verify();
 
-        assertThat(delta.toMillis()).isCloseTo(200 + 400, byLessThan(350L));
-    }
-    @Test
-    @CaptureSystemOutput
-    void p07_retryWithBackoff_failing0x(OutputCapture outputCapture) {
-        when(dependencyMock.call()).thenReturn(subscribed.times(1, just("result")));
+    assertThat(delta.toMillis()).isCloseTo(200 + 400 + 800, byLessThan(750L));
+  }
 
-        Duration delta = workshop.p07_retryWithBackoff()
-                .as(StepVerifier::create)
-                .expectNext("result")
-                .verifyComplete();
+  @Test
+  @Timeout(5)
+  void p07_retryWithBackoff_failing2x() {
+    when(dependencyMock.call()).thenReturn(subscribed.times(3, failingMonoTimes(2, "result")));
 
-        assertThat(delta.toMillis()).isCloseTo(0L, byLessThan(90L));
-    }
+    Duration delta = workshop.p07_retryWithBackoff()
+            .as(StepVerifier::create)
+            .expectNext("result")
+            .verifyComplete();
+
+    assertThat(delta.toMillis()).isCloseTo(200 + 400, byLessThan(350L));
+  }
+
+  @Test
+  @CaptureSystemOutput
+  void p07_retryWithBackoff_failing0x(OutputCapture outputCapture) {
+    when(dependencyMock.call()).thenReturn(subscribed.times(1, just("result")));
+
+    Duration delta = workshop.p07_retryWithBackoff()
+            .as(StepVerifier::create)
+            .expectNext("result")
+            .verifyComplete();
+
+    assertThat(delta.toMillis()).isCloseTo(0L, byLessThan(90L));
+  }
 
   @Test
   void p08_usingResourceThatNeedsToBeClosed() throws IOException {
