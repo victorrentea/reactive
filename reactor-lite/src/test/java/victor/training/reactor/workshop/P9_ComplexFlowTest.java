@@ -64,7 +64,7 @@ public class P9_ComplexFlowTest {
 
   @Test
   public void doesNotBlock() {
-    RunAsNonBlocking.runsNonBlocking(() -> {
+    RunAsNonBlocking.nonBlocking(() -> {
       try {
         return workshop.p06_complexFlow(ID);
       } catch (ExecutionException | InterruptedException e) {

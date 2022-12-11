@@ -10,7 +10,7 @@ import reactor.core.publisher.Mono;
 public class P2_Enrich {
     static class A {}
     static class B {}
-    static class C {}
+    static class C {boolean reject;}
     static class D {}
     @Value @With
     static class AB {
@@ -189,8 +189,6 @@ public class P2_Enrich {
          try {b= dependency.b(id).block();}catch(Exception e) {}
          return Mono.just(new AB(a, b));
     }
-
-//    TODO filterWhen
 
     // ==================================================================================================
 

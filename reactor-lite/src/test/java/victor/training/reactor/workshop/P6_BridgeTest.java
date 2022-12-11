@@ -66,7 +66,7 @@ public class P6_BridgeTest {
       Utils.sleep(200);
       return "data";
     });
-    Mono<String> mono = RunAsNonBlocking.runsNonBlocking(() -> workshop.p03_blockingCalls());
+    Mono<String> mono = RunAsNonBlocking.nonBlocking(() -> workshop.p03_blockingCalls());
     assertThat(mono.block()).isEqualTo("data");
   }
 
