@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.io.Writer;
 import java.time.Duration;
 
+import static java.time.Duration.ofMillis;
+
 public class P3_Errors {
   protected final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -44,61 +46,68 @@ public class P3_Errors {
    * TODO Log any exception from the Mono, and rethrow the same error.
    */
   public Mono<String> p01_log_rethrow() {
+    return dependency.call()
 
-    // equivalent blocking⛔️ code:
-    try {
-      String value = dependency.call().block(); // .block() [AVOID in prod] throws any exception in the Mono
-      return Mono.just(value);
-    } catch (Exception e) {
-      log.error("Exception occurred: " + e, e);  //replace this catch with equivalent reactive code. avoid .block()
-      throw e;
-    }
+            // pentru side-effects in memorie pe diverse semnale (aici: eroare)
+            .doOnError(e -> log.error("Exception occurred: " + e, e))
+
+//            .onErrorResume(e -> {
+//              log.error("Exception occurred: " + e, e);
+//              return Mono.error(e);
+//            })
+            ;
+
   }
 
   // ==================================================================================================
 
   // TODO Wrap any exception in the call() in a new IllegalStateException("Call failed", originalException).
   public Mono<String> p02_wrap() {
-    try {
-      return dependency.call();
-    } catch (
-            Exception originalException) { // <-- do this on any exception in the future, then delete this USELESS catch
-      throw new IllegalStateException(originalException);
-    }
+    //    try {
+    //      return dependency.call();
+    //    } catch (Exception originalException) { // <-- do this on any exception in the future, then delete this USELESS catch
+    //      throw new IllegalStateException(originalException);
+    //    }
+    return dependency.call()
+//            .onErrorResume(e -> Mono.error(new IllegalStateException(e)))
+            .onErrorMap(cause -> new IllegalStateException(cause))
+            ;
   }
 
   // ==================================================================================================
 
   // TODO Return "default" if the call fails.
   public Mono<String> p03_defaultValue() {
-    try {
-      return dependency.call();
-    } catch (Exception e) {
-      return Mono.just("default"); // <-- do this on any exception in the future, then delete this USELESS catch
-    }
+//    try {
+//      return dependency.call();
+//    } catch (Exception e) {
+//      return Mono.just("default"); // <-- do this on any exception in the future, then delete this USELESS catch
+//    }
+    return dependency.call().onErrorReturn("default");
   }
 
   // ==================================================================================================
 
   // TODO Call dependency#backup() if #call() fails.
   public Mono<String> p04_fallback() {
-    try {
-      return dependency.call();
-    } catch (Exception e) {
-      return dependency.backup(); // <-- do this on any exception in the future, then delete this USELESS catch
-    }
+    return dependency.call()
+            .onErrorResume(e -> dependency.backup());
   }
 
   // ==================================================================================================
 
   // TODO Call dependency#sendError(ex) on any exception in the call(), and then let the original error flow to the client
   public Mono<String> p05_sendError() {
-    try {
-      return dependency.call();
-    } catch (Exception e) {
-      dependency.sendError(e).block(); // <-- do this on any exception in the future, then delete this USELESS catch
-      throw e;
-    }
+//    try {
+//      return dependency.call();
+//    } catch (Exception e) {
+//      dependency.sendError(e).block(); // <-- do this on any exception in the future, then delete this USELESS catch
+//      throw e;
+//    }
+
+    return dependency.call()
+            .onErrorResume(e -> dependency.sendError(e).then(Mono.error(e)))
+            ;
   }
 
   // ==================================================================================================
@@ -108,7 +117,12 @@ public class P3_Errors {
   //  If a call takes more than 200 millis, consider it to be failure and retry.
   // If needed, investingate using .log("above") / .log("below")
   public Mono<String> p06_retryThenLogError() {
-    return dependency.call();
+    return dependency.call()
+            .timeout(ofMillis(200))
+            .log()
+            .retry(3)
+            .doOnError(e -> log.error("SCRAP LOGS FOR ME:  " + e))
+            ;
   }
 
   // ==================================================================================================
@@ -116,8 +130,13 @@ public class P3_Errors {
   // TODO Call dependency#call() again on error, maximum 4 times in total (as above)
   //  but leave 200 millis backoff between the calls.
   public Mono<String> p07_retryWithBackoff() {
-    return dependency.call();
+    return dependency.call()
+            .retryWhen(Retry.backoff(3, ofMillis(200)));
   }
+
+
+
+
 
   // ==================================================================================================
 

@@ -4,8 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.With;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaTypeEditor;
 import reactor.core.publisher.Mono;
 import reactor.function.TupleUtils;
+
+import java.util.Optional;
+
+import static reactor.function.TupleUtils.function;
 
 @Slf4j
 public class P2_Enrich {
@@ -117,7 +122,7 @@ public class P2_Enrich {
 
             // are voie sa execute doar transformate in memorie (fara retea)
             //                .map(tuple3 -> new ABC(tuple3.getT1(), tuple3.getT2(), tuple3.getT3()))
-            .map(TupleUtils.function((a, b, c) -> new ABC(a, b, c)))
+            .map(function((a, b, c) -> new ABC(a, b, c)))
             //                .map(TupleUtils.function(ABC::new)) // ca sa nu mai inteleaga nimeni!! - Job Security
 
             ;
@@ -182,7 +187,7 @@ public class P2_Enrich {
     Mono<B> mb = ma.flatMap(a-> dependency.b1(a));
     Mono<C> mc = ma.flatMap(a-> dependency.c1(a));
     return Mono.zip(ma,mb,mc)
-            .map(TupleUtils.function((a,b,c)->new ABC(a,b,c)))
+            .map(function((a, b, c)->new ABC(a,b,c)))
             ;
 
 
@@ -201,14 +206,27 @@ public class P2_Enrich {
    */
   public Mono<ABC> p05_a_then_b1_then_c2(int id) {
     // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block();
-    B b = dependency.b1(a).block();
-    C c = dependency.c2(a, b).block();
-    return Mono.just(new ABC(a, b, c));
+//    A a = dependency.a(id).block();
+//    B b = dependency.b1(a).block();
+//    C c = dependency.c2(a, b).block();
+//    return Mono.just(new ABC(a, b, c));
 
-    // TODO Solution #1: accumulating data structures (chained flatMap)
+
+
+    // TODO Solution #1: accumulating intermediary data structures (chained flatMap)
+    return dependency.a(id)
+            .zipWhen(dependency::b1)
+            .zipWhen(TupleUtils.function(dependency::c2),
+                    (tab, c) -> new ABC(tab.getT1(), tab.getT2(), c));
+
 
     // TODO Solution #2 (geek): nested flatMap
+//    return dependency.a(id)
+//            .flatMap(a -> dependency.b1(a)
+//                    .flatMap(b -> dependency.c2(a,b)
+//                            .map(c->new ABC(a,b,c))
+//                    )
+//            );
 
     // TODO Solution #3 (risky): cached Mono<>
     //      eg Mono<A> ma = dependency.a(id).cache();
@@ -217,16 +235,25 @@ public class P2_Enrich {
   // ==================================================================================================
 
   /**
-   * a(id) then b1(a) ==> AB(a,b), but if b(id) returns empty() => AB(a,null)
+   * a(id) then b1(a) ==> AB(a,b),
+   *  but if b1(id) returns empty() => AB(a,null)
    * Hint: watch out not to lose the data signals.
    * Challenge is that Flux/Mono cannot carry a "null" data signal.
    * Hint: you might need an operator containing "empty" in its name
    */
   public Mono<AB> p06_a_then_bMaybe(int id) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block();
-    B b = dependency.b1(a).block();
-    return Mono.just(new AB(a, b));
+    return dependency.a(id)
+//            .zipWhen(a -> dependency.b1(a).defaultIfEmpty(null), AB::new); // prima idee, dar nu poti da null ca valoare in Reactor
+
+//            .zipWhen(a -> dependency.b1(a)
+//                                    .map(Optional::of)
+//                                    .defaultIfEmpty(Optional.empty())
+//                    , (a1, bOpt) -> new AB(a1, bOpt.orElse(null)));
+
+            .flatMap(a -> dependency.b1(a)
+                    .map(b -> new AB(a, b))
+                    .defaultIfEmpty(new AB(a,null))
+            );
   }
   // ==================================================================================================
 
@@ -237,27 +264,24 @@ public class P2_Enrich {
    * Hint: watch out not to lose the data signals.
    */
   public Mono<AB> p07_a_par_bMaybe(int id) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block(); // in parallel
-    B b = dependency.b(id).block(); // in parallel
-    return Mono.just(new AB(a, b));
+    return Mono.zip(dependency.a(id),
+            dependency.b(id).map(Optional::of).defaultIfEmpty(Optional.empty()),
+            (a, bOpt) -> new AB(a, bOpt.orElse(null)));
   }
 
   // ==================================================================================================
 
   /**
-   * a(id) || b(id) ==> AB(a,b), but if b(id) fails => AB(a,null)
+   * a(id) || b(id) ==> AB(a,b), but if b(id) fails (Mono.error) => AB(a,null)
    * Hint: watch out not to lose the data signals.
    */
   public Mono<AB> p08_a_try_b(int id) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block();
-    B b = null;
-    try {
-      b = dependency.b(id).block();
-    } catch (Exception e) {
-    }
-    return Mono.just(new AB(a, b));
+    return Mono.zip(dependency.a(id),
+            dependency.b(id)
+                    .map(Optional::of)
+                    .onErrorReturn(Optional.empty())
+                    .defaultIfEmpty(Optional.empty()),
+            (a, bOpt) -> new AB(a, bOpt.orElse(null)));
   }
 
   // ==================================================================================================
@@ -283,14 +307,14 @@ public class P2_Enrich {
   }
 
   public Mono<P10UseCaseContext> p10_contextPattern(int id) {
-    // equivalent blocking⛔️ code:
-    P10UseCaseContext context = new P10UseCaseContext(id);
-    context = context.withA(dependency.a(context.getId()).block());
-    context = context.withB(dependency.b1(context.getA()).block());
-    context = context.withC(dependency.c2(context.getA(), context.getB()).block());
-    context = context.withD(dependency.d(id).block());
-    // TODO non-blocking and in parallel as many as possible
-    return Mono.just(context);
+    return Mono.just(new P10UseCaseContext(id))
+            .zipWhen(context -> dependency.a(context.id), P10UseCaseContext::withA)
+            .zipWhen(context -> dependency.b1(context.a), P10UseCaseContext::withB)
+            .zipWhen(context -> dependency.c2(context.a, context.b), P10UseCaseContext::withC)
+
+            // slight inefficiency: de ce astept sa-l cer pe B pana am facut si a,b,c ??? b e independent de ele.
+            .zipWhen(context -> dependency.d(context.id), P10UseCaseContext::withD)
+            ;
   }
 
 }
