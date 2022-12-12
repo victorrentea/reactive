@@ -38,9 +38,18 @@ public class P4_SideEffects {
    */
   public Mono<A> p01_sendMessageAndReturn(Mono<A> ma) {
     // equivalent blocking⛔️ code:
-    A a = ma.block();
-    dependency.sendMessage(a).block();
-    return Mono.just(a);
+//    A a = ma.block();
+//    dependency.sendMessage(a).block();
+//    return Mono.just(a);
+
+    return ma
+            .doOnNext(a -> {
+              log.debug("ACUM!!!" +a);
+              dependency.sendMessage(a); // daca nu faci .subscribe()
+              // pe un Publisher(Flux/Mono) si nici nu-l dai mai departe cuiva (Spring),
+              // nimic nu ruleaza. tre' subscribe!!
+              // .subscribe();
+            });
   }
 
   // ==================================================================================================
