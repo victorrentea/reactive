@@ -128,10 +128,14 @@ public class P1_CreationTest {
             .verifyError(IllegalStateException.class);
   }
 
+//  @Test
+//  public void flux5_delayedElements_prostScris() {
+//    List<Long> lista = workshop.flux5_delayedElements().collectList().block();
+//  }
   @Test
   @Timeout(value = 1500, unit = MILLISECONDS)
   public void flux5_delayedElements() {
-    Duration duration = workshop.flux5_delayedElements()
+        Duration duration = workshop.flux5_delayedElements()
             .as(StepVerifier::create)
             .expectNext(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)
             .verifyComplete();
