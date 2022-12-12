@@ -57,17 +57,20 @@ public class BlockingApp {
       Mono<Beer> futureBeer = barman.pourBeer(); // by default ruleaza pe ForkJoin.commonPool are Ncpu-1 threaduri
       Mono<Vodka> futureVodka = barman.pourVodka();
 
-      Mono<DillyDilly> dillyMono = futureBeer.zipWith(futureVodka, (beer, vodka) -> barman.mixCocktail(beer, vodka))
+      Mono<DillyDilly> dillyMono = futureBeer
+              .zipWith(futureVodka, (beer, vodka) -> barman.mixCocktail(beer, vodka))
               .flatMap(m -> m);
-
-      //      CompletableFuture<DillyDilly> futureDilly = futureBeer.thenCombine(futureVodka,
-//              (beer, vodka) ->  barman.mixCocktail(beer, vodka));
-
-//      DillyDilly dilly = barman.mixCocktail(beer, vodka);
 
       log.debug("HTTP thread was blocked for {} millis ", (currentTimeMillis() - t0));
       return dillyMono; // ii intorc lui Spring un future, el va sti sa astepte sa
    }
+//   @GetMapping("drink")
+//   public async DillyDilly drinkAlaNode() throws Exception {
+//      Beer futureBeer = await barman.pourBeer(); // by default ruleaza pe ForkJoin.commonPool are Ncpu-1 threaduri
+//      Vodka futureVodka = await barman.pourVodka();
+//      DillyDilly dilly = await barman.mixCocktail(beer, vodka);
+//      return dilly;
+//    }
 
 }
 
