@@ -152,8 +152,9 @@ public class P2_Enrich {
    */
   public Mono<ABC> p04_a_then_b1_c1(int id) {
     // Hint mono.flatMap(->mono.zipWith(mono, ->))
-     dependency.a(id)
-            .flatMap(a->dependency.b1(a));
+     return dependency.a(id)
+            .flatMap(a->dependency.b1(a)
+                    .zipWith(dependency.c1(a), (b,c) -> new ABC(a,b,c)  ));
   }
 
   // ==================================================================================================
@@ -165,8 +166,12 @@ public class P2_Enrich {
    * Relax, you are in Heaven😇: calling b1 and c1 return immediately, without blocking.
    */
   public Mono<ABC> p04_a_then_b1_c1_cache(int id) {
-    Mono<A> ma = dependency.a(id).cache();
-    return null;
+    Mono<A> ma = dependency.a(id);
+    Mono<B> mb = ma.flatMap(a-> dependency.b1(a));
+    Mono<C> mc = ma.flatMap(a-> dependency.c1(a));
+    return Mono.zip(ma,mb,mc)
+            .map(TupleUtils.function((a,b,c)->new ABC(a,b,c)))
+            ;
   }
 
 
