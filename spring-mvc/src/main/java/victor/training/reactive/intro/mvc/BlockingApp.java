@@ -46,7 +46,7 @@ public class BlockingApp {
    }
 
    @GetMapping("drink")
-   public DillyDilly drink() throws Exception {
+   public CompletableFuture<DillyDilly> drink() throws Exception {
       log.info("Talking to barman: " + barman.getClass());
       // o executa un thread dintr-un thread pool al Tomcatului (app serverul de sub)
       long t0 = currentTimeMillis();
@@ -55,14 +55,17 @@ public class BlockingApp {
       CompletableFuture<Beer> futureBeer = CompletableFuture.supplyAsync(() -> barman.pourBeer()); // by default ruleaza pe ForkJoin.commonPool are Ncpu-1 threaduri
       CompletableFuture<Vodka> futureVodka = CompletableFuture.supplyAsync(() -> barman.pourVodka());
 
-// antipattern: .get pe CompletableFuture
-      Beer beer = futureBeer.get(); //cat timp sta blocat la ac linie threadul Tomcatului ? 1 sec
-      Vodka vodka = futureVodka.get();//cat timp sta blocat la ac linie threadul Tomcatului ? - 0, operatia deja s-a terminat
 
-      DillyDilly dilly = barman.mixCocktail(beer, vodka);
+// antipattern: .get pe CompletableFuture
+//      Beer beer = futureBeer.get(); //cat timp sta blocat la ac linie threadul Tomcatului ? 1 sec
+//      Vodka vodka = futureVodka.get();//cat timp sta blocat la ac linie threadul Tomcatului ? - 0, operatia deja s-a terminat
+
+      CompletableFuture<DillyDilly> futureDilly = futureBeer.thenCombine(futureVodka, (beer, vodka) ->  barman.mixCocktail(beer, vodka));
+
+//      DillyDilly dilly = barman.mixCocktail(beer, vodka);
 
       log.debug("HTTP thread was blocked for {} millis ", (currentTimeMillis() - t0));
-      return dilly;
+      return futureDilly; // ii intorc lui Spring un future, el va sti sa astepte sa
    }
 
 }
