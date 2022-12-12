@@ -42,8 +42,6 @@ public class BlockingApp {
 
    @GetMapping("fast")
    public String fast() {
-//      sdjgklsdjgskldgjlsddslgldghgjfgd
-//              hsjhgjghjskdkjg
       return "immediate";
    }
 
@@ -54,10 +52,10 @@ public class BlockingApp {
       long t0 = currentTimeMillis();
 
       // pornesc in executie in paralel cele 2 treburi pt ca sunt indep intre ele
-      CompletableFuture<Beer> futureBeer = CompletableFuture.supplyAsync(() -> barman.pourBeer());
+      CompletableFuture<Beer> futureBeer = CompletableFuture.supplyAsync(() -> barman.pourBeer()); // by default ruleaza pe ForkJoin.commonPool are Ncpu-1 threaduri
       CompletableFuture<Vodka> futureVodka = CompletableFuture.supplyAsync(() -> barman.pourVodka());
 
-
+// antipattern: .get pe CompletableFuture
       Beer beer = futureBeer.get(); //cat timp sta blocat la ac linie threadul Tomcatului ? 1 sec
       Vodka vodka = futureVodka.get();//cat timp sta blocat la ac linie threadul Tomcatului ? - 0, operatia deja s-a terminat
 
