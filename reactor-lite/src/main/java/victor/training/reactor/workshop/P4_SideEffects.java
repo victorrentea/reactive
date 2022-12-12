@@ -112,7 +112,9 @@ public class P4_SideEffects {
    */
   public Mono<A> p05_saveSendAuditKOReturn(A a0) {
     return dependency.save(a0)
-            .delayUntil(a -> dependency.sendMessage(a).onErrorResume(e -> Mono.empty()))
+            .delayUntil(a -> dependency.sendMessage(a)
+                    .doOnError(e -> log.error(e.getMessage(), e))
+                    .onErrorResume(e -> Mono.empty()))
             .delayUntil(dependency::audit);
   }
 
