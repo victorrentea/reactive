@@ -15,6 +15,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static java.lang.System.currentTimeMillis;
@@ -79,10 +80,15 @@ class Barman {
    private static final Logger log = LoggerFactory.getLogger(Barman.class);
 
    public Mono<Beer> pourBeer() {
-      log.info("Start beer"); // aceste loguri MINT aici
-      Mono<Beer> beerMono = WebClient.create().get().uri("http://localhost:9999/api/beer")
-              .retrieve().bodyToMono(Beer.class);
-      log.info("End beer"); // aceste loguri MINT aici
+      String vai = UUID.randomUUID().toString();
+      //      log.info("Start beer"); // aceste loguri MINT aici
+      Mono<Beer> beerMono = WebClient.create().get()
+              .uri("http://localhost:9999/api/beer")
+              .retrieve().bodyToMono(Beer.class)
+              .doOnSubscribe(s -> log.info("Start beer " + vai))
+              .doOnSuccess(beer->log.info("End beer "+vai + ": " +beer))
+              ;
+//      log.info("End beer"); // aceste loguri MINT aici
       return beerMono;
    }
 
