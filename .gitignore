@@ -41,3 +41,4 @@ log/
 /src/main/docker/kafka/data/
 /databases/src/main/docker/databases/data/cassandra/data/
 /databases/src/main/docker/databases/data/cassandra/commitlog/
+/reactor-lite/out.txt
