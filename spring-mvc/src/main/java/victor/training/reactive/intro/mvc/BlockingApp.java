@@ -11,7 +11,10 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 import static java.lang.System.currentTimeMillis;
@@ -46,26 +49,24 @@ public class BlockingApp {
    }
 
    @GetMapping("drink")
-   public CompletableFuture<DillyDilly> drink() throws Exception {
+   public Mono<DillyDilly> drink() throws Exception {
       log.info("Talking to barman: " + barman.getClass());
-      // o executa un thread dintr-un thread pool al Tomcatului (app serverul de sub)
       long t0 = currentTimeMillis();
 
       // pornesc in executie in paralel cele 2 treburi pt ca sunt indep intre ele
-      CompletableFuture<Beer> futureBeer = CompletableFuture.supplyAsync(() -> barman.pourBeer()); // by default ruleaza pe ForkJoin.commonPool are Ncpu-1 threaduri
-      CompletableFuture<Vodka> futureVodka = CompletableFuture.supplyAsync(() -> barman.pourVodka());
+      Mono<Beer> futureBeer = barman.pourBeer(); // by default ruleaza pe ForkJoin.commonPool are Ncpu-1 threaduri
+      Mono<Vodka> futureVodka = barman.pourVodka();
 
+      Mono<DillyDilly> dillyMono = futureBeer.zipWith(futureVodka, (beer, vodka) -> barman.mixCocktail(beer, vodka))
+              .flatMap(m -> m);
 
-// antipattern: .get pe CompletableFuture
-//      Beer beer = futureBeer.get(); //cat timp sta blocat la ac linie threadul Tomcatului ? 1 sec
-//      Vodka vodka = futureVodka.get();//cat timp sta blocat la ac linie threadul Tomcatului ? - 0, operatia deja s-a terminat
-
-      CompletableFuture<DillyDilly> futureDilly = futureBeer.thenCombine(futureVodka, (beer, vodka) ->  barman.mixCocktail(beer, vodka));
+      //      CompletableFuture<DillyDilly> futureDilly = futureBeer.thenCombine(futureVodka,
+//              (beer, vodka) ->  barman.mixCocktail(beer, vodka));
 
 //      DillyDilly dilly = barman.mixCocktail(beer, vodka);
 
       log.debug("HTTP thread was blocked for {} millis ", (currentTimeMillis() - t0));
-      return futureDilly; // ii intorc lui Spring un future, el va sti sa astepte sa
+      return dillyMono; // ii intorc lui Spring un future, el va sti sa astepte sa
    }
 
 }
@@ -74,37 +75,38 @@ public class BlockingApp {
 class Barman {
    private static final Logger log = LoggerFactory.getLogger(Barman.class);
 
-   public Beer pourBeer() {
+   public Mono<Beer> pourBeer() {
       log.info("Start beer");
 
       // 1: pretend
-      sleep(1000);
-      Beer beer = new Beer("blond");
+//      sleep(1000);
+//      Beer beer = new Beer("blond");
 
       // 2: blocking REST call
-//      Beer beer = new RestTemplate().getForEntity("http://localhost:9999/api/beer", Beer.class).getBody();
+//      RestTemplate restTemplate = new RestTemplate();
+//      Beer beer = restTemplate.getForEntity("http://localhost:9999/api/beer", Beer.class).getBody();
       log.info("End beer");
-      return beer;
+      Mono<Beer> beerMono = WebClient.create().get().uri("http://localhost:9999/api/beer").retrieve().bodyToMono(Beer.class);
+      return beerMono;
 
       // 3: non-blocking REST call
 //      return new AsyncRestTemplate().exchange(...).completable()....;
 
       // 4: non-blocking REST call via WebClient
-      // return WebClient.create().get()...
    }
 
-   public Vodka pourVodka() {
+   public Mono<Vodka> pourVodka() {
       log.info("Start vodka");
-      sleep(200);  // imagine blocking DB call
+//      sleep(200);  // imagine blocking DB call
       log.info("End vodka");
-      return new Vodka();
+      return Mono.just(new Vodka()).delayElement(Duration.ofMillis(200));
    }
 
 
-   public DillyDilly mixCocktail(Beer beer, Vodka vodka) {
+   public Mono<DillyDilly> mixCocktail(Beer beer, Vodka vodka) {
       log.info("Mixing {} with {} (takes time) ...", beer, vodka);
-      sleep(500);
-      return new DillyDilly(beer, vodka);
+//      sleep(500);
+      return Mono.just(new DillyDilly(beer, vodka)).delayElement(Duration.ofMillis(500));
    }
 }
 
