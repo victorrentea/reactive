@@ -4,6 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+
+import static java.time.Duration.ofMillis;
+
 public class P4_SideEffects {
   protected final Logger log = LoggerFactory.getLogger(P4_SideEffects.class);
   static class A {
@@ -42,14 +46,11 @@ public class P4_SideEffects {
 //    dependency.sendMessage(a).block();
 //    return Mono.just(a);
 
-    return ma
-            .doOnNext(a -> {
-              log.debug("ACUM!!!" +a);
-              dependency.sendMessage(a); // daca nu faci .subscribe()
-              // pe un Publisher(Flux/Mono) si nici nu-l dai mai departe cuiva (Spring),
-              // nimic nu ruleaza. tre' subscribe!!
-              // .subscribe();
-            });
+ return ma
+//            .flatMap(a -> dependency.sendMessage(a).thenReturn(a)) // perfect, doar ca e atat de frecv ca au facut op dedicat:
+//            .delayUntil(a -> dependency.sendMessage(a))
+            .delayUntil(dependency::sendMessage) // geek version
+            ;
   }
 
   // ==================================================================================================
@@ -59,9 +60,12 @@ public class P4_SideEffects {
    */
   public Mono<Void> p02_saveAndSend(A a0) {
     // equivalent blocking⛔️ code:
-    A a = dependency.save(a0).block();
-    dependency.sendMessage(a).block();
-    return Mono.empty();
+//    A a = dependency.save(a0).block();
+//    dependency.sendMessage(a).block();
+//    return Mono.empty();
+    return dependency.save(a0)
+            .flatMap(dependency::sendMessage);
+
   }
 
   // ==================================================================================================
@@ -72,11 +76,21 @@ public class P4_SideEffects {
    */
   public Mono<Void> p03_saveSendIfConflict(A a0) {
     // equivalent blocking⛔️ code:
-    A a = dependency.save(a0).block();
-    if (dependency.retrieveStatus(a).block() == AStatus.CONFLICT) {
-      dependency.sendMessage(a).block();
-    }
-    return Mono.empty();
+//    A a = dependency.save(a0).block();
+//    if (dependency.retrieveStatus(a).block() == AStatus.CONFLICT) {
+//      dependency.sendMessage(a).block();
+//    }
+//    return Mono.empty();
+
+//    return dependency.save(a0)
+//            .flatMap(a -> dependency.retrieveStatus(a)
+//                    .flatMap(status -> status == AStatus.CONFLICT ? dependency.sendMessage(a) : Mono.empty()
+//                    ));
+
+    return dependency.save(a0)
+            .filterWhen(a -> dependency.retrieveStatus(a).map(status -> status == AStatus.CONFLICT))
+            .flatMap(a->dependency.sendMessage(a));
+
   }
 
   // ==================================================================================================
@@ -85,11 +99,9 @@ public class P4_SideEffects {
    * TODO Call a = .save(a0) then .sendMessage(a) and .audit(a) and return the 'a' returned by save
    */
   public Mono<A> p04_saveSendAuditReturn(A a0) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.save(a0).block();
-    dependency.sendMessage(a).block();
-    dependency.audit(a).block();
-    return Mono.just(a);
+    return dependency.save(a0)
+            .delayUntil(a->Mono.zip(dependency.sendMessage(a), dependency.audit(a)))
+            ;
   }
 
   // ==================================================================================================
@@ -99,14 +111,9 @@ public class P4_SideEffects {
    * ! Make sure audit() is called and the returned Mono<> completes without error.
    */
   public Mono<A> p05_saveSendAuditKOReturn(A a0) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.save(a0).block();
-    try {
-      dependency.sendMessage(a).block();
-    } catch (Exception e) {
-    }
-    dependency.audit(a).block();
-    return Mono.just(a);
+    return dependency.save(a0)
+            .delayUntil(a -> dependency.sendMessage(a).onErrorResume(e -> Mono.empty()))
+            .delayUntil(dependency::audit);
   }
 
 
@@ -135,7 +142,23 @@ public class P4_SideEffects {
    */
   public Mono<A> p07_save_sendFireAndForget(A a0) {
     return dependency.save(a0)
-            // TODO
+
+            // il las max 200 ms. altfel ii dau cancel si continui ca si cum nimic nu s-ar fi intamplat
+//            .delayUntil(a -> dependency.sendMessage(a).timeout(ofMillis(200), Mono.empty()))
+
+            .doOnNext(a -> dependency.sendMessage(a).subscribe())
+            // de ce NU se recomanda sa faci .subscribe() de mana ci sa "chainuiesti" toate operatiile pe care le faci
+            // si sa dai un Flux/Mono lui Spring in final, intorcandu-l dintr-o metoda de controller eg @GetMapping
+
+            // 1) sa uiti sa logezi erorile! (by default Reactor logeaza)
+
+            // 2) .cancel() pe subscriptia facuta de mana NU se executa daca Mono<A> returnat din fct asta (lu spring) este cancel.
+            //      // no cancellation signal propagation -> in BE nu prea ne doare. In ANdroid doare. FE:
+                // 'n-are sens sa mai lasi apelurile http la BE sa mearga daca omu a inchis pagina/applicatia)
+
+            // 3) Reactor Context propagation is blocked. metadatele asociate req curent (AT, userid, tenantId, @Transactional, MDC)
+            // NU se mai propaga pe sendMessage()
+
             ;
   }
 
