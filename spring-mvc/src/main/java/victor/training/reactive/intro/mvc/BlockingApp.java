@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.concurrent.CompletableFuture;
+
 import static java.lang.System.currentTimeMillis;
 import static victor.training.reactive.intro.mvc.Utils.sleep;
 
@@ -40,18 +42,24 @@ public class BlockingApp {
 
    @GetMapping("fast")
    public String fast() {
+//      sdjgklsdjgskldgjlsddslgldghgjfgd
+//              hsjhgjghjskdkjg
       return "immediate";
    }
 
    @GetMapping("drink")
    public DillyDilly drink() throws Exception {
       log.info("Talking to barman: " + barman.getClass());
-
+      // o executa un thread dintr-un thread pool al Tomcatului (app serverul de sub)
       long t0 = currentTimeMillis();
 
-      Beer beer = barman.pourBeer();
+      // pornesc in executie in paralel cele 2 treburi pt ca sunt indep intre ele
+      CompletableFuture<Beer> futureBeer = CompletableFuture.supplyAsync(() -> barman.pourBeer());
+      CompletableFuture<Vodka> futureVodka = CompletableFuture.supplyAsync(() -> barman.pourVodka());
 
-      Vodka vodka = barman.pourVodka();
+
+      Beer beer = futureBeer.get(); //cat timp sta blocat la ac linie threadul Tomcatului ? 1 sec
+      Vodka vodka = futureVodka.get();//cat timp sta blocat la ac linie threadul Tomcatului ? - 0, operatia deja s-a terminat
 
       DillyDilly dilly = barman.mixCocktail(beer, vodka);
 
