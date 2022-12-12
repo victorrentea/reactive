@@ -71,6 +71,21 @@ public class P2_EnrichTest {
         assertThat(workshop.p04_a_then_b1_c1(1).block()).isEqualTo(new ABC(a, b,c));
     }
     @Test
+    void p04_a_then_b1_c1_cache_naiveTest() {
+        // given
+        Mono<A> justA = Mono.just(a);
+        // TODO how can I count how many times was subscribed the publisher above?
+        when(dependency.a(1)).thenReturn(justA);
+        when(dependency.b1(a)).thenReturn(just(b));
+        when(dependency.c1(a)).thenReturn(just(c));
+
+        // when
+        ABC block = workshop.p04_a_then_b1_c1_cache(1).block();
+
+        // then
+        assertThat(block).isEqualTo(new ABC(a, b, c));
+    }
+    @Test
     void p04_a_then_b1_c1_cache() {
         when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
         when(dependency.b1(a)).thenReturn(subscribed.once(just(b)));
@@ -157,90 +172,4 @@ public class P2_EnrichTest {
 
         assertThat(mono.block()).isEqualTo(new P10UseCaseContext(1, a,b,c,d));
     }
-
-
-    //    @Nested
-//    class P06_ComplexFlow {
-//        @Captor
-//        ArgumentCaptor<A> captorA;
-//        @BeforeEach
-//        final void before() {
-//            when(dependency.a(1)).thenReturn(completedFuture(a));
-//            lenient().when(dependency.b1(a)).thenReturn(completedFuture(b));
-//            lenient().when(dependency.c1(a)).thenReturn(completedFuture(c));
-//        }
-//        @Test
-//        void happy() throws ExecutionException, InterruptedException {
-//            when(dependency.saveA(any())).thenAnswer(x -> completedFuture(x.getArgument(0)));
-//            when(dependency.auditA(any(), eq(a))).thenReturn(completedFuture(null));
-//
-//            workshop.p06_complexFlow(1).get();
-//
-//            verify(dependency).a(1); // called once
-//            verify(dependency).b1(a); // called once
-//            verify(dependency).c1(a); // called once
-//            verify(dependency).saveA(captorA.capture()); // called once
-//            A a1 = captorA.getValue();
-//            assertThat(a1.a).isEqualTo("aBc");
-//            verify(dependency).auditA(a1, a); // called once
-//        }
-//
-//        @Test
-//        @Timeout(value = 400, unit = MILLISECONDS)
-//        void doesNotWaitForAuditToComplete() throws ExecutionException, InterruptedException {
-//            when(dependency.saveA(any())).thenAnswer(x -> completedFuture(x.getArgument(0)));
-//            when(dependency.auditA(any(), eq(a))).thenReturn(supplyAsync(() -> null, delayedExecutor(500, MILLISECONDS)));
-//
-//            workshop.p06_complexFlow(1).get();
-//
-//            verify(dependency).saveA(any());
-//        }
-//        @Test
-//        @CaptureSystemOutput
-//        void doesNotFail_ifAuditFails_butErrorIsLogged(OutputCapture outputCapture) throws ExecutionException, InterruptedException {
-//            when(dependency.saveA(any())).thenAnswer(x -> completedFuture(x.getArgument(0)));
-//            when(dependency.auditA(any(), eq(a))).thenReturn(failedFuture(new NullPointerException("from test")));
-//
-//            workshop.p06_complexFlow(1).get();
-//
-//            verify(dependency).saveA(any());
-//            assertThat(outputCapture.toString()).contains("from test");
-//        }
-//        @Test
-//        void errorInB_failsTheWholeFlow() throws ExecutionException, InterruptedException {
-//            when(dependency.b1(a)).thenReturn(failedFuture(new NullPointerException("from test")));
-//
-//            assertThatThrownBy(() -> workshop.p06_complexFlow(1).get());
-//
-//            verify(dependency,never()).saveA(any());
-//            verify(dependency,never()).auditA(any(), any());
-//        }
-//
-//        @Test
-//        void errorInSave_doesNotAudit() throws ExecutionException, InterruptedException {
-//            when(dependency.saveA(any())).thenReturn(failedFuture(new NullPointerException("from test")));
-//
-//            assertThatThrownBy(() -> workshop.p06_complexFlow(1).get());
-//
-//            verify(dependency,never()).auditA(any(), any());
-//        }
-//
-//        @Test
-//        @Timeout(value = 900, unit = MILLISECONDS)
-//        @Disabled("EXTRA HARD")
-//        void calls_b_c_inParallel() throws ExecutionException, InterruptedException {
-//            // when(dependency.b1(a)).thenReturn(supplyAsync(() -> b, delayedExecutor(500, MILLISECONDS))); // WRONG
-//            // Note: thenAnswer(->) calls the -> only when invoked from tested code
-//            // ==> start ticking the 500 millis only AT PROD CALL, not earlier
-//
-//            when(dependency.b1(a)).thenAnswer(x->supplyAsync(() -> b, delayedExecutor(500, MILLISECONDS)));
-//            when(dependency.c1(a)).thenAnswer(x->supplyAsync(() -> c, delayedExecutor(500, MILLISECONDS)));
-//            when(dependency.saveA(any())).thenAnswer(x -> completedFuture(x.getArgument(0)));
-//            when(dependency.auditA(any(), eq(a))).thenReturn(completedFuture(null));
-//
-//            workshop.p06_complexFlow(1).get();
-//        }
-//
-//    }
-    // parallel fetch ?
 }

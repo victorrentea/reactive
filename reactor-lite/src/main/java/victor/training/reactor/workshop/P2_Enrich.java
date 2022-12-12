@@ -109,8 +109,9 @@ public class P2_Enrich {
 
     /**
      * a(id), then b1(a) || c1(a) ==> ABC(a,b,c)
-     * Relax, you are in Heaven😇: calling b1 and c1 return immediately, without blocking.
-     */
+     * Remember, you are in Reactive Heaven😇:
+     *   calling b1 and c1 launches the network calls and returns immediately,
+     *   without blocking. */
     public Mono<ABC> p04_a_then_b1_c1(int id) {
         // Hint mono.flatMap(->mono.zipWith(mono, ->))
         return null;
@@ -119,13 +120,15 @@ public class P2_Enrich {
     // ==================================================================================================
 
     /**
-     * Same problem as above but this time define multiple Mono<> variables.
-     * !! Use Mono#cache to avoid repeating the call to a(id))
+     * Same problem as above:
      * a(id), then b1(a) || c1(a) ==> ABC(a,b,c)
-     * Relax, you are in Heaven😇: calling b1 and c1 return immediately, without blocking.
+     * , but this time solve it by using multiple Mono<> variables.
+     * Hint: Use Mono#cache to avoid repeating the call to a(id)
      */
     public Mono<ABC> p04_a_then_b1_c1_cache(int id) {
-        Mono<A> ma = dependency.a(id).cache();
+        Mono<A> ma = dependency.a(id);
+        // Mono<B> mb =
+        // etc...
         return null;
     }
 
@@ -163,6 +166,7 @@ public class P2_Enrich {
          B b = dependency.b1(a).block();
          return Mono.just(new AB(a, b));
     }
+
     // ==================================================================================================
     /**
      * a(id) || b(id) ==> AB(a,b), but if b(id) returns empty() => AB(a,null)
