@@ -167,8 +167,10 @@ public class P2_Enrich {
    */
   public Mono<ABC> p04_a_then_b1_c1_cache(int id) {
     Mono<A> ma = dependency.a(id)
+            .metrics() // afiseaza pe Grafana de cate ori te-ai subscris si cat a durat sa vina elementul
             .doOnSubscribe(s-> System.out.println("ACUM PLEACA CALLU DE RETEA"))
             .cache()
+
             ;
     // there are only 2 things hard in programming:
     // - cache invalidation> valeu: cacheul asta cat traieste?
