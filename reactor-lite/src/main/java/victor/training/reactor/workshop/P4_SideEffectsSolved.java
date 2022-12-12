@@ -51,7 +51,8 @@ public class P4_SideEffectsSolved extends P4_SideEffects {
   @Override
   public Mono<A> p07_save_sendFireAndForget(A a0) {
     return dependency.save(a0)
-            .doOnNext(a -> dependency.sendMessage(a).subscribe(v -> {
-            }, e -> log.error("Error: " + e)));
+            .doOnNext(a -> dependency.sendMessage(a)
+                    .subscribe(v -> {}, e -> log.error("Error: " + e))
+            );
   }
 }

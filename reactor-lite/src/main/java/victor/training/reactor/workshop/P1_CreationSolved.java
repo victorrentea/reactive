@@ -76,4 +76,8 @@ public class P1_CreationSolved extends P1_Creation {
     return flux.log();
   }
 
+  @Override
+  public Mono<String> reactorContext_read() {
+    return Mono.deferContextual(context -> Mono.just("Hi " + context.get("username")));
+  }
 }

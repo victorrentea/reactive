@@ -107,4 +107,12 @@ public class P1_Creation {
     return flux;
   }
 
+  //========================================================================================
+  // TODO The returned Mono should emit "Hi " + the current username
+  //  got from the Reactor Context, eg  context.get("username")
+  // Hint: Mono.deferContextual allows access to context propagated from downstream subscriber: inspect the test also.
+  public Mono<String> reactorContext_read() {
+    return null;
+  }
+
 }

@@ -150,4 +150,13 @@ public class P1_CreationTest {
             .contains("onSubscribe", "request", "onNext", "onComplete");
   }
 
+  @Test
+  void reactorContext_read() {
+    String string = workshop.reactorContext_read()
+            .contextWrite(context -> context.put("username", "Joe"))
+            .block();
+
+    assertThat(string).contains("Hi", "Joe");
+  }
+
 }

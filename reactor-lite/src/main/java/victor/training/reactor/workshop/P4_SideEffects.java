@@ -121,10 +121,13 @@ public class P4_SideEffects {
    * In other words, the returned Mono should complete immediately after save() completes with the 'a' returned by it,
    * leaving in the background the call to sendMessage running (aka 'fire and forget').
    * Also, make sure any error from sendMessage is logged in the console.
+   *
+   * BONUS: make sure any data in the reactor context sent by the subscriber is propagated into the sendMessage reactor context.
    */
   public Mono<A> p07_save_sendFireAndForget(A a0) {
     return dependency.save(a0)
             // TODO
             ;
   }
+
 }
