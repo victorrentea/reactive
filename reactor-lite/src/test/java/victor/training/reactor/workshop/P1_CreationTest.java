@@ -18,31 +18,30 @@ import java.util.List;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.byLessThan;
+import static org.assertj.core.api.Assertions.*;
 
 @TestMethodOrder(MethodName.class)
-public class P1_CreationTest {
+class P1_CreationTest {
 
   	P1_Creation workshop = new P1_Creation();
 //  P1_Creation workshop = new P1_CreationSolved();
 
 
   @Test
-  public void mono1_just() {
+  void p1_mono1_just() {
     Mono<String> mono = workshop.mono1_just();
     assertThat(mono.block()).isEqualTo("foo");
   }
 
   @Test
-  public void mono2_empty() {
+  void p1_mono2_empty() {
     workshop.mono2_empty()
             .as(StepVerifier::create)
             .verifyComplete();
   }
 
   @Test
-  public void mono3_optional() {
+  void p1_mono3_optional() {
     assertThat(workshop.mono3_optional("foo").block()).isEqualTo("foo");
 
     workshop.mono3_optional(null)
@@ -51,14 +50,14 @@ public class P1_CreationTest {
   }
 
   @Test
-  public void mono4_error() {
+  void p1_mono4_error() {
     workshop.mono4_error()
             .as(StepVerifier::create)
             .verifyError(IllegalStateException.class);
   }
 
   @Test
-  public void mono5_noSignal() {
+  void p1_mono5_noSignal() {
     workshop.mono5_noSignal()
             .as(StepVerifier::create)
             .expectSubscription()
@@ -70,7 +69,7 @@ public class P1_CreationTest {
 
   @Test
   @Timeout(value = 200, unit = MILLISECONDS)
-  void mono6_delayedData() {
+  void p1_mono6_delayedData() {
     workshop.mono6_delayedData()
             .as(StepVerifier::create)
             .expectSubscription()
@@ -80,7 +79,7 @@ public class P1_CreationTest {
   }
 
   @Test
-  void mono7_fromCallable() throws InterruptedException {
+  void p1_mono7_fromCallable() throws InterruptedException {
     Mono<LocalDateTime> resultMono = workshop.mono7_fromCallable();
     Thread.sleep(110);
     LocalDateTime time = resultMono.block();
@@ -90,7 +89,7 @@ public class P1_CreationTest {
 
   @Test
   @Timeout(value = 200, unit = MILLISECONDS)
-  void mono8_delayedCompletion() {
+  void p1_mono8_delayedCompletion() {
     workshop.mono8_delayedCompletion()
             .as(StepVerifier::create)
             .expectSubscription()
@@ -100,7 +99,7 @@ public class P1_CreationTest {
 
 
   @Test
-  public void flux1_values() {
+  void p2_flux1_values() {
     workshop.flux1_values()
             .as(StepVerifier::create)
             .expectNext("foo", "bar")
@@ -108,21 +107,21 @@ public class P1_CreationTest {
   }
 
   @Test
-  public void flux2_fromList() {
+  void p2_flux2_fromList() {
     workshop.flux2_fromList(List.of("foo", "bar"))
             .as(StepVerifier::create)
             .expectNext("foo", "bar")
             .verifyComplete();
   }
   @Test
-  public void flux3_empty() {
+  void p2_flux3_empty() {
     workshop.flux3_empty()
             .as(StepVerifier::create)
             .verifyComplete();
   }
 
   @Test
-  public void flux4_error() {
+  void p2_flux4_error() {
     workshop.flux4_error()
             .as(StepVerifier::create)
             .verifyError(IllegalStateException.class);
@@ -130,7 +129,7 @@ public class P1_CreationTest {
 
   @Test
   @Timeout(value = 1500, unit = MILLISECONDS)
-  public void flux5_delayedElements() {
+  void p2_flux5_delayedElements() {
     Duration duration = workshop.flux5_delayedElements()
             .as(StepVerifier::create)
             .expectNext(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)
@@ -143,11 +142,31 @@ public class P1_CreationTest {
 
   @Test
   @CaptureSystemOutput
-  void logSignals(OutputCapture outputCapture) {
+  void p3_logSignals(OutputCapture outputCapture) {
     Flux<String> flux = Flux.just("one", "two");
     workshop.logSignals(flux).collectList().block();
     assertThat(outputCapture.toString())
             .contains("onSubscribe", "request", "onNext", "onComplete");
+  }
+  @Test
+  @CaptureSystemOutput
+  void p3_doOnHooks(OutputCapture outputCapture) {
+    Flux<String> flux = Flux.just("one", "two");
+
+    workshop.doOnHooks(flux).blockLast();
+
+    assertThat(outputCapture.toString())
+            .contains("SUBSCRIBE", "NEXT", "END", "one", "two");
+  }
+  @Test
+  @CaptureSystemOutput
+  void p3_doOnHooks_error(OutputCapture outputCapture) {
+    Flux<String> flux = Flux.error(new IllegalStateException());
+
+    assertThatThrownBy(()->workshop.doOnHooks(flux).blockLast());
+
+    assertThat(outputCapture.toString())
+            .contains("SUBSCRIBE", "ERROR", "END");
   }
 
   @Test

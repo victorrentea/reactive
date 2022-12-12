@@ -75,6 +75,14 @@ public class P1_CreationSolved extends P1_Creation {
   public Flux<String> logSignals(Flux<String> flux) {
     return flux.log();
   }
+  public Flux<String> doOnHooks(Flux<String> flux) {
+    return flux
+            .doOnSubscribe(s-> System.out.println("SUBSCRIBE"))
+            .doOnNext(element-> System.out.println("NEXT"+element))
+            .doOnError(error -> System.out.println("ERROR"))
+            .doOnTerminate(() -> System.out.println("END"))
+            ;
+  }
 
   @Override
   public Mono<String> reactorContext_read() {
