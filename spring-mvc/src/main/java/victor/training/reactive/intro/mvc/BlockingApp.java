@@ -79,23 +79,11 @@ class Barman {
    private static final Logger log = LoggerFactory.getLogger(Barman.class);
 
    public Mono<Beer> pourBeer() {
-      log.info("Start beer");
-
-      // 1: pretend
-//      sleep(1000);
-//      Beer beer = new Beer("blond");
-
-      // 2: blocking REST call
-//      RestTemplate restTemplate = new RestTemplate();
-//      Beer beer = restTemplate.getForEntity("http://localhost:9999/api/beer", Beer.class).getBody();
-      log.info("End beer");
-      Mono<Beer> beerMono = WebClient.create().get().uri("http://localhost:9999/api/beer").retrieve().bodyToMono(Beer.class);
+      log.info("Start beer"); // aceste loguri MINT aici
+      Mono<Beer> beerMono = WebClient.create().get().uri("http://localhost:9999/api/beer")
+              .retrieve().bodyToMono(Beer.class);
+      log.info("End beer"); // aceste loguri MINT aici
       return beerMono;
-
-      // 3: non-blocking REST call
-//      return new AsyncRestTemplate().exchange(...).completable()....;
-
-      // 4: non-blocking REST call via WebClient
    }
 
    public Mono<Vodka> pourVodka() {

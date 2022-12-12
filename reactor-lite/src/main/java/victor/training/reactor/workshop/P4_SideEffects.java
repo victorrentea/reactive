@@ -90,7 +90,6 @@ public class P4_SideEffects {
     return dependency.save(a0)
             .filterWhen(a -> dependency.retrieveStatus(a).map(status -> status == AStatus.CONFLICT))
             .flatMap(a->dependency.sendMessage(a));
-
   }
 
   // ==================================================================================================
