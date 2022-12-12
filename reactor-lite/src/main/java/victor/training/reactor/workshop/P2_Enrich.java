@@ -166,12 +166,29 @@ public class P2_Enrich {
    * Relax, you are in Heaven😇: calling b1 and c1 return immediately, without blocking.
    */
   public Mono<ABC> p04_a_then_b1_c1_cache(int id) {
-    Mono<A> ma = dependency.a(id);
+    Mono<A> ma = dependency.a(id)
+            .doOnSubscribe(s-> System.out.println("ACUM PLEACA CALLU DE RETEA"))
+            .cache()
+            ;
+    // there are only 2 things hard in programming:
+    // - cache invalidation> valeu: cacheul asta cat traieste?
+        // doar cat traieste in heap instanta de Mono
+        // cu alte cuvinte, doar pentru instanta asta de flux
+    // - naming things
+
+    // fara .cache -> bug=ma subscriam de 3 ori la Mono<A> => 3 NETWORK CALLS.
     Mono<B> mb = ma.flatMap(a-> dependency.b1(a));
     Mono<C> mc = ma.flatMap(a-> dependency.c1(a));
     return Mono.zip(ma,mb,mc)
             .map(TupleUtils.function((a,b,c)->new ABC(a,b,c)))
             ;
+
+
+    // Concluzie coding practice: NU AI VOIE SA DECLARI VARIABILE Mono/Flux
+    // efect : vei vedea metode de 10-20 de linii ce inlantuie un reactive chain
+          //NU:  Exista si dirty hack: .cache() < nu o folosi. pt ca degenereaza
+
+    // Cum scriu un test sa pice pe cazu asta
   }
 
 

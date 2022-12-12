@@ -55,7 +55,7 @@ public class SubscribedProbe implements InvocationInterceptor {
 
   @Override
   public void interceptTestMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
-    invocation.proceed();
+    invocation.proceed();// runs the test
 
     for (ProbeSpec probeSpec : probes) {
       assertThat(probeSpec.probe.subscribeCount())

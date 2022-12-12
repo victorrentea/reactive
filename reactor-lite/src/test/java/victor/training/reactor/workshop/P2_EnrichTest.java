@@ -8,6 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
+import reactor.test.publisher.PublisherProbe;
 import victor.training.reactor.workshop.P2_Enrich.*;
 import victor.training.util.SubscribedProbe;
 
@@ -77,6 +78,22 @@ public class P2_EnrichTest {
         when(dependency.c1(a)).thenReturn(subscribed.once(just(c)));
 
         assertThat(workshop.p04_a_then_b1_c1_cache(1).block()).isEqualTo(new ABC(a, b,c));
+    }
+    @Test
+
+    void testDeLaZeroCareSaVerificeDeCateOriTeSubscriiLaA() {
+        // given
+        PublisherProbe<A> probe = PublisherProbe.of(just(a));
+        when(dependency.a(1)).thenReturn(probe.mono());
+        when(dependency.b1(a)).thenReturn(just(b));
+        when(dependency.c1(a)).thenReturn(just(c));
+
+        // when
+        ABC result = workshop.p04_a_then_b1_c1_cache(1).block();
+
+        // then
+        assertThat(result).isEqualTo(new ABC(a, b,c));
+        assertThat(probe.subscribeCount()).isEqualTo(1);
     }
 
     @Test
