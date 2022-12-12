@@ -129,6 +129,18 @@ public class P1_Creation {
 
   // Magie: acel lucru pentru care Jr o sa vina la tine sa te intrebe.
   //========================================================================================
+  // TODO print to console:
+  //  - "SUBSCRIBE" on subscribe signal
+  //  - "NEXT "+element on next signal (concatenate the element to message)
+  //  - "ERROR" on error signal
+  //  - "END" on error or completion signal
+  public Flux<String> doOnHooks(Flux<String> flux) {
+    return flux;
+  }
+
+
+
+  //========================================================================================
   // TODO The returned Mono should emit "Hi " + the current username
   //  got from the Reactor Context, eg  context.get("username")
   // Hint: Mono.deferContextual allows access to context propagated from downstream subscriber: inspect the test also.
