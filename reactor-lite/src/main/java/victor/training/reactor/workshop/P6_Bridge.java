@@ -2,17 +2,16 @@ package victor.training.reactor.workshop;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.core.scheduler.Schedulers;
 
-import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 public class P6_Bridge {
 
@@ -30,6 +29,8 @@ public class P6_Bridge {
     Flux<String> findAll();
 
     String legacyBlockingCall(); // blocks the caller thread
+
+    void sendMessage(long id);
   }
 
   protected final Dependency dependency;
@@ -101,44 +102,57 @@ public class P6_Bridge {
 
   }
 
-
-
-
-
-
-
-
-
-
-
   // ==================================================================================
   // TODO Adapt Mono to Java 8+ CompletableFuture
   public CompletableFuture<User> p04_fromMonoToCompletableFuture(Mono<User> mono) {
-    return null;
+    // Ce diferenta e intre Mono si CompletableFuture?
+    // Asemanarea: ambele iti dau date mai tarziu
+    // Diferenta: CompletableFuture.supplyAsync( [, executor custom]) -> commonPool daca nu-i dai executor
+    // Diferenta: un Mono are nevoie sa-i faci subscribe; CompletableFuture se porneste imediat ce pune mana pe un thread din thread poolul pe care i-ai spus sa ruleze
+    return mono.toFuture(); // DUR: face .subscribe
   }
 
   // ==================================================================================
   // TODO Adapt Java 8+ CompletableFuture to Mono
   public Mono<User> p05_fromCompletableFutureToMono(CompletableFuture<User> future) {
-    return null;
+    return Mono.fromFuture(future); // futureul deja e in executie
   }
   // What is the difference between CompletableFuture and Mono? When do they start executing?
 
+
+
+
+
+
   // ==================================================================================
-  // TODO call dependency#sendRequest(id) and return a mono that emits the Response received in the next method.
+  // Bridgeul intre Reactive <> Callbacks
+  // TODO call dependency#sendRequest(id) and return a mono
+  //  that emits the Response received in the next method.
   // Use-Case: message bridge: send on a Kafka topic and receive the response on a second Kafka topic.
   // Hint: use Sinks.???
-  public Mono<ResponseMessage> p06_sendRequest(long id) {
-    return null;
+  @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+  public Mono<ResponseMessage> p06_sendRequestOnQueueAndReturnAMonoThatWouldCompleteWhenResponseComesBackOn2ndResonseQueue(long id) {
+    // rabbit.send(request)
+    return Mono.fromRunnable(() -> dependency.sendMessage(id))
+            .subscribeOn(Schedulers.boundedElastic())
+            .then(futureResponse.asMono());
   }
 
-  private Sinks.One<ResponseMessage> futureResponse; // TODO = ...
+  // Sinks iti permit sa EMITI programatic elemente pe un Mono/Flux de pe alta metoda, cand vrei tu.
+  private Sinks.One<ResponseMessage> futureResponse = Sinks.one();
 
+  // @RabitListener...
   public void p06_receiveResponse(long id, ResponseMessage response) {
     // TODO write code here to send the response in the mono returned in the previous method.
     // This method is called once from tests 500ms after the first. Try to Publisher#log() signals to see for yourself.
+    futureResponse.tryEmitValue(response);
   }
   // ⭐️ Challenge: Can you make t
+
+
+
+
+
 
 
   // ==================================================================================

@@ -86,7 +86,7 @@ public class P6_BridgeTest {
   @Timeout(value = 500, unit = MILLISECONDS)
   void p06_callback() {
     ResponseMessage responseMessage = new ResponseMessage();
-    Mono<ResponseMessage> mono = workshop.p06_sendRequest(1L);
+    Mono<ResponseMessage> mono = workshop.p06_sendRequestOnQueueAndReturnAMonoThatWouldCompleteWhenResponseComesBackOn2ndResonseQueue(1L);
     runAsync(() -> workshop.p06_receiveResponse(1L, responseMessage),
             delayedExecutor(200, MILLISECONDS));
     ResponseMessage r = mono.block();
