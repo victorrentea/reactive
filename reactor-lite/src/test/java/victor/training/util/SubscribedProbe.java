@@ -48,7 +48,7 @@ public class SubscribedProbe implements InvocationInterceptor {
   private <T> PublisherProbe<T> createAndRecordProbe(Publisher<T> mono, int times) {
     StackTraceElement callerStackTraceElement = new RuntimeException().getStackTrace()[2];
     PublisherProbe<T> probe = PublisherProbe.of(mono);
-    String testClassLine = callerStackTraceElement.getClassName().substring(callerStackTraceElement.getClassName().lastIndexOf('.') + 1) + ":" + callerStackTraceElement.getLineNumber();
+    String testClassLine = callerStackTraceElement.toString();
     probes.add(new ProbeSpec(probe, testClassLine, times));
     return probe;
   }
@@ -59,7 +59,7 @@ public class SubscribedProbe implements InvocationInterceptor {
 
     for (ProbeSpec probeSpec : probes) {
       assertThat(probeSpec.probe.subscribeCount())
-              .describedAs("Mono probed at " + probeSpec.testClassLine + " was subscribed too many (or few) times")
+              .describedAs("Publisher was subscribed too many (or few) times\n  Publisher probed in test: "+probeSpec.testClassLine)
               .isEqualTo(probeSpec.times);
     }
   }
