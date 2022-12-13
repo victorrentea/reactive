@@ -27,6 +27,9 @@ public class GroupingFluxes {
       //TYPE3(HARD): Call apiC(messageList), buffering together requests such that
       //HARD: send max 3 IDs, but an ID waits max 500 millis
 
+
+      // DEPRECATED IN FAVOR OF P7_Flux.java
+
       return messageStream
           .then()
           ;

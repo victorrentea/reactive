@@ -1,4 +1,4 @@
-package victor.training.reactive.databases.r2dbc;
+package victor.training.reactive.r2dbc;
 
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;

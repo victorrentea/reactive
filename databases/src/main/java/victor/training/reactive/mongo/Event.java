@@ -1,4 +1,4 @@
-package victor.training.reactive.databases.mongo;
+package victor.training.reactive.mongo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

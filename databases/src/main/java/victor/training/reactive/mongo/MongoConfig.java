@@ -1,15 +1,13 @@
-package victor.training.reactive.databases.mongo;
+package victor.training.reactive.mongo;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.CollectionOptions;
 import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRepositories;
 
 import javax.annotation.PostConstruct;
-import java.time.LocalDateTime;
 
 import static java.time.LocalDateTime.now;
 
