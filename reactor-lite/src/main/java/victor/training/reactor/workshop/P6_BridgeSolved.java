@@ -38,13 +38,15 @@ public class P6_BridgeSolved extends P6_Bridge {
     return Mono.fromFuture(future);
   }
 
-  public Mono<ResponseMessage> p06_sendRequest(long id) {
-    return futureResponse.asMono();
+  public Mono<ResponseMessage> p06_callback(long id) {
+    return Mono.fromRunnable(() ->dependency.sendMessageOnQueueBlocking(id))
+            .subscribeOn(Schedulers.boundedElastic())
+            .then(futureResponse.asMono());
   }
 
   private final One<ResponseMessage> futureResponse = Sinks.one();
 
-  public void p06_receiveResponse(long id, ResponseMessage response) {
+  public void p06_receiveResponseOnReplyQueue(long id, ResponseMessage response) {
     futureResponse.tryEmitValue(response);
   }
 

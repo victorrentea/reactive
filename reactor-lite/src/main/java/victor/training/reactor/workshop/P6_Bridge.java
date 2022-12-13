@@ -2,6 +2,7 @@ package victor.training.reactor.workshop;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.bind.annotation.GetMapping;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -25,6 +26,8 @@ public class P6_Bridge {
     Flux<String> findAll();
 
     String legacyBlockingCall(); // blocks the caller thread
+
+    void sendMessageOnQueueBlocking(Long id);
   }
 
   protected final Dependency dependency;
@@ -69,20 +72,21 @@ public class P6_Bridge {
   // What is the difference between CompletableFuture and Mono? When do they start executing?
 
   // ==================================================================================
-  // TODO call dependency#sendRequest(id) and return a mono that emits the Response received in the next method.
-  // Use-Case: message bridge: send on a Kafka topic and receive the response on a second Kafka topic.
-  // Hint: use Sinks.???
-  public Mono<ResponseMessage> p06_sendRequest(long id) {
+  // TODO call dependency#sendMessageOnQueueBlocking(id) and then return a Mono
+  //  that emits the ResponseMessage received LATER via the next method (aka callback).
+  @GetMapping // imagine..
+  public Mono<ResponseMessage> p06_callback(long id) {
     return null;
   }
 
   private Sinks.One<ResponseMessage> futureResponse; // TODO = ...
 
-  public void p06_receiveResponse(long id, ResponseMessage response) {
-    // TODO write code here to send the response in the mono returned in the previous method.
-    // This method is called once from tests 500ms after the first. Try to Publisher#log() signals to see for yourself.
+  // @MessageListener imagine..
+  public void p06_receiveResponseOnReplyQueue(long id, ResponseMessage response) {
+    // TODO write code here to emit the received response in the Mono returned by the method above
+
   }
-  // ⭐️ Challenge: Can you make this work even if there are 2 overlapping requests?
+  // ⭐️ Challenge: Can you make this work even if there are 2 pending requests at the same time?
 
 
   // ==================================================================================
