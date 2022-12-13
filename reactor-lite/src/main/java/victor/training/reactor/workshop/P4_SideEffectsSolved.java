@@ -29,10 +29,12 @@ public class P4_SideEffectsSolved extends P4_SideEffects {
   }
 
   @Override
-  public Mono<A> p04_saveSendAuditReturn(A a0) {
+  public Mono<Void> p04_saveSendAuditReturn(A a0) {
     return dependency.save(a0)
+            .filter(a -> a.updated)
             .delayUntil(dependency::sendMessage)
-            .delayUntil(dependency::audit);
+            .delayUntil(dependency::audit)
+            .then();
   }
 
   @Override

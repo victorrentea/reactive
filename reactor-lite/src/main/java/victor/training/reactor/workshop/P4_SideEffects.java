@@ -7,6 +7,7 @@ import reactor.core.publisher.Mono;
 public class P4_SideEffects {
   protected final Logger log = LoggerFactory.getLogger(P4_SideEffects.class);
   static class A {
+    public boolean updated;
   }
   enum AStatus {
     NEW, UPDATED, CONFLICT
@@ -73,14 +74,17 @@ public class P4_SideEffects {
   // ==================================================================================================
 
   /**
-   * TODO Call a = .save(a0) then .sendMessage(a) and .audit(a) and return the 'a' returned by save
+   * TODO Call a = .save(a0)
+   *  if (a.updated) then .sendMessage(a) and .audit(a)
    */
-  public Mono<A> p04_saveSendAuditReturn(A a0) {
+  public Mono<Void> p04_saveSendAuditReturn(A a0) {
     // equivalent blocking⛔️ code:
     A a = dependency.save(a0).block();
-    dependency.sendMessage(a).block();
-    dependency.audit(a).block();
-    return Mono.just(a);
+    if (a.updated) {
+      dependency.sendMessage(a).block();
+      dependency.audit(a).block();
+    }
+    return Mono.empty();
   }
 
   // ==================================================================================================

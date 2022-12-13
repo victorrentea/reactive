@@ -30,8 +30,8 @@ public class P4_SideEffectsTest {
   @Mock
   Dependency dependency;
   @InjectMocks
-  P4_SideEffects workshop;
-//  P4_SideEffectsSolved workshop;
+//  P4_SideEffects workshop;
+  P4_SideEffectsSolved workshop;
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();
 
@@ -74,11 +74,20 @@ public class P4_SideEffectsTest {
   }
   @Test
   void p04_saveSendAuditReturn() {
+    a.updated=true;
     when(dependency.save(a0)).thenReturn(subscribed.once(Mono.just(a)));
     when(dependency.sendMessage(a)).thenReturn(subscribed.once(Mono.empty()));
     when(dependency.audit(a)).thenReturn(subscribed.once(Mono.empty()));
 
-    assertThat(nonBlocking(() -> workshop.p04_saveSendAuditReturn(a0)).block()).isEqualTo(a);
+    nonBlocking(() -> workshop.p04_saveSendAuditReturn(a0)).block();
+  }
+  @Test
+  void p04_saveSendAuditReturnNotUpdated() {
+    a.updated=false;
+    when(dependency.save(a0)).thenReturn(subscribed.once(Mono.just(a)));
+    // Note: org.mockito.configuration.DefaultErrorSignalException makes all non-stubbed methods to emits an error signal by default
+
+    nonBlocking(() -> workshop.p04_saveSendAuditReturn(a0)).block();
   }
 
   @Test
