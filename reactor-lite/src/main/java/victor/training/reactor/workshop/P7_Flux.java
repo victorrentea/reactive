@@ -175,7 +175,7 @@ public class P7_Flux {
                           .bufferTimeout(3, Duration.ofMillis(200))
                           .flatMap(page -> dependency.sendEven(page));
                 default:
-                  throw new IllegalStateException("Unexpected value: " + groupedFlux.key());
+                  return Flux.error(new IllegalStateException("Unexpected value: " + groupedFlux.key()));
               }
             })
             .then();
