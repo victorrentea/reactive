@@ -11,6 +11,8 @@ import reactor.core.publisher.Sinks.EmitResult;
 import reactor.core.publisher.Sinks.One;
 import reactor.core.scheduler.Schedulers;
 
+import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -139,19 +141,25 @@ public class P6_Bridge {
     return Mono.fromRunnable(() -> dependency.sendMessage(id))
             .subscribeOn(Schedulers.boundedElastic())
             .then(pendingHttpRequests.computeIfAbsent(id,numipasa -> Sinks.one()).asMono())
+            .timeout(Duration.ofMinutes(1))
             .doOnTerminate(()-> System.out.println("Oare am scos ceva? " + (pendingHttpRequests.remove(id)!=null)))
 
             ;
   }
 
   // Sinks iti permit sa EMITI programatic elemente pe un Mono/Flux de pe alta metoda, cand vrei tu.
-  private Map<Long, One<ResponseMessage>> pendingHttpRequests = new HashMap<>();
+  private Map<Long, One<ResponseMessage>> pendingHttpRequests = Collections.synchronizedMap(new HashMap<>());
 
   // @RabitListener...
   public void p06_receiveResponse(long id, ResponseMessage response) {
     // TODO write code here to send the response in the mono returned in the previous method.
     // This method is called once from tests 500ms after the first. Try to Publisher#log() signals to see for yourself.
-    pendingHttpRequests.get(id).tryEmitValue(response);
+    One<ResponseMessage> pendingHttpRequest = pendingHttpRequests.get(id);
+    if (pendingHttpRequest == null) {
+      log.warn("Rasp de la rabbit a venit prea tarziu. A plecat deja Bro'");
+      return;
+    }
+    pendingHttpRequest.tryEmitValue(response);
   }
   // ⭐️ Challenge: Can you make t
 
