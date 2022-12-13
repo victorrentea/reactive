@@ -21,14 +21,14 @@ public class BackPressure {
 
 
 
-    System.out.println("------ Cold publisher that does NOT respect the request(n) from subscriber");
-    Flux.interval(Duration.ofMillis(50)) // impinge la fiecare 50 ms cate un element in jos... FARA sa-i pese de cate ai cerut,
-//            .onBackpressureBuffer()
-            .onBackpressureDrop()
-            .log()
-            .concatMap(x -> Mono.delay(Duration.ofMillis(100)), 1) // simulate that processing takes time
-            .take(4)
-            .blockLast();
+//    System.out.println("------ Cold publisher that does NOT respect the request(n) from subscriber");
+//    Flux.interval(Duration.ofMillis(50)) // impinge la fiecare 50 ms cate un element in jos... FARA sa-i pese de cate ai cerut,
+////            .onBackpressureBuffer()
+//            .onBackpressureDrop()
+//            .log()
+//            .concatMap(x -> Mono.delay(Duration.ofMillis(100)), 1) // simulate that processing takes time
+//            .take(4)
+//            .blockLast();
 
 
 //    ConnectableFlux<Long> hotFlux = Flux.interval(Duration.ofMillis(10))

@@ -93,7 +93,7 @@ public class SpringBootSample {
     }
 
     // a runner that publishes messages with the sender bean and consumes them with the receiver bean
-    @Component
+//    @Component
     static class Runner implements CommandLineRunner {
 
         final Sender sender;
