@@ -138,7 +138,10 @@ public class P6_Bridge {
     // rabbit.send(request)
     return Mono.fromRunnable(() -> dependency.sendMessage(id))
             .subscribeOn(Schedulers.boundedElastic())
-            .then(pendingHttpRequests.computeIfAbsent(id,numipasa -> Sinks.one()).asMono());
+            .doOnTerminate(()-> System.out.println("Oare am scos ceva? " + (pendingHttpRequests.remove(id)!=null)))
+            .then(pendingHttpRequests.computeIfAbsent(id,numipasa -> Sinks.one()).asMono())
+
+            ;
   }
 
   // Sinks iti permit sa EMITI programatic elemente pe un Mono/Flux de pe alta metoda, cand vrei tu.

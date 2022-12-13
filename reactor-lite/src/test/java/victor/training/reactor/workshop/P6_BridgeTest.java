@@ -1,5 +1,6 @@
 package victor.training.reactor.workshop;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -30,6 +31,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+@Slf4j
 @TestMethodOrder(MethodName.class)
 @ExtendWith(MockitoExtension.class)
 public class P6_BridgeTest {
@@ -88,7 +90,11 @@ public class P6_BridgeTest {
     ResponseMessage responseMessage = new ResponseMessage();
     Mono<ResponseMessage> mono = workshop.p06_sendRequestOnQueueAndReturnAMonoThatWouldCompleteWhenResponseComesBackOn2ndResonseQueue(1L);
     runAsync(() -> workshop.p06_receiveResponse(1L, responseMessage),
-            delayedExecutor(200, MILLISECONDS));
+            delayedExecutor(200, MILLISECONDS))
+            .exceptionally(e-> {
+              log.error("Eroare in callbackul de receive response: " + e, e);
+              return null;
+            });
     ResponseMessage r = mono.block();
     assertThat(r).isEqualTo(responseMessage);
   }
