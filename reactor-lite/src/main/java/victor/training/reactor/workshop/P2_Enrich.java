@@ -201,7 +201,7 @@ public class P2_Enrich {
      * The moral of the above example is to avoid method variables completely.
      * a(id), then b1(a), then c2(a,b); also d(id) ==> P10UseCaseContext(a,b,c,d)
      */
-    @Value // imutable object
+    @Value // immutable object
     @With // public P10UseCaseContext withA(A newa) { return new P10UseCaseContext(newa, b,c,d); }
     @AllArgsConstructor
     static class P10UseCaseContext {
@@ -221,7 +221,7 @@ public class P2_Enrich {
         context = context.withB(dependency.b1(context.getA()).block());
         context = context.withC(dependency.c2(context.getA(), context.getB()).block());
         context = context.withD(dependency.d(id).block());
-        // TODO non-blocking and in parallel as many as possible
+        // propagate context along a chain, enriching it along a chain of .zipWith or .flatMap
         return Mono.just(context);
     }
 
