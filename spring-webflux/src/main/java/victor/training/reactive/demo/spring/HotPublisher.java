@@ -13,10 +13,10 @@ import java.util.Objects;
 @RestController
 public class HotPublisher {
    // publisher cold
-   private Flux<Long> coldFlux = Flux.interval(Duration.ofSeconds(1));
+   private static final Flux<Long> coldFlux = Flux.interval(Duration.ofSeconds(1));
    @GetMapping(value = "tick/cold", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
    public Flux<String> cold() {
-      return coldFlux.map(Objects::toString);
+      return coldFlux.map(o -> "Au trecut "+ o + " secunde");
    }
 
    // publisher hot
