@@ -19,7 +19,7 @@
             <artifactId>lombok</artifactId>
         </dependency>
         <dependency>
-            <!-- detect blocking code in non-blocking context -->
+            <!-- detects    blocking code in non-blocking context -->
             <groupId>io.projectreactor.tools</groupId>
             <artifactId>blockhound</artifactId>
             <version>1.0.6.RELEASE</version>

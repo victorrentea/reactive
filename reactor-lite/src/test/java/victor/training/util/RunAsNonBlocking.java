@@ -21,6 +21,7 @@ public class RunAsNonBlocking {
   public static <T> Mono<T> nonBlocking(Supplier<Mono<T>> monoSupplier) {
     return Mono.defer(monoSupplier)
             .subscribeOn(parallel()); // blockhound detects any blocking in threads of this scheduler
+    // cu conditia sa-l ai pe blockhound-junit in dependinte
   }
 
   public static <T> T decorateAsNonBlocking(T objectUnderTest, Class<? super T> clazz) {

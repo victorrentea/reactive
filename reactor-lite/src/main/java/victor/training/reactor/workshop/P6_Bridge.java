@@ -101,9 +101,10 @@ public class P6_Bridge {
   public Mono<String> p03_blockingCalls() {
     log.info("Pe ce thread sunt aici si incerc sa ma blochez?");
 
-    return Mono.fromCallable(() -> dependency.legacyBlockingCall())
-            // asa faci o lambda sa ruleze pe ce Scheduler(aka thread pool) vrei
-            .subscribeOn(Schedulers.boundedElastic());
+//    return Mono.fromCallable(() -> dependency.legacyBlockingCall())
+//            // asa faci o lambda sa ruleze pe ce Scheduler(aka thread pool) vrei
+//            .subscribeOn(Schedulers.boundedElastic());
+    return Mono.just(dependency.legacyBlockingCall());
 
   }
 
