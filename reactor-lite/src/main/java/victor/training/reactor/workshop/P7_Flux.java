@@ -169,8 +169,7 @@ public class P7_Flux {
               switch (groupedFlux.key()) {
                 case TYPE1_NEGATIVE: return Mono.empty();
                 case TYPE2_ODD: return groupedFlux
-                        .flatMap(odd ->Mono.zip(dependency.sendOdd1(odd), dependency.sendOdd2(odd)))
-                ;
+                        .flatMap(odd ->Mono.zip(dependency.sendOdd1(odd), dependency.sendOdd2(odd)));
                 case TYPE3_EVEN:
                   return groupedFlux
                           .bufferTimeout(3, Duration.ofMillis(200))
