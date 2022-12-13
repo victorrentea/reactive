@@ -2,6 +2,7 @@ package victor.training.reactor.workshop;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.bind.annotation.GetMapping;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -38,7 +39,33 @@ public class P6_Bridge {
   // TODO call dependency#save and block the current thread until it completes, then log.info the returned value
   // Use-Case: hang a Kafka Listener thread that would otherwise consume a new message
   public void p01_blockForMono(String message) {
+    String s = dependency.save(message).block(); // RAU! sa blochezi threadu curent. Cand are sens?
+    log.info(s);
+    // MOTIVU1: MQ listener ne reactive
+    // codu asta e chemat dintr-un context non reactiv. eg Rabbit Listener
+    // ce ar merge rau daca in loc sa fac .block() fac .subscribe() intr-un listener de Rabbit =>?
+      // problema1(BIG): daca dau exceptie in save()? mai vede rabbitu eroare sa faca retry(3) la mesaj (sau sa-l puna in DLQ)
+      // problema2(LOAD): te sufoca rabbitu: listeneru (tu) nu faci fata la cate mesaje iti impinge el. ca el iti da alt mesaj imediat daca ii spui "gata sefu" in 0,02 ms
+//    dependency.save(message).doOnNext(s2-> log.info(s2)).subscribe();
+
+    // MOTIVU1: cand esti intr-un @Scheduled : scheduled nu pune in exec acceeasi met daca inca ruleaza
   }
+
+
+//  @GetMapping
+//  public Flux<String> multeMaiEficient() { // pentru ca memorie:
+//      // serverul poate trimite JSONurile pe rand element cu elemnent imediat ce vin
+////    daca aduc de pe remote pe toti odata, nu prea am beneficiu, eg:
+////    Mono<Parent> mp = WebClient...retrieve;
+////    return mp.flatMapMany(parent -> parent.getChildren())
+//    // dar e ma eficient daca faci de ex:
+//    Flux<Date> date = reactiveRepo.findAllByUsername("u");
+//    return date.map(Object::toString);
+//  }
+//  @GetMapping
+//  public Mono<List<String>> multe() {
+//
+//  }
 
   // ==================================================================================
   // TODO call dependency#findAll() and block to get all values, then log.info the list in the console.
@@ -48,12 +75,32 @@ public class P6_Bridge {
     log.info("List:" + list);
   }
 
+
+
   // ==================================================================================
   // TODO call dependency#legacyBlockingCall() and return its result in a Mono.
   //  NOTE: you are only allowed to block threads from Schedulers.boundedElastic()
+  // eg: legacyBlockingCall() {
+  //    springDataJpa.findByGrupaDeSange("..."):Person !!! NU POTI FOLOSI HIBERNATE CU REACTOR!
+  //    restTemplate.getFor... > a blocat threadu!
+  //    .wsdl call > nu exista moduri reactive de a apela alea
+  //    rabbit.send() daca vrei guaranteed delivery
+  //    fisierDePeFtp.read() -> I/O
+  //
   public Mono<String> p03_blockingCalls() {
-    return null;
+    String s = dependency.legacyBlockingCall();
+    return Mono.just(s);
   }
+
+
+
+
+
+
+
+
+
+
 
   // ==================================================================================
   // TODO Adapt Mono to Java 8+ CompletableFuture
@@ -82,7 +129,7 @@ public class P6_Bridge {
     // TODO write code here to send the response in the mono returned in the previous method.
     // This method is called once from tests 500ms after the first. Try to Publisher#log() signals to see for yourself.
   }
-  // ⭐️ Challenge: Can you make this work even if there are 2 overlapping requests?
+  // ⭐️ Challenge: Can you make t
 
 
   // ==================================================================================

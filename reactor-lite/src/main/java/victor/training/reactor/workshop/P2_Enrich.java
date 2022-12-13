@@ -158,8 +158,7 @@ public class P2_Enrich {
   public Mono<ABC> p04_a_then_b1_c1(int id) {
     // Hint mono.flatMap(->mono.zipWith(mono, ->))
      return dependency.a(id)
-            .flatMap(a->dependency.b1(a)
-                    .zipWith(dependency.c1(a), (b,c) -> new ABC(a,b,c)  ));
+            .flatMap(a->dependency.b1(a).zipWith(dependency.c1(a), (b,c) -> new ABC(a,b,c)  ));
   }
 
   // ==================================================================================================
