@@ -48,11 +48,14 @@ public class RabbitBridgeApi {
 //    AtomicReference<String> nucumva= new AtomicReference<>(); // GRESEALA: sa te bazezi pe date "alaturea" mutabile pe langa chain
     return Mono.deferContextual(context -> Mono.just((String) context.get("tenantId")))
             .map(tenantId -> "Thales Rupe pe " + tenantId + "! la ora " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm")))
-//            .doOnNext(body -> nucumva.set(body))
+            //            .doOnNext(body -> nucumva.set(body))
             .delayUntil(body -> sender.send(Mono.justOrEmpty(toMessage(body))))
-//            .then(Mono.fromCallable(() -> "Sent message: " + nucumva.get()))
-            .map(body ->  "Sent message: " + body)
-            ;
+            //            .then(Mono.fromCallable(() -> "Sent message: " + nucumva.get()))
+            .map(body -> "Sent message: " + body)
+            .doOnError(System.err::println);
+//             .subscribe();
+//            ;
+//    return Mono.just("bine");
   }
 
   @NotNull
