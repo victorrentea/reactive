@@ -2,6 +2,7 @@ package victor.training.reactor.workshop;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -123,7 +124,13 @@ public class P1_Creation {
   //  or down (from Publisher->Subscriber)
   public Flux<String> logSignals(Flux<String> flux) {
     return flux
-            .log() // v ^ v v v
+            .log("deasupra") // ⬆subscribe,request  ⬇next,complete,error
+
+            .subscribeOn(Schedulers.single())
+            .publishOn(Schedulers.parallel())
+
+            .log("sub") // ⬆subscribe,request  ⬇next,complete,error
+
             ;
   }
 

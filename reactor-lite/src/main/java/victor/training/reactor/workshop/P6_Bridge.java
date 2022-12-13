@@ -6,9 +6,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 public class P6_Bridge {
 
@@ -78,8 +82,6 @@ public class P6_Bridge {
 
 
   // ==================================================================================
-  // TODO call dependency#legacyBlockingCall() and return its result in a Mono.
-  //  NOTE: you are only allowed to block threads from Schedulers.boundedElastic()
   // eg: legacyBlockingCall() {
   //    springDataJpa.findByGrupaDeSange("..."):Person !!! NU POTI FOLOSI HIBERNATE CU REACTOR!
   //    restTemplate.getFor... > a blocat threadu!
@@ -87,9 +89,16 @@ public class P6_Bridge {
   //    rabbit.send() daca vrei guaranteed delivery
   //    fisierDePeFtp.read() -> I/O
   //
+  // TODO call dependency#legacyBlockingCall() and return its result in a Mono.
+  //  NOTE: you are only allowed to block threads from Schedulers.boundedElastic()
+  // In Reactor exista 4 scheduleri=thread pools: parallel (pt CPU), single (teste), netty(http), boundedElastic(pt a te bloca)
   public Mono<String> p03_blockingCalls() {
-    String s = dependency.legacyBlockingCall();
-    return Mono.just(s);
+    log.info("Pe ce thread sunt aici si incerc sa ma blochez?");
+
+    return Mono.fromCallable(() -> dependency.legacyBlockingCall())
+            // asa faci o lambda sa ruleze pe ce Scheduler(aka thread pool) vrei
+            .subscribeOn(Schedulers.boundedElastic());
+
   }
 
 
