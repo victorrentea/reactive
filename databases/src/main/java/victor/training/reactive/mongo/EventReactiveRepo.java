@@ -1,4 +1,4 @@
-package victor.training.reactive.databases.mongo;
+package victor.training.reactive.mongo;
 
 import org.springframework.data.mongodb.repository.Tailable;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;

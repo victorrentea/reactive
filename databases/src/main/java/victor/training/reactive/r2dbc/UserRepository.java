@@ -1,5 +1,5 @@
 
-package victor.training.reactive.databases.r2dbc;
+package victor.training.reactive.r2dbc;
 
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
