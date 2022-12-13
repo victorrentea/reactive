@@ -12,22 +12,24 @@ import java.util.Objects;
 
 @RestController
 public class HotPublisher {
+   // publisher cold
    private Flux<Long> coldFlux = Flux.interval(Duration.ofSeconds(1));
-   private ConnectableFlux<Long> hotFlux;
+   @GetMapping(value = "tick/cold", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+   public Flux<String> cold() {
+      return coldFlux.map(Objects::toString);
+   }
 
+   // publisher hot
+   private ConnectableFlux<Long> hotFlux;
    @PostConstruct
    public void initHotFlux() {
       hotFlux = Flux.interval(Duration.ofSeconds(1)).publish();
       hotFlux.connect();
    }
-
-   @GetMapping(value = "tick", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+   @GetMapping(value = "tick/hot", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
    public Flux<String> hot() {
       return hotFlux.map(Objects::toString);
    }
 
-   @GetMapping(value = "tick-cold", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-   public Flux<String> cold() {
-      return coldFlux.map(Objects::toString);
-   }
+
 }
