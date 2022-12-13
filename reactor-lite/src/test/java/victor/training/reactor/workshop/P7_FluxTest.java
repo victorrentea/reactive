@@ -41,8 +41,8 @@ public class P7_FluxTest {
   @Mock
   Dependency dependency;
   @InjectMocks
-  //  P7_Flux workshop;
-  P7_FluxSolved workshop;
+    P7_Flux workshop;
+//  P7_FluxSolved workshop;
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();
 
