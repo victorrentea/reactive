@@ -3,22 +3,33 @@ package victor.training.reactor.workshop;
 import lombok.Value;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
+import reactor.core.publisher.Sinks.One;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static java.time.Duration.ofMillis;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 public class P7_Flux {
+  Dependency dependency;
   public P7_Flux(Dependency dependency) {
     this.dependency = dependency;
   }
-  final Dependency dependency;
 
   @Value
-  static class A{Long id;}
+  static class A{int id;}
   interface Dependency {
-    Mono<A> fetchOneById(Long id);
-    Flux<A> fetchPageByIds(List<Long> idPage);
+    Mono<A> fetchOneById(Integer id);
+    Flux<A> fetchPageByIds(List<Integer> idPage);
     Mono<Void> sendMessage(A a);
 
     Mono<Void> sendOdd1(Integer oddMessage);
@@ -30,7 +41,7 @@ public class P7_Flux {
   // TODO #1 fetch each element by id using .fetchOneById(id)
   // TODO #2 Print elements as they come in. What do you observe? (the original IDs are consecutive)
   // TODO #3 Restrict the concurrency to maximum 4 requests in parallel
-  public Flux<A> p01_fetchInParallel_scrambled(List<Long> idList) {
+  public Flux<A> p01_fetchInParallel_scrambled(List<Integer> idList) {
     System.out.println("IDs to fetch: "+ idList);
     return Flux.empty(); // Flux.fromIterable(idList)...
   }
@@ -38,13 +49,13 @@ public class P7_Flux {
   // ==================================================================================
   // TODO same as above, but fire all requests in parallel.
   //  Still, preserve the order of the items in the list
-  public Flux<A> p02_fetchInParallel_preservingOrder(List<Long> idList) {
+  public Flux<A> p02_fetchInParallel_preservingOrder(List<Integer> idList) {
     return Flux.empty();
   }
 
   // ==================================================================================
   // TODO same as above, but fire only one request in parallel at a time (thus, still preserve order).
-  public Flux<A> p03_fetchOneByOne(List<Long> idList) {
+  public Flux<A> p03_fetchOneByOne(List<Integer> idList) {
     return Flux.empty();
   }
 
@@ -52,21 +63,48 @@ public class P7_Flux {
   // TODO #1 to save network latency, fetch items in pages of size=4, using .fetchPageByIds
   // TODO #2 don't allow any ID to wait more than 200 millis  (hint: look for a buffer* variant)
   // TODO #3 limit concurrent request to max 2 in parallel and make sure you don't scramble the elements
-  public Flux<A> p04_fetchInPages(Flux<Long> infiniteFlux) {
+  public Flux<A> p04_fetchInPages(Flux<Integer> flux) {
     return Flux.empty();
   }
 
   // ==================================================================================
-  // TODO for any incoming id > 0, .fetchOneById(id) and then send it to .sendMessage(a)
+  // TODO #1 for any incoming id > 0, .fetchOneById(id) and then send it to .sendMessage(a)
   //  Hint: this method runs at startup of a fictitious app => It has to .subscribe() to the flux!
   // TODO #2 any error in fetchOneById should be logged and the element discarded, but and NOT cancel/stop the flux
   //  Hint: onError...
   // TODO #3 any error (fetch OR send) should be logged and the element discarded, but and NOT cancel/stop the flux
   //  Hint: onErrorContinue
   @PostConstruct
-  public void p05_infinite(Flux<Long> infiniteFlux) {
+  public void p05_infinite(Flux<Integer> infiniteFlux) {
     // .subscribe(); // <- the only legal place ?
   }
+
+  // ==================================================================================
+  // TODO Batch requests together in pages of max 4 items, each element waiting max 200ms to be sent.
+  //  when a page of results comes back, complete the respective opened Mono<>
+  // Any call to submit request is returned a MOno that is completed later when the item in the page returns
+  // WARNING: EXTRA-EXTRA-EXTRA HARD
+  @Value
+  static class Request {
+    int id;
+    One<A> promise;
+  }
+  Sinks.Many<Request> requests = Sinks.many().unicast().onBackpressureBuffer();
+
+  public void p06_configureRequestFlux() {
+    requests.asFlux()
+            // TODO
+            //dependency.fetchPageByIds(idPage)
+            //request.getPromise().tryEmitValue(a)
+            .subscribe();
+
+  }
+  public Mono<A> p06_submitRequest(int id) {
+    One<A> promise = Sinks.one();
+    requests.tryEmitNext(new Request(id, promise));
+    return promise.asMono();
+  }
+
 
   // ==================================================================================
   // TODO #1 for any incoming element < 0, increment a counter and emit its value
@@ -75,17 +113,19 @@ public class P7_Flux {
   // TODO #2 do NOT emit repeated values:
   //   eg for the input above =>output=> 0, 1, 2, 3
 
-  public Flux<Integer> p06_monitoring(Flux<Integer> flux) {
+  public Flux<Integer> p07_monitoring(Flux<Integer> flux) {
     return Flux.empty();
   }
+
 
   // ==================================================================================
   // TODO based on the MessageType.forMessage(int) below, do one of the following:
   //  - TYPE1_NEGATIVE: Do nothing (ignore the message)
   //  - TYPE2_ODD: Call .sendOdd1(message) and .sendOdd2(message) in parallel
   //  - TYPE3_EVEN: Call .sendEven(List.of(message))
-  //  Then, to optimize network traffic, buffer together messages sent to .sendEven(page),
-  //   in pages of max 3 items, but without having any item waiting more than 200 millis
+  //  - TYPE3_EVEN: Call .sendEven(pageOfMessages)
+  //      * to optimize network traffic send in pages of size = 3
+  //      * avoid delaying an element by more than 200 millis
   // Bonus: debate .buffer vs .window
   public Mono<Void> p09_groupedFlux(Flux<Integer> messageStream) {
     return messageStream

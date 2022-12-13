@@ -1,19 +1,23 @@
 package victor.training.reactor.workshop;
 
-import lombok.Value;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import victor.training.reactor.workshop.P7_Flux.Dependency;
+import reactor.core.publisher.Sinks;
+import reactor.core.publisher.Sinks.One;
+import reactor.util.function.Tuples;
 
-import javax.annotation.PostConstruct;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+
+import static java.time.Duration.ofMillis;
+import static java.util.stream.Collectors.toMap;
 
 public class P7_FluxSolved extends P7_Flux {
   public P7_FluxSolved(P7_Flux.Dependency dependency) {
     super(dependency);
   }
-  public Flux<A> p01_fetchInParallel_scrambled(List<Long> idList) {
+  public Flux<A> p01_fetchInParallel_scrambled(List<Integer> idList) {
     System.out.println("IDs to fetch: "+ idList);
     return Flux.fromIterable(idList)
             .flatMap(dependency::fetchOneById, 4)
@@ -21,25 +25,25 @@ public class P7_FluxSolved extends P7_Flux {
             ;
   }
 
-  public Flux<A> p02_fetchInParallel_preservingOrder(List<Long> idList) {
+  public Flux<A> p02_fetchInParallel_preservingOrder(List<Integer> idList) {
     return Flux.fromIterable(idList)
             .flatMapSequential(dependency::fetchOneById)
             .doOnNext(System.out::println);
   }
 
-  public Flux<A> p03_fetchOneByOne(List<Long> idList) {
+  public Flux<A> p03_fetchOneByOne(List<Integer> idList) {
     return Flux.fromIterable(idList)
             .concatMap(dependency::fetchOneById)
             .doOnNext(System.out::println);
   }
 
-  public Flux<A> p04_fetchInPages(Flux<Long> infiniteFlux) {
-    return infiniteFlux
-            .buffer(4)
+  public Flux<A> p04_fetchInPages(Flux<Integer> flux) {
+    return flux
+            .bufferTimeout(4, ofMillis(200))
             .flatMapSequential(page -> dependency.fetchPageByIds(page), 2);
   }
 
-  public void p05_infinite(Flux<Long> infiniteFlux) {
+  public void p05_infinite(Flux<Integer> infiniteFlux) {
     infiniteFlux
             .filter(id -> id > 0)
             .flatMap(id -> dependency.fetchOneById(id))
@@ -49,7 +53,23 @@ public class P7_FluxSolved extends P7_Flux {
     ;
   }
 
-  public Flux<Integer> p06_monitoring(Flux<Integer> flux) {
+  public void p06_configureRequestFlux() {
+    requests.asFlux()
+//            .log("request")
+            .bufferTimeout(4, ofMillis(200))
+            .map(idPage -> idPage.stream().collect(toMap(Request::getId, Request::getPromise)))
+            .flatMap(idPageMap -> dependency.fetchPageByIds(new ArrayList<>(idPageMap.keySet()))
+                    .map(a -> Tuples.of(a, idPageMap.get(a.getId())))
+            )
+            .log("results")
+            .doOnNext(tuple -> tuple.getT2().tryEmitValue(tuple.getT1()).orThrow())
+            .onErrorContinue((ex, element)-> System.out.println(element + " failed with " +ex))
+            .subscribe();
+
+  }
+
+
+  public Flux<Integer> p07_monitoring(Flux<Integer> flux) {
     return flux
             .scan(0, (acc, e)-> acc + (e<0?1:0))
             .distinctUntilChanged()

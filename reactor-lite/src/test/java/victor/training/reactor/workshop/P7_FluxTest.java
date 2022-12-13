@@ -1,43 +1,50 @@
 package victor.training.reactor.workshop;
 
+import org.jooq.lambda.Unchecked;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import victor.training.reactor.workshop.P7_Flux.A;
 import victor.training.reactor.workshop.P7_Flux.Dependency;
 import victor.training.util.CaptureSystemOutput;
 import victor.training.util.CaptureSystemOutput.OutputCapture;
+import victor.training.util.SubscribedProbe;
 
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.LongStream;
+import java.util.stream.IntStream;
 
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-import static victor.training.reactor.lite.Utils.sleep;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @TestMethodOrder(MethodName.class)
 @ExtendWith(MockitoExtension.class)
 public class P7_FluxTest {
-  public static final List<Long> LIST_OF_IDS = LongStream.range(0, 10).boxed().collect(toList());
+  public static final List<Integer> LIST_OF_IDS = IntStream.range(0, 10).boxed().collect(toList());
   @Mock
   Dependency dependency;
   @InjectMocks
-  P7_Flux workshop;
-//  P7_FluxSolved workshop;
+  //  P7_Flux workshop;
+  P7_FluxSolved workshop;
+  @RegisterExtension
+  SubscribedProbe subscribed = new SubscribedProbe();
 
   AtomicInteger parallelCallsCounter = new AtomicInteger();
   int maxParallelism = 0;
@@ -95,9 +102,9 @@ public class P7_FluxTest {
 
   @Test
   void p04_fetchInPages() {
-    when(dependency.fetchPageByIds(List.of(0L, 1L, 2L, 3L))).thenReturn(Flux.just(new A(0L), new A(1L), new A(2L), new A(3L)).delayElements(ofMillis(100)));
-    when(dependency.fetchPageByIds(List.of(4L, 5L, 6L, 7L))).thenReturn(Flux.just(new A(4L), new A(5L), new A(6L), new A(7L)));
-    when(dependency.fetchPageByIds(List.of(8L, 9L))).thenReturn(Flux.just(new A(8L), new A(9L)));
+    when(dependency.fetchPageByIds(List.of(0, 1, 2, 3))).thenReturn(Flux.just(new A(0), new A(1), new A(2), new A(3)).delayElements(ofMillis(100)));
+    when(dependency.fetchPageByIds(List.of(4, 5, 6, 7))).thenReturn(Flux.just(new A(4), new A(5), new A(6), new A(7)));
+    when(dependency.fetchPageByIds(List.of(8, 9))).thenReturn(Flux.just(new A(8), new A(9)));
 
     List<A> results = workshop.p04_fetchInPages(Flux.fromIterable(LIST_OF_IDS)).collectList().block();
 
@@ -105,64 +112,108 @@ public class P7_FluxTest {
     assertThat(results).describedAs("Elements are in the correct order (not scrambled)").map(A::getId).containsExactlyElementsOf(LIST_OF_IDS);
   }
 
+
   @Test
   @Timeout(value = 500, unit = MILLISECONDS)
-  void p04_fetchInPages_delayedElement() {
-    when(dependency.fetchPageByIds(List.of(0L))).thenReturn(Flux.just(new A(0L)));
+  void p04_fetchInPages_delayedElement_KUNGFU_testPublisher_andStepVerifier() {
+    when(dependency.fetchPageByIds(List.of(0))).thenReturn(Flux.just(new A(0)));
 
-    List<A> results = workshop.p04_fetchInPages(Flux.interval(ofMillis(300)).take(1)).collectList().block();
-
-    assertThat(results.get(0)).isEqualTo(new A(0L));
+    TestPublisher<Integer> testPublisher = TestPublisher.create();
+    workshop.p04_fetchInPages(testPublisher.flux())
+            .as(StepVerifier::create)
+            .then(() -> testPublisher.next(0))
+            .thenAwait(ofMillis(300))
+            .expectNext(new A(0))
+            .then(() -> testPublisher.complete())
+            .verifyComplete();
+    // se poate si mai si, cu virtualTime (fakeuiest timpul sa nu stai efecti 400 ms la testul asta, ci doar cate ms)
   }
 
 
-  @Test
-  @CaptureSystemOutput
-  void p05_infinite(OutputCapture outputCapture) {
-    TestPublisher<Long> publisher = TestPublisher.create();
-    when(dependency.fetchOneById(any())).thenAnswer(p -> Mono.just(new A(p.getArgument(0))));
-    when(dependency.sendMessage(any())).thenReturn(Mono.empty());
+  @Nested
+  class P05_InfiniteFlux {
+    TestPublisher<Integer> publisher = TestPublisher.create();
 
-    workshop.p05_infinite(publisher.flux());
+    @BeforeEach
+    final void before() {
+      workshop.p05_infinite(publisher.flux());
+    }
 
-    // ignored
-    publisher.next(-1L);
-    sleep(100);
-    verify(dependency, never()).sendMessage(any());
+    @Test
+    void negativesAreIgnored() {
+      publisher.next(-1);
+    }
 
-    // passes through
-    publisher.next(1L);
-    sleep(100);
-    verify(dependency).fetchOneById(1L);
-    verify(dependency).sendMessage(new A(1L));
+    @Test
+    void fluxWorks() {
+      when(dependency.fetchOneById(1)).thenReturn(subscribed.once(Mono.just(new A(1))));
+      when(dependency.sendMessage(new A(1))).thenReturn(subscribed.once(Mono.empty()));
+      publisher.next(1);
+    }
 
-    // fetch fails
-    when(dependency.fetchOneById(88L)).thenReturn(Mono.error(new IllegalArgumentException("ExceptionFetch")));
-    publisher.next(88L);
-    sleep(100);
-    assertThat(outputCapture.toString()).contains("ExceptionFetch");
-    publisher.assertWasNotCancelled();
+    @Test
+    @CaptureSystemOutput
+    void fetchFails_fluxNotCancelled(OutputCapture outputCapture) {
+      when(dependency.fetchOneById(88)).thenReturn(Mono.error(new IllegalArgumentException("ExceptionFetch")));
+      publisher.next(88);
+      assertThat(outputCapture.toString()).contains("ExceptionFetch");
+      publisher.assertWasNotCancelled();
 
-    // send fails
-    when(dependency.sendMessage(new A(99L))).thenReturn(Mono.error(new IllegalArgumentException("ExceptionSend")));
-    publisher.next(99L);
-    sleep(100);
-    assertThat(outputCapture.toString()).contains("ExceptionSend");
-    publisher.assertWasNotCancelled();
+      fluxWorks(); // flux still works
+    }
 
-    // flux still works
-    publisher.next(2L);
-    sleep(100);
-    verify(dependency).fetchOneById(2L);
-    verify(dependency).sendMessage(new A(2L));
+    @Test
+    @CaptureSystemOutput
+    void anyError_fluxNotCancelled(OutputCapture outputCapture) {
+      when(dependency.fetchOneById(99)).thenReturn(Mono.just(new A(99)));
+      when(dependency.sendMessage(new A(99))).thenReturn(Mono.error(new IllegalArgumentException("ExceptionSend")));
+      publisher.next(99);
+      assertThat(outputCapture.toString()).contains("ExceptionSend");
+      publisher.assertWasNotCancelled();
+
+      fluxWorks(); // flux still works
+    }
   }
+
   
   @Test
-  void p06_monitoring() {
+  void p06_batchCalls() throws ExecutionException, InterruptedException {
+    workshop.p06_configureRequestFlux();
+    when(dependency.fetchPageByIds(any())).thenAnswer(call -> Flux.fromIterable(
+            ((List<Integer>) call.getArgument(0)).stream().map(A::new).collect(toList())
+    ));
 
-    List<Integer> results = workshop.p06_monitoring(Flux.just(1, -1, 2, -3, 0, -1)).collectList().block();
+    List<Future<A>> futures = List.of(
+            workshop.p06_submitRequest(1).toFuture(),
+            workshop.p06_submitRequest(2).toFuture(),
+            workshop.p06_submitRequest(3).toFuture(),
+            workshop.p06_submitRequest(4).toFuture(),
+            workshop.p06_submitRequest(5).toFuture()
+    );
+    List<A> results = futures.stream().map(Unchecked.function(Future::get)).collect(toList());
+    assertThat(results).containsExactly(new A(1), new A(2), new A(3), new A(4), new A(5));
+  }
+
+  @Test
+  @Timeout(value = 300, unit = MILLISECONDS)
+  void p06_batchCalls_timeout() {
+    workshop.p06_configureRequestFlux();
+    when(dependency.fetchPageByIds(any())).thenAnswer(call -> Flux.fromIterable(
+            ((List<Integer>) call.getArgument(0)).stream().map(A::new).collect(toList())
+    ));
+
+    assertThat(workshop.p06_submitRequest(1).block()).isEqualTo(new A(1));
+  }
+  @Test
+  void p07_monitoring_detectsAllChanges() {
+    List<Integer> results = workshop.p07_monitoring(Flux.just(1, -1, 2, -3, 0, -1)).collectList().block();
 
     assertThat(results).describedAs("#1 Detected all the changes").containsSubsequence(0, 1, 2, 3);
+  }
+
+  @Test
+  void p07_monitoring_onlyEmitsNewValues() {
+    List<Integer> results = workshop.p07_monitoring(Flux.just(1, -1, 2, -3, 0, -1)).collectList().block();
 
     assertThat(results).describedAs("#2 Does not emit duplicates").containsExactly(0, 1, 2, 3);
   }
