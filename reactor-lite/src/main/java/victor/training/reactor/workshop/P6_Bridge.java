@@ -170,16 +170,22 @@ public class P6_Bridge {
 
 
   // ==================================================================================
-  // TODO This method is called once. Every time the next method is called, this flux must emit the integer data.
+  // TODO This method is called by each brow care vrea sa urmareasca un stream de date.
+  //  Every time the next method is called, this flux must emit the integer data.
   // Use-Case: report on a Flux signals received as API calls or Messages
   // Hint: use Sinks.???
+  @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   public Flux<Integer> p07_fluxOfSignals() {
-    return null;
+    return fluxSink.asFlux().onBackpressureDrop()
+//            .switchMap(i->dependency.save(i+"").map(e->i))
+            ;
   }
 
-  private Sinks.Many<Integer> fluxSink; // TODO = ...
+  private Sinks.Many<Integer> fluxSink = Sinks.many().multicast().onBackpressureBuffer(100);
 
+//  @RabbitLisytemer/ SNMP callback
   public void p07_externalSignal(Integer data) {
+    fluxSink.tryEmitNext(data).orThrow();
     // TODO write code here to emit the data in the flux returned in the previous method.
   }
 
