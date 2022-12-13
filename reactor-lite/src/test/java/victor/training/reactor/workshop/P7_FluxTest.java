@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import victor.training.reactor.workshop.P7_Flux.A;
 import victor.training.reactor.workshop.P7_Flux.Dependency;
@@ -18,6 +19,7 @@ import victor.training.util.CaptureSystemOutput.OutputCapture;
 
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.LongStream;
 
@@ -37,7 +39,7 @@ public class P7_FluxTest {
   Dependency dependency;
   @InjectMocks
   P7_Flux workshop;
-//  P7_FluxSolved workshop;
+  //  P7_FluxSolved workshop;
 
   AtomicInteger parallelCallsCounter = new AtomicInteger();
   int maxParallelism = 0;
@@ -110,9 +112,45 @@ public class P7_FluxTest {
   void p04_fetchInPages_delayedElement() {
     when(dependency.fetchPageByIds(List.of(0L))).thenReturn(Flux.just(new A(0L)));
 
-    List<A> results = workshop.p04_fetchInPages(Flux.interval(ofMillis(300)).take(1)).collectList().block();
+    Flux<Long> emit0_thenCompleteAfter300ms = Flux.just(0L).concatWith(Flux.interval(ofMillis(300)).take(1).filter(x -> false));
+    List<A> results = workshop.p04_fetchInPages(emit0_thenCompleteAfter300ms).collectList().block();
 
     assertThat(results.get(0)).isEqualTo(new A(0L));
+  }
+
+  @Test
+  @Timeout(value = 500, unit = MILLISECONDS)
+  void p04_fetchInPages_delayedElement_testPublisherParallel() {
+    when(dependency.fetchPageByIds(List.of(0L))).thenReturn(Flux.just(new A(0L)));
+
+    TestPublisher<Long> testPublisher = TestPublisher.create();
+    CompletableFuture.runAsync(() ->
+            {
+              sleep(100);// posibil sa faca testul flaky
+              testPublisher.next(0L);
+              sleep(300);
+              testPublisher.complete();
+            }
+
+    );
+    List<A> results = workshop.p04_fetchInPages(testPublisher.flux()).collectList().block();
+    assertThat(results.get(0)).isEqualTo(new A(0L));
+  }
+
+  @Test
+  @Timeout(value = 500, unit = MILLISECONDS)
+  void p04_fetchInPages_delayedElement_testPublisher_andStepVerifier() {
+    when(dependency.fetchPageByIds(List.of(0L))).thenReturn(Flux.just(new A(0L)));
+
+    TestPublisher<Long> testPublisher = TestPublisher.create();
+    workshop.p04_fetchInPages(testPublisher.flux())
+            .as(StepVerifier::create)
+            .then(() -> testPublisher.next(0L))
+            .thenAwait(ofMillis(300))
+            .expectNext(new A(0L))
+            .then(() -> testPublisher.complete())
+            .verifyComplete();
+    // se poate si mai si, cu virtualTime (fakeuiest timpul sa nu stai efecti 400 ms la testul asta, ci doar cate ms)
   }
 
 
@@ -156,7 +194,7 @@ public class P7_FluxTest {
     verify(dependency).fetchOneById(2L);
     verify(dependency).sendMessage(new A(2L));
   }
-  
+
   @Test
   void p06_monitoring() {
 
