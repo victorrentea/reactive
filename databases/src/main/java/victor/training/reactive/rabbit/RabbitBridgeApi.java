@@ -1,5 +1,6 @@
 package victor.training.reactive.rabbit;
 
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,14 +45,19 @@ public class RabbitBridgeApi {
 
   @GetMapping("send")
   public Mono<String> sendPeRabbit() { // 1! UN endpoint care NU intoarce Mono/Flux <=> nu atinge retea
-    AtomicReference<String> nucumva= new AtomicReference<>();
+//    AtomicReference<String> nucumva= new AtomicReference<>(); // GRESEALA: sa te bazezi pe date "alaturea" mutabile pe langa chain
     return Mono.deferContextual(context -> Mono.just((String) context.get("tenantId")))
             .map(tenantId -> "Thales Rupe pe " + tenantId + "! la ora " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm")))
-            .doOnNext(body -> nucumva.set(body))
-            .map(body -> new OutboundMessage("", "demo-queue", body.getBytes()))
+//            .doOnNext(body -> nucumva.set(body))
+            .delayUntil(body -> sender.send(Mono.justOrEmpty(toMessage(body))))
+//            .then(Mono.fromCallable(() -> "Sent message: " + nucumva.get()))
+            .map(body ->  "Sent message: " + body)
+            ;
+  }
 
-            .flatMap(message -> sender.send(Mono.justOrEmpty(message)))
-            .then(Mono.fromCallable(() -> "Sent message: " + nucumva.get()));
+  @NotNull
+  private static OutboundMessage toMessage(String body) {
+    return new OutboundMessage("", "demo-queue", body.getBytes());
   }
   // de ce e Publisher() param? => ca sa poti conecta un flux din alta parte in send()
 
