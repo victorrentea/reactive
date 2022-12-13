@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -39,6 +40,9 @@ public class MongoController {
    public Flux<ServerSentEvent<String>> messageStream() {
       return rxRepo.findAllByIdNotNull()
               .map(Event::getValue)
+              .log("AICI!!")
+              .concatMap(e ->Mono.delay(Duration.ofSeconds(3)).map(i->e), 1)
+              .log("dupa slow")
               .map(b -> ServerSentEvent.builder(b).build());
    }
 }
