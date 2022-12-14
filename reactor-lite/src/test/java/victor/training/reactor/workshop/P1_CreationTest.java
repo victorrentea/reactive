@@ -4,11 +4,11 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import victor.training.util.CaptureSystemOutput;
-import victor.training.util.CaptureSystemOutput.OutputCapture;
+import victor.training.util.CaptureSystemOutputExtension;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -21,11 +21,12 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.*;
 
 @TestMethodOrder(MethodName.class)
-class P1_CreationTest {
+public class P1_CreationTest {
 
-  	P1_Creation workshop = new P1_Creation();
-//  P1_Creation workshop = new P1_CreationSolved();
+  protected P1_Creation workshop = new P1_Creation();
 
+  @RegisterExtension
+  CaptureSystemOutputExtension systemOutput = new CaptureSystemOutputExtension();
 
   @Test
   void p1_mono1_just() {
@@ -64,7 +65,6 @@ class P1_CreationTest {
             .expectTimeout(ofSeconds(1))
             .verify();
   }
-
 
 
   @Test
@@ -113,6 +113,7 @@ class P1_CreationTest {
             .expectNext("foo", "bar")
             .verifyComplete();
   }
+
   @Test
   void p2_flux3_empty() {
     workshop.flux3_empty()
@@ -141,31 +142,30 @@ class P1_CreationTest {
 
 
   @Test
-  @CaptureSystemOutput
-  void p3_logSignals(OutputCapture outputCapture) {
+  void p3_logSignals() {
     Flux<String> flux = Flux.just("one", "two");
     workshop.logSignals(flux).collectList().block();
-    assertThat(outputCapture.toString())
+    assertThat(systemOutput.toString())
             .contains("onSubscribe", "request", "onNext", "onComplete");
   }
+
   @Test
-  @CaptureSystemOutput
-  void p3_doOnHooks(OutputCapture outputCapture) {
+  void p3_doOnHooks() {
     Flux<String> flux = Flux.just("one", "two");
 
     workshop.doOnHooks(flux).blockLast();
 
-    assertThat(outputCapture.toString())
+    assertThat(systemOutput.toString())
             .contains("SUBSCRIBE", "NEXT", "END", "one", "two");
   }
+
   @Test
-  @CaptureSystemOutput
-  void p3_doOnHooks_error(OutputCapture outputCapture) {
+  void p3_doOnHooks_error() {
     Flux<String> flux = Flux.error(new IllegalStateException());
 
-    assertThatThrownBy(()->workshop.doOnHooks(flux).blockLast());
+    assertThatThrownBy(() -> workshop.doOnHooks(flux).blockLast());
 
-    assertThat(outputCapture.toString())
+    assertThat(systemOutput.toString())
             .contains("SUBSCRIBE", "ERROR", "END");
   }
 

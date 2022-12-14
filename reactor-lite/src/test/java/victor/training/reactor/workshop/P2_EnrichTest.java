@@ -27,14 +27,18 @@ public class P2_EnrichTest {
     @Mock
     Dependency dependency;
     @InjectMocks
-    P2_Enrich workshop;
-//    P2_EnrichSolved workshop;
+    protected P2_Enrich workshop;
 
     private static final A a = new A();
     private static final B b = new B();
     private static final C c = new C();
     private static final D d = new D();
 
+    @BeforeEach
+    final void before() {
+        System.out.println("workshop="+workshop);
+//        System.out.println("workshop2="+workshop2);
+    }
     @RegisterExtension
     SubscribedProbe subscribed = new SubscribedProbe();
 

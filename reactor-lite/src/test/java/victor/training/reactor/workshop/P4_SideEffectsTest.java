@@ -9,14 +9,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import victor.training.reactor.lite.Utils;
 import victor.training.reactor.workshop.P4_SideEffects.A;
 import victor.training.reactor.workshop.P4_SideEffects.AStatus;
 import victor.training.reactor.workshop.P4_SideEffects.Dependency;
-import victor.training.util.CaptureSystemOutput;
-import victor.training.util.CaptureSystemOutput.OutputCapture;
+import victor.training.util.CaptureSystemOutputExtension;
 import victor.training.util.SubscribedProbe;
 
 import static java.time.Duration.ofMillis;
@@ -30,10 +28,12 @@ public class P4_SideEffectsTest {
   @Mock
   Dependency dependency;
   @InjectMocks
-//  P4_SideEffects workshop;
-  P4_SideEffectsSolved workshop;
+  protected P4_SideEffects workshop;
+
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();
+  @RegisterExtension
+  CaptureSystemOutputExtension systemOutput = new CaptureSystemOutputExtension();
 
   private static final A a0 = new A();
   private static final A a = new A();
@@ -127,14 +127,13 @@ public class P4_SideEffectsTest {
   }
 
   @Test
-  @CaptureSystemOutput
-  void p07_save_sendFireAndForget_errorsSilencedButLogged(OutputCapture outputCapture) {
+  void p07_save_sendFireAndForget_errorsSilencedButLogged() {
     when(dependency.save(a0)).thenReturn(subscribed.once(Mono.just(a)));
     when(dependency.sendMessage(a)).thenReturn(subscribed.once(Mono.error(new IllegalStateException("TEST ERROR"))));
 
     assertThat(nonBlocking(() -> workshop.p07_save_sendFireAndForget(a0)).block()).isEqualTo(a);
     Utils.sleep(300);
-    assertThat(outputCapture.toString()).contains("TEST ERROR");
+    assertThat(systemOutput.toString()).contains("TEST ERROR");
   }
 
   @Test

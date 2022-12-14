@@ -17,15 +17,15 @@
 package victor.training.reactor.lite;
 
 import lombok.extern.slf4j.Slf4j;
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import victor.training.reactor.lite.Part07Errors.CustomException;
 import victor.training.reactor.lite.Part07Errors.Order;
 import victor.training.reactor.lite.domain.User;
-import victor.training.util.CaptureSystemOutput;
+import victor.training.util.CaptureSystemOutputExtension;
 import victor.training.util.NonBlockingTest;
 
 import java.io.IOException;
@@ -37,13 +37,15 @@ import java.util.function.Predicate;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Slf4j
 public class Part07ErrorsTest {
 
    Part07Errors workshop = new Part07Errors();
 //	Part07Errors workshop = new Part07ErrorsSolved();
+
+   @RegisterExtension
+   CaptureSystemOutputExtension systemOutput = new CaptureSystemOutputExtension();
 
 //========================================================================================
 
@@ -154,13 +156,12 @@ public class Part07ErrorsTest {
    //========================================================================================
    @Test
    @NonBlockingTest
-   @CaptureSystemOutput
-   public void logRethrow(CaptureSystemOutput.OutputCapture outputCapture) {
-      outputCapture.expect(CoreMatchers.containsString("BOOM"));
+   public void logRethrow() {
 
       StepVerifier.create(workshop.logRethrow(List.of(1, 2, -1, 4)))
           .expectErrorMatches(e -> e instanceof IllegalArgumentException)
           .verify();
+      assertThat(systemOutput.toString()).contains("BOOM");
    }
 
    //========================================================================================

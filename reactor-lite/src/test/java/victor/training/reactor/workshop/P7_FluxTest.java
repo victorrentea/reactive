@@ -14,14 +14,11 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import victor.training.reactor.workshop.P7_Flux.A;
 import victor.training.reactor.workshop.P7_Flux.Dependency;
-import victor.training.util.CaptureSystemOutput;
-import victor.training.util.CaptureSystemOutput.OutputCapture;
 import victor.training.util.SubscribedProbe;
+import victor.training.util.CaptureSystemOutputExtension;
 
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -41,10 +38,12 @@ public class P7_FluxTest {
   @Mock
   Dependency dependency;
   @InjectMocks
-    P7_Flux workshop;
-//  P7_FluxSolved workshop;
+  protected P7_Flux workshop;
+
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();
+  @RegisterExtension
+  CaptureSystemOutputExtension systemOutput = new CaptureSystemOutputExtension();
 
   AtomicInteger parallelCallsCounter = new AtomicInteger();
   int maxParallelism = 0;
@@ -62,16 +61,15 @@ public class P7_FluxTest {
   }
 
   @Test
-  @CaptureSystemOutput
   @Timeout(value = 500, unit = MILLISECONDS)
-  void p01_fetchInParallel_scrambled(OutputCapture capture) {
+  void p01_fetchInParallel_scrambled() {
     when(dependency.fetchOneById(any())).thenAnswer(call ->
             delayedMono(new A(call.getArgument(0)), 20, 100));
 
     List<A> results = workshop.p01_fetchInParallel_scrambled(LIST_OF_IDS).collectList().block();
 
     assertThat(results).map(A::getId).describedAs("Contains all elements").containsExactlyInAnyOrderElementsOf(LIST_OF_IDS);
-    assertThat(capture.toString()).describedAs("Printed elements to console").contains("A(id=2)");
+    assertThat(systemOutput.toString()).describedAs("Printed elements to console").contains("A(id=2)");
     assertThat(maxParallelism).describedAs("Max number of requests in parallel").isLessThanOrEqualTo(4);
 
   }
@@ -112,7 +110,6 @@ public class P7_FluxTest {
     assertThat(results).describedAs("Elements are in the correct order (not scrambled)").map(A::getId).containsExactlyElementsOf(LIST_OF_IDS);
   }
 
-
   @Test
   @Timeout(value = 500, unit = MILLISECONDS)
   void p04_fetchInPages_delayedElement_KUNGFU_testPublisher_andStepVerifier() {
@@ -152,23 +149,21 @@ public class P7_FluxTest {
     }
 
     @Test
-    @CaptureSystemOutput
-    void fetchFails_fluxNotCancelled(OutputCapture outputCapture) {
+    void fetchFails_fluxNotCancelled() {
       when(dependency.fetchOneById(88)).thenReturn(Mono.error(new IllegalArgumentException("ExceptionFetch")));
       publisher.next(88);
-      assertThat(outputCapture.toString()).contains("ExceptionFetch");
+      assertThat(systemOutput.toString()).contains("ExceptionFetch");
       publisher.assertWasNotCancelled();
 
       fluxWorks(); // flux still works
     }
 
     @Test
-    @CaptureSystemOutput
-    void anyError_fluxNotCancelled(OutputCapture outputCapture) {
+    void anyError_fluxNotCancelled() {
       when(dependency.fetchOneById(99)).thenReturn(Mono.just(new A(99)));
       when(dependency.sendMessage(new A(99))).thenReturn(Mono.error(new IllegalArgumentException("ExceptionSend")));
       publisher.next(99);
-      assertThat(outputCapture.toString()).contains("ExceptionSend");
+      assertThat(systemOutput.toString()).contains("ExceptionSend");
       publisher.assertWasNotCancelled();
 
       fluxWorks(); // flux still works
@@ -177,7 +172,8 @@ public class P7_FluxTest {
 
   
   @Test
-  void p06_batchCalls() throws ExecutionException, InterruptedException {
+  @Timeout(1)
+  void p06_batchCalls() {
     workshop.p06_configureRequestFlux();
     when(dependency.fetchPageByIds(any())).thenAnswer(call -> Flux.fromIterable(
             ((List<Integer>) call.getArgument(0)).stream().map(A::new).collect(toList())

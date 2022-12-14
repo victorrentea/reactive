@@ -29,8 +29,8 @@ public class P9_ComplexFlowTest {
   @Mock
   Dependency dependency;
   @InjectMocks
-  P9_ComplexFlow workshop;
-//  P9_ComplexFlowSolved workshop;
+  protected P9_ComplexFlow workshop;
+
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();
 

@@ -1,85 +1,92 @@
-/*
- * Copyright 2012-2019 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package victor.training.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-
-import org.junit.jupiter.api.extension.AfterEachCallback;
-import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
-import org.junit.jupiter.api.extension.ExtensionContext.Store;
-import org.junit.jupiter.api.extension.ParameterContext;
-import org.junit.jupiter.api.extension.ParameterResolver;
-import victor.training.util.CaptureSystemOutput.OutputCapture;
+import org.junit.jupiter.api.extension.InvocationInterceptor;
+import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.lang.reflect.Method;
+import java.util.List;
+import java.util.stream.Collectors;
 
-/**
- * JUnit Jupiter extension for capturing output to {@code System.out} and
- * {@code System.err} with expectations supported via Hamcrest matchers.
- *
- * <p>Based on code from Spring Boot's
- * <a href="https://github.com/spring-projects/spring-boot/blob/d3c34ee3d1bfd3db4a98678c524e145ef9bca51c/spring-boot-project/spring-boot-tools/spring-boot-test-support/src/main/java/org/springframework/boot/testsupport/rule/OutputCapture.java">OutputCapture</a>
- * rule for JUnit 4 by Phillip Webb and Andy Wilkinson.
- *
- * @author Sam Brannen
- * @author Phillip Webb
- * @author Andy Wilkinson
- */
-class CaptureSystemOutputExtension implements BeforeEachCallback, AfterEachCallback, ParameterResolver {
+public class CaptureSystemOutputExtension implements InvocationInterceptor {
+  private CaptureOutputStream captureOut;
 
-    @Override
-    public void beforeEach(ExtensionContext context) throws Exception {
-        getOutputCapture(context).captureOutput();
+  private CaptureOutputStream captureErr;
+
+  private ByteArrayOutputStream copy;
+
+  public void interceptTestMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
+    this.copy = new ByteArrayOutputStream();
+    this.captureOut = new CaptureOutputStream(System.out, copy);
+    this.captureErr = new CaptureOutputStream(System.err, copy);
+    System.setOut(new PrintStream(captureOut));
+    System.setErr(new PrintStream(captureErr));
+    try {
+
+      invocation.proceed();
+
+    } finally {
+      System.setOut(captureOut.getOriginal());
+      System.setErr(captureErr.getOriginal());
+      this.copy = null;
+    }
+  }
+
+  @Override
+  public String toString() {
+    try {
+      captureOut.flush();
+      captureErr.flush();
+    } catch (IOException ex) {
+      // ignore
+    }
+    return copy.toString();
+  }
+
+  public List<String> lines() {
+    return toString().lines().collect(Collectors.toList());
+  }
+
+  private static class CaptureOutputStream extends OutputStream {
+    private final PrintStream original;
+    private final OutputStream copy;
+
+    CaptureOutputStream(PrintStream original, OutputStream copy) {
+      this.original = original;
+      this.copy = copy;
+    }
+
+    PrintStream getOriginal() {
+      return original;
     }
 
     @Override
-    public void afterEach(ExtensionContext context) throws Exception {
-        OutputCapture outputCapture = getOutputCapture(context);
-        try {
-            if (!outputCapture.matchers.isEmpty()) {
-                String output = outputCapture.toString();
-                assertThat(output, allOf(outputCapture.matchers));
-            }
-        }
-        finally {
-            outputCapture.releaseOutput();
-        }
+    public void write(int b) throws IOException {
+      copy.write(b);
+      original.write(b);
+      original.flush();
     }
 
     @Override
-    public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext) {
-        boolean isTestMethodLevel = extensionContext.getTestMethod().isPresent();
-        boolean isOutputCapture = parameterContext.getParameter().getType() == OutputCapture.class;
-        return isTestMethodLevel && isOutputCapture;
+    public void write(byte[] b) throws IOException {
+      write(b, 0, b.length);
     }
 
     @Override
-    public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) {
-        return getOutputCapture(extensionContext);
+    public void write(byte[] b, int off, int len) throws IOException {
+      copy.write(b, off, len);
+      original.write(b, off, len);
     }
 
-    private OutputCapture getOutputCapture(ExtensionContext context) {
-        return getStore(context).getOrComputeIfAbsent(OutputCapture.class);
+    @Override
+    public void flush() throws IOException {
+      copy.flush();
+      original.flush();
     }
 
-    private Store getStore(ExtensionContext context) {
-        return context.getStore(Namespace.create(getClass(), context.getRequiredTestMethod()));
-    }
-
+  }
 }

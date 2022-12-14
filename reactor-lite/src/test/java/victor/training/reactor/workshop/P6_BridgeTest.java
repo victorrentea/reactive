@@ -17,8 +17,7 @@ import victor.training.reactor.lite.Utils;
 import victor.training.reactor.workshop.P6_Bridge.Dependency;
 import victor.training.reactor.workshop.P6_Bridge.ResponseMessage;
 import victor.training.reactor.workshop.P6_Bridge.User;
-import victor.training.util.CaptureSystemOutput;
-import victor.training.util.CaptureSystemOutput.OutputCapture;
+import victor.training.util.CaptureSystemOutputExtension;
 import victor.training.util.RunAsNonBlocking;
 import victor.training.util.SubscribedProbe;
 
@@ -39,28 +38,29 @@ public class P6_BridgeTest {
   @Mock
   Dependency dependency;
   @InjectMocks
-//  P6_Bridge workshop;
-  P6_BridgeSolved workshop;
+  protected P6_Bridge workshop;
+
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();
+  @RegisterExtension
+  CaptureSystemOutputExtension systemOutput = new CaptureSystemOutputExtension();
+
   private User user = new User();
 
   @Test
-  @CaptureSystemOutput
-  void p01_blockForMono(OutputCapture output) {
+  void p01_blockForMono() {
     Mono<String> mono = Mono.just("MESSAGE").delayElement(ofMillis(500));
     when(dependency.save("IN")).thenReturn(subscribed.once(mono));
     workshop.p01_blockForMono("IN");
-    assertThat(output.toString()).contains("MESSAGE");
+    assertThat(systemOutput.toString()).contains("MESSAGE");
   }
 
   @Test
-  @CaptureSystemOutput
-  void p02_blockForFlux(OutputCapture output) {
+  void p02_blockForFlux() {
     Flux<String> flux = Flux.interval(ofMillis(100)).map(i -> ""+i).take(10);
     when(dependency.findAll()).thenReturn(flux);
     workshop.p02_blockForFlux();
-    assertThat(output.toString()).contains("0, 1, 2, 3, 4, 5, 6, 7, 8, 9");
+    assertThat(systemOutput.toString()).contains("0, 1, 2, 3, 4, 5, 6, 7, 8, 9");
   }
 
   @Test

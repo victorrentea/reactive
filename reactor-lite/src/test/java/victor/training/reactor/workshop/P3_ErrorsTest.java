@@ -14,17 +14,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import victor.training.reactor.workshop.P3_Errors.Dependency;
-import victor.training.util.CaptureSystemOutput;
-import victor.training.util.CaptureSystemOutput.OutputCapture;
-import victor.training.util.NamedThreadFactory;
+import victor.training.util.CaptureSystemOutputExtension;
 import victor.training.util.SubscribedProbe;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Duration;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.*;
@@ -36,41 +32,39 @@ import static reactor.core.publisher.Mono.*;
 @ExtendWith(MockitoExtension.class)
 @TestMethodOrder(MethodName.class)
 @Timeout(1)
-class P3_ErrorsTest {
+public class P3_ErrorsTest {
   @Mock
   Dependency dependencyMock;
   @InjectMocks
-  P3_Errors workshop;
-//    P3_ErrorsSolved workshop;
+  protected P3_Errors workshop;
+
   @RegisterExtension
   SubscribedProbe subscribed = new SubscribedProbe();
+  @RegisterExtension
+  CaptureSystemOutputExtension systemOutput = new CaptureSystemOutputExtension();
 
   public static class TestRootCauseException extends RuntimeException {
   }
 
 
-  private static final ExecutorService secondExecutor = Executors.newFixedThreadPool(1, new NamedThreadFactory("second"));
-
   @Test
-  @CaptureSystemOutput
-  void p01_log_KO(OutputCapture outputCapture) {
+  void p01_log_KO() {
     when(dependencyMock.call()).thenReturn(Mono.error(new TestRootCauseException()));
 
     assertThatThrownBy(() -> workshop.p01_log_rethrow().block())
             .isInstanceOf(TestRootCauseException.class);
 
-    assertThat(outputCapture.toString())
+    assertThat(systemOutput.toString())
             .contains(TestRootCauseException.class.getSimpleName());
   }
 
   @Test
-  @CaptureSystemOutput
-  void p01_log_OK(OutputCapture outputCapture) {
+  void p01_log_OK() {
     when(dependencyMock.call()).thenReturn(just("abc"));
 
     workshop.p01_log_rethrow().block();
 
-    assertThat(outputCapture.toString()).isEmpty();
+    assertThat(systemOutput.toString()).isEmpty();
   }
 
   @Test
@@ -129,34 +123,31 @@ class P3_ErrorsTest {
   }
 
   @Test
-  @CaptureSystemOutput
-  void p06_retryThenLogError_failingAlways(OutputCapture outputCapture) {
+  void p06_retryThenLogError_failingAlways() {
     TestRootCauseException ex = new TestRootCauseException();
     when(dependencyMock.call()).thenReturn(subscribed.times(4, error(ex)));
 
     assertThatThrownBy(() -> workshop.p06_retryThenLogError().block())
             .isInstanceOf(TestRootCauseException.class);
-    assertThat(outputCapture.toString()).contains("SCRAP LOGS FOR ME");
+    assertThat(systemOutput.toString()).contains("SCRAP LOGS FOR ME");
   }
 
   @Test
-  @CaptureSystemOutput
-  void p06_retryThenLogError_failing2x(OutputCapture outputCapture) {
+  void p06_retryThenLogError_failing2x() {
     AtomicInteger iteration = new AtomicInteger(0);
     when(dependencyMock.call()).thenReturn(subscribed.times(3, failingMonoTimes(2, "result")));
 
     assertThat(workshop.p06_retryThenLogError().block()).isEqualTo("result");
-    assertThat(outputCapture.toString()).doesNotContain("SCRAP LOGS FOR ME");
+    assertThat(systemOutput.toString()).doesNotContain("SCRAP LOGS FOR ME");
   }
 
   @Test
-  @CaptureSystemOutput
-  void p06_retryThenLogError_failing3x(OutputCapture outputCapture) {
+  void p06_retryThenLogError_failing3x() {
     AtomicInteger iteration = new AtomicInteger(0);
     when(dependencyMock.call()).thenReturn(subscribed.times(4, failingMonoTimes(3, "result")));
 
     assertThat(workshop.p06_retryThenLogError().block()).isEqualTo("result");
-    assertThat(outputCapture.toString()).doesNotContain("SCRAP LOGS FOR ME");
+    assertThat(systemOutput.toString()).doesNotContain("SCRAP LOGS FOR ME");
   }
 
   private static Mono<String> failingMonoTimes(int timesFailing, String result) {
@@ -172,24 +163,22 @@ class P3_ErrorsTest {
 
 
   @Test
-  @CaptureSystemOutput
-  void p06_retryThenLogError_failing0x(OutputCapture outputCapture) {
+  void p06_retryThenLogError_failing0x() {
     when(dependencyMock.call())
             .thenReturn(subscribed.once(just("result")))
     ;
 
     assertThat(workshop.p06_retryThenLogError().block()).isEqualTo("result");
-    assertThat(outputCapture.toString()).doesNotContain("SCRAP LOGS FOR ME");
+    assertThat(systemOutput.toString()).doesNotContain("SCRAP LOGS FOR ME");
   }
 
 
   @Test
-  @CaptureSystemOutput
-  void p06_retryThenLogError_timeout(OutputCapture outputCapture) {
+  void p06_retryThenLogError_timeout() {
     when(dependencyMock.call()).thenReturn(subscribed.times(4, never()));
 
     assertThatThrownBy(() -> workshop.p06_retryThenLogError().block());
-    assertThat(outputCapture.toString()).contains("SCRAP LOGS FOR ME");
+    assertThat(systemOutput.toString()).contains("SCRAP LOGS FOR ME");
   }
 
 
@@ -220,8 +209,7 @@ class P3_ErrorsTest {
   }
 
   @Test
-  @CaptureSystemOutput
-  void p07_retryWithBackoff_failing0x(OutputCapture outputCapture) {
+  void p07_retryWithBackoff_failing0x() {
     when(dependencyMock.call()).thenReturn(subscribed.times(1, just("result")));
 
     Duration delta = workshop.p07_retryWithBackoff()

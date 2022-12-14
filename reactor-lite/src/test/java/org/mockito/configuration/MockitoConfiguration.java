@@ -6,6 +6,8 @@ import org.mockito.stubbing.Answer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
+
 // this class has to be exactly in this package, as Mockito looks for this classname at startup automatically: org.mockito.configuration.MockitoConfiguration
 public class MockitoConfiguration extends DefaultMockitoConfiguration {
    @Override
@@ -16,10 +18,10 @@ public class MockitoConfiguration extends DefaultMockitoConfiguration {
          public Object answer(InvocationOnMock invocation) {
             // by default mocks returning Mono/Flux should emit an error instead of throwing it, for any method not stubbed.
             if (Mono.class.isAssignableFrom(invocation.getMethod().getReturnType())) {
-               return Mono.error(new DefaultErrorSignalException(invocation.getMethod().toString()));
+               return Mono.error(new DefaultErrorSignalException(invocation.getMethod().toString() + Arrays.toString(invocation.getArguments())));
             }
             if (Flux.class.isAssignableFrom(invocation.getMethod().getReturnType())) {
-               return Flux.error(new DefaultErrorSignalException(invocation.getMethod().toString()));
+               return Flux.error(new DefaultErrorSignalException(invocation.getMethod().toString() + Arrays.toString(invocation.getArguments())));
             }
             return super.answer(invocation);
          }
