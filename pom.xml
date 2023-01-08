@@ -20,7 +20,7 @@
     <modules>
         <module>kafka</module>
         <module>databases</module>
-        <module>reactor-lite</module>
+        <module>reactor</module>
         <module>spring-mvc</module>
         <module>spring-webflux</module>
     </modules>
