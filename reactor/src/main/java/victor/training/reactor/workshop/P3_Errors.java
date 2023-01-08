@@ -19,9 +19,9 @@ public class P3_Errors {
     this.dependency = dependency;
   }
 
-  final Dependency dependency;
+  protected final Dependency dependency;
 
-  interface Dependency {
+  protected interface Dependency {
     Mono<String> call();
 
     Mono<String> backup();

@@ -1,10 +1,11 @@
-package victor.training.reactor.workshop;
+package victor.training.reactor.workshop.solved;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.One;
 import reactor.util.function.Tuples;
+import victor.training.reactor.workshop.P7_Flux;
 
 import java.time.Duration;
 import java.util.ArrayList;

@@ -14,13 +14,13 @@ public class P6_Bridge {
 
   protected Logger log = LoggerFactory.getLogger(P6_Bridge.class);
 
-  static class User {
+  protected static class User {
   }
 
-  static class ResponseMessage {
+  protected static class ResponseMessage {
   }
 
-  interface Dependency {
+  protected interface Dependency {
     Mono<String> save(String message);
 
     Flux<String> findAll();

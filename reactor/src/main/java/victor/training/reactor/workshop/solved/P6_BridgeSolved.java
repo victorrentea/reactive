@@ -1,4 +1,4 @@
-package victor.training.reactor.workshop;
+package victor.training.reactor.workshop.solved;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -6,6 +6,7 @@ import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.Many;
 import reactor.core.publisher.Sinks.One;
 import reactor.core.scheduler.Schedulers;
+import victor.training.reactor.workshop.P6_Bridge;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

@@ -1,10 +1,11 @@
-package victor.training.reactor.workshop;
+package victor.training.reactor.workshop.solved;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import victor.training.reactor.lite.domain.User;
+import victor.training.reactor.workshop.P5_Testing;
 
 import java.time.Duration;
 import java.util.function.Function;

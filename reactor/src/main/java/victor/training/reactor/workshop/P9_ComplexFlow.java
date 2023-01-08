@@ -8,15 +8,15 @@ import reactor.core.publisher.Mono;
 import java.util.concurrent.ExecutionException;
 
 public class P9_ComplexFlow {
-  @Value static class A {String value;}
-  @Value static class B {String value;}
-  @Value static class C {String value;}
-  @Value static class D {String value;}
+  @Value protected static class A {String value;}
+  @Value protected static class B {String value;}
+  @Value protected static class C {String value;}
+  @Value protected static class D {String value;}
 
   @Value
   @With
   @AllArgsConstructor
-  static class MyContext {
+  protected static class MyContext {
     A a;
     B b;
     C c;
@@ -25,7 +25,7 @@ public class P9_ComplexFlow {
     public MyContext() {
       this(null, null, null, null, null);}
   }
-  public interface Dependency {
+  protected interface Dependency {
     Mono<A> a(int id);
     Mono<B> b(A a);
     Mono<C> c(A a);

@@ -1,10 +1,11 @@
-package victor.training.reactor.workshop;
+package victor.training.reactor.workshop.solved;
 
 import org.jooq.lambda.Unchecked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
+import victor.training.reactor.workshop.P3_Errors;
 
 import java.io.FileWriter;
 import java.io.IOException;

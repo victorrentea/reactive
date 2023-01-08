@@ -1,7 +1,8 @@
-package victor.training.reactor.workshop;
+package victor.training.reactor.workshop.solved;
 
 import reactor.core.publisher.Mono;
 import reactor.function.TupleUtils;
+import victor.training.reactor.workshop.P2_Enrich;
 
 import java.util.function.Function;
 

@@ -20,14 +20,14 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 public class P7_Flux {
-  Dependency dependency;
+  protected Dependency dependency;
   public P7_Flux(Dependency dependency) {
     this.dependency = dependency;
   }
 
   @Value
-  static class A{int id;}
-  interface Dependency {
+  protected static class A{int id;}
+  protected interface Dependency {
     Mono<A> fetchOneById(Integer id);
     Flux<A> fetchPageByIds(List<Integer> idPage);
     Mono<Void> sendMessage(A a);
@@ -85,11 +85,11 @@ public class P7_Flux {
   // Any call to submit request is returned a MOno that is completed later when the item in the page returns
   // WARNING: EXTRA-EXTRA-EXTRA HARD
   @Value
-  static class Request {
+  protected static class Request {
     int id;
     One<A> promise;
   }
-  Sinks.Many<Request> requests = Sinks.many().unicast().onBackpressureBuffer();
+  protected Sinks.Many<Request> requests = Sinks.many().unicast().onBackpressureBuffer();
 
   public void p06_configureRequestFlux() {
     requests.asFlux()
@@ -133,7 +133,7 @@ public class P7_Flux {
             .then();
   }
 
-  enum MessageType {
+  protected enum MessageType {
     TYPE1_NEGATIVE,
     TYPE2_ODD,
     TYPE3_EVEN;

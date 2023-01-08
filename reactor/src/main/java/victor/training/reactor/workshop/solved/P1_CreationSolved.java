@@ -1,7 +1,8 @@
-package victor.training.reactor.workshop;
+package victor.training.reactor.workshop.solved;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import victor.training.reactor.workshop.P1_Creation;
 
 import java.time.LocalDateTime;
 import java.util.List;

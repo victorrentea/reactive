@@ -6,14 +6,14 @@ import reactor.core.publisher.Mono;
 
 public class P4_SideEffects {
   protected final Logger log = LoggerFactory.getLogger(P4_SideEffects.class);
-  static class A {
+  protected static class A {
     public boolean updated;
   }
-  enum AStatus {
+  protected enum AStatus {
     NEW, UPDATED, CONFLICT
   }
 
-  interface Dependency {
+  protected interface Dependency {
     Mono<A> save(A a);
 
     Mono<AStatus> retrieveStatus(A a);

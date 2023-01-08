@@ -1,6 +1,7 @@
-package victor.training.reactor.workshop;
+package victor.training.reactor.workshop.solved;
 
 import reactor.core.publisher.Mono;
+import victor.training.reactor.workshop.P9_ComplexFlow;
 
 public class P9_ComplexFlowSolved extends P9_ComplexFlow {
 

@@ -8,22 +8,22 @@ import reactor.core.publisher.Mono;
 
 @Slf4j
 public class P2_Enrich {
-    static class A {}
-    static class B {}
-    static class C {boolean reject;}
-    static class D {}
+    protected static class A {}
+    protected static class B {}
+    protected static class C {boolean reject;}
+    protected static class D {}
     @Value @With
-    static class AB {
+    protected static class AB {
         public A a;
         public B b;
     }
     @Value
-    static class ABC {
+    protected static class ABC {
         public A a;
         public B b;
         public C c;
     }
-    interface Dependency {
+    protected interface Dependency {
         Mono<A> a(int id);
         Mono<B> b(int id);
 
@@ -204,7 +204,7 @@ public class P2_Enrich {
     @Value // immutable object
     @With // public P10UseCaseContext withA(A newa) { return new P10UseCaseContext(newa, b,c,d); }
     @AllArgsConstructor
-    static class P10UseCaseContext {
+    protected static class P10UseCaseContext {
         int id;
         A a;
         B b;
