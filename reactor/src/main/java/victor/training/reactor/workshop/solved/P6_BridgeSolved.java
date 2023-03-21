@@ -1,5 +1,7 @@
 package victor.training.reactor.workshop.solved;
 
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -11,6 +13,7 @@ import victor.training.reactor.workshop.P6_Bridge;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+@RestController
 public class P6_BridgeSolved extends P6_Bridge {
   public P6_BridgeSolved(Dependency dependency) {
     super(dependency);
@@ -39,7 +42,8 @@ public class P6_BridgeSolved extends P6_Bridge {
     return Mono.fromFuture(future);
   }
 
-  public Mono<ResponseMessage> p06_callback(long id) {
+  @GetMapping("message-bridge")
+  public Mono<ResponseMessage> p06_messageBridge(@RequestParam(defaultValue = "1") long id) {
     return Mono.fromRunnable(() ->dependency.sendMessageOnQueueBlocking(id))
             .subscribeOn(Schedulers.boundedElastic())
             .then(futureResponse.asMono());
@@ -47,17 +51,21 @@ public class P6_BridgeSolved extends P6_Bridge {
 
   private final One<ResponseMessage> futureResponse = Sinks.one();
 
-  public void p06_receiveResponseOnReplyQueue(long id, ResponseMessage response) {
+  @PostMapping("receive-reply-message")
+  public void p06_receiveOnReplyQueue(@RequestParam(defaultValue = "1") long id,
+                                      @RequestBody ResponseMessage response) {
     futureResponse.tryEmitValue(response);
   }
 
-  public Flux<Integer> p07_fluxOfSignals() {
+  @GetMapping(value = "flux-broadcast", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+  public Flux<Integer> p07_fluxBroadcast() {
     return fluxSink.asFlux();
   }
 
-  private final Many<Integer> fluxSink = Sinks.many().unicast().onBackpressureBuffer();
+  private final Many<Integer> fluxSink = Sinks.many().multicast().onBackpressureBuffer();
 
-  public void p07_externalSignal(Integer data) {
+  @GetMapping("flux-signal")
+  public void p07_externalSignal(@RequestParam(defaultValue = "9") Integer data) {
     fluxSink.tryEmitNext(data);
   }
 }

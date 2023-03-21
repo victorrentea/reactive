@@ -87,10 +87,10 @@ public class P6_BridgeTest {
 
   @Test
   @Timeout(value = 500, unit = MILLISECONDS)
-  void p06_callback() {
+  void p06_messageBridge() {
     ResponseMessage responseMessage = new ResponseMessage();
-    Mono<ResponseMessage> mono = workshop.p06_callback(1L);
-    runAsync(() -> workshop.p06_receiveResponseOnReplyQueue(1L, responseMessage),
+    Mono<ResponseMessage> mono = workshop.p06_messageBridge(1L);
+    runAsync(() -> workshop.p06_receiveOnReplyQueue(1L, responseMessage),
             delayedExecutor(200, MILLISECONDS))
             .exceptionally(ex-> {
               log.error("Exception in callback: " + ex, ex);
@@ -104,19 +104,19 @@ public class P6_BridgeTest {
 
   @Test
   @Timeout(1)
-  void p07_fluxOfSignals() {
+  void p07_fluxBroadcast() {
     ResponseMessage responseMessage = new ResponseMessage();
     runAsync(() -> workshop.p07_externalSignal(10), delayedExecutor(200, MILLISECONDS));
-    assertThat(workshop.p07_fluxOfSignals().blockFirst()).isEqualTo(10);
+    assertThat(workshop.p07_fluxBroadcast().blockFirst()).isEqualTo(10);
   }
 
   @Test
   @Timeout(1)
-  void p07_fluxOfSignals_two() {
+  void p07_fluxBroadcast_two() {
     ResponseMessage responseMessage = new ResponseMessage();
     runAsync(() -> workshop.p07_externalSignal(10), delayedExecutor(200, MILLISECONDS));
     runAsync(() -> workshop.p07_externalSignal(20), delayedExecutor(400, MILLISECONDS));
-    workshop.p07_fluxOfSignals()
+    workshop.p07_fluxBroadcast()
             .timeout(ofMillis(600))
             .as(StepVerifier::create)
             .expectNext(10, 20)

@@ -1,33 +1,51 @@
 package victor.training.reactor.workshop;
 
+import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import victor.training.reactor.lite.Utils;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class P6_Bridge {
 
-  protected Logger log = LoggerFactory.getLogger(P6_Bridge.class);
+  protected static Logger log = LoggerFactory.getLogger(P6_Bridge.class);
 
   protected static class User {
   }
 
+  @Data
   protected static class ResponseMessage {
+    String data;
   }
 
-  protected interface Dependency {
-    Mono<String> save(String message);
+  @Component
+  protected static class Dependency {
+    public Mono<String> save(String message) {
+      return Mono.just(message);
+    }
 
-    Flux<String> findAll();
+    public Flux<String> findAll() {
+      return Flux.empty();
+    }
 
-    String legacyBlockingCall(); // blocks the caller thread
+    public String legacyBlockingCall(){
+      Utils.sleep(10); // blocks the caller thread
+      return "";
+    }
 
-    void sendMessageOnQueueBlocking(Long id);
+    public void sendMessageOnQueueBlocking(Long id) {
+      log.info("Sent message {}", id);
+    }
   }
 
   protected final Dependency dependency;
@@ -38,22 +56,22 @@ public class P6_Bridge {
 
 
   // ==================================================================================
-  // TODO call dependency#save and block the current thread until it completes, then log.info the returned value
-  // Use-Case: hang a Kafka Listener thread that would otherwise consume a new message
+  // TODO call dependency#save() and block the current thread until it completes, then log.info the returned value
+  // Use-Case: block the thread in a @Scheduled / Message Listener, that would otherwise consume a new message (eg Kafka, Rabbit)
   public void p01_blockForMono(String message) {
   }
 
   // ==================================================================================
   // TODO call dependency#findAll() and block to get all values, then log.info the list in the console.
-  // Use-Case: find all items to process in a table / write a test.
+  // Use-Case: same as above
   public void p02_blockForFlux() {
-    List<String> list = dependency.findAll().collectList().block();
-    log.info("List:" + list);
+    List<String> allItems = null;
+    log.info("List: " + allItems);
   }
 
   // ==================================================================================
-  // TODO call dependency#legacyBlockingCall() and return its result in a Mono.
-  //  NOTE: you are only allowed to block threads from Schedulers.boundedElastic()
+  // TODO call dependency#legacyBlockingCall() and return its result wrapped in a Mono.
+  //  NOTE: you are only allowed to block threads of Schedulers.boundedElastic()
   public Mono<String> p03_blockingCalls() {
     return null;
   }
@@ -74,34 +92,38 @@ public class P6_Bridge {
   // ==================================================================================
   // TODO call dependency#sendMessageOnQueueBlocking(id) and then return a Mono
   //  that emits the ResponseMessage received LATER via the next method (aka callback).
-  @GetMapping // imagine..
-  public Mono<ResponseMessage> p06_callback(long id) {
+  @GetMapping("message-bridge")
+  public Mono<ResponseMessage> p06_messageBridge(@RequestParam(defaultValue = "1") long id) {
     return null;
   }
 
-  private Sinks.One<ResponseMessage> futureResponse; // TODO = ...
+  private Sinks.One<ResponseMessage> futureResponse; // TODO
 
   // @MessageListener imagine..
-  public void p06_receiveResponseOnReplyQueue(long id, ResponseMessage response) {
+  @PostMapping("receive-reply-message") // simulate with a REST api for easier testing.
+  public void p06_receiveOnReplyQueue(@RequestParam(defaultValue = "1") long id,
+                                      @RequestBody ResponseMessage response) {
     // TODO write code here to emit the received response in the Mono returned by the method above
 
   }
-  // ⭐️ Challenge: Can you make this work even if there are 2 pending requests at the same time?
+  // ⭐️ Challenge: Support multiple concurrent requests waiting at the same time
 
 
   // ==================================================================================
-  // TODO This method is called once. Every time the next method is called, this flux must emit the integer data.
+  // TODO This method is called once by each browser.
+  //  Every time the p07_externalSignal(i) method is called later, the flux must emit the 'i' value.
   // Use-Case: report on a Flux signals received as API calls or Messages
   // Hint: use Sinks.???
-  public Flux<Integer> p07_fluxOfSignals() {
+  @GetMapping(value = "flux-broadcast", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+  public Flux<Integer> p07_fluxBroadcast() {
     return null;
   }
 
   private Sinks.Many<Integer> fluxSink; // TODO = ...
 
-  public void p07_externalSignal(Integer data) {
+  @GetMapping("flux-signal")
+  public void p07_externalSignal(@RequestParam(defaultValue = "9") Integer data) {
     // TODO write code here to emit the data in the flux returned in the previous method.
   }
-
 
 }

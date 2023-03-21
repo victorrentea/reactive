@@ -38,7 +38,7 @@ public class P5_TestingSolved extends P5_Testing {
    }
 
    @Override
-   public void expect5Elements(Flux<Long> flux) {
+   public void expect5ElementsVirtualTime(Flux<Long> flux) {
       StepVerifier.create(flux)
           .expectNextCount(5)
           .verifyComplete();

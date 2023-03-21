@@ -122,8 +122,11 @@ public class P4_SideEffects {
 
   /**
    * TODO a = save(a0); then call sendMessage(a) but don't wait for this to complete.
+   *
    * In other words, the returned Mono should complete immediately after save() completes,
-   * leaving in the background the call to sendMessage (aka 'fire-and-forget').
+   * leaving in background the call to sendMessage (aka 'fire-and-forget').
+   *    Why: faster response to user
+   *
    * Also, make sure any error from sendMessage is logged in the console.
    *
    * BONUS[HARD]: make sure any data in the Reactor Context is propagated into the sendMessage.

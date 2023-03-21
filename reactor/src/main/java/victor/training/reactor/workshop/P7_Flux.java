@@ -70,17 +70,17 @@ public class P7_Flux {
   // ==================================================================================
   // TODO #1 for any incoming id > 0, .fetchOneById(id) and then send it to .sendMessage(a)
   //  Hint: this method runs at startup of a fictitious app => It has to .subscribe() to the flux!
-  // TODO #2 any error in fetchOneById should be logged and the element discarded, but and NOT cancel/stop the flux
+  // TODO #2 any error in fetchOneById should be logged and the element discarded, but DO NOT cancel/stop the flux
   //  Hint: onError...
-  // TODO #3 any error (fetch OR send) should be logged and the element discarded, but and NOT cancel/stop the flux
+  // TODO #3 any error (fetch OR send) should be logged and the element discarded, but DO NOT cancel/stop the flux
   //  Hint: onErrorContinue
   @PostConstruct
   public void p05_infinite(Flux<Integer> infiniteFlux) {
-    // .subscribe(); // <- the only legal place ?
+    // .subscribe(); // <- the only safe place ?
   }
 
   // ==================================================================================
-  // TODO Batch requests together in pages of max 4 items, each element waiting max 200ms to be sent.
+  // TODO Batch requests together in pages of max 4 items, each element waiting max 200ms to be sent (bufferTimeout).
   //  when a page of results comes back, complete the respective opened Mono<>
   // Any call to submit request is returned a MOno that is completed later when the item in the page returns
   // WARNING: EXTRA-EXTRA-EXTRA HARD
@@ -122,8 +122,8 @@ public class P7_Flux {
   // TODO based on the MessageType.forMessage(int) below, do one of the following:
   //  - TYPE1_NEGATIVE: Do nothing (ignore the message)
   //  - TYPE2_ODD: Call .sendOdd1(message) and .sendOdd2(message) in parallel
-  //  - TYPE3_EVEN: Call .sendEven(List.of(message))
-  //  - TYPE3_EVEN: Call .sendEven(pageOfMessages)
+  //  - TYPE3_EVEN: Call .sendEven(List.of(oneMessage))
+  //  - TYPE3_EVEN: Call .sendEven(pageOfMessages) <- ⭐️⭐️⭐️ HARD
   //      * to optimize network traffic send in pages of size = 3
   //      * avoid delaying an element by more than 200 millis
   // Bonus: debate .buffer vs .window

@@ -16,6 +16,7 @@
 
 package victor.training.reactor.workshop;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.opentest4j.AssertionFailedError;
 import reactor.core.publisher.Flux;
@@ -47,13 +48,6 @@ public class P5_TestingTest {
    public void expectSkylerJesseComplete() {
       workshop.expectSkylerJesseComplete(Flux.just(new User("swhite", null, null), new User("jpinkman", null, null)));
    }
-
-
-   @Test
-   public void expect5Elements() {
-      workshop.expect5Elements(Flux.interval(Duration.ofSeconds(1)).take(5));
-   }
-
 
    @Test
    public void expectDelayedElement() {

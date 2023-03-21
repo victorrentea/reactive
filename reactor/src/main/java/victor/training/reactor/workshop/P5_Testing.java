@@ -28,10 +28,15 @@ import java.util.function.Function;
 
 
 public class P5_Testing {
+   private void fail() {
+      throw new AssertionError("workshop not implemented");
+   }
 
 //========================================================================================
 
-   // TODO Use StepVerifier to check that the flux parameter emits "foo" and "bar" elements then completes successfully.
+   // TODO Check that the flux parameter emits "foo" and "bar" elements then completes successfully.
+   //  Option 1: use .block
+   //  Option 2: use StepVerifier
    public void expectFooBarComplete(Flux<String> flux) {
       fail();
    }
@@ -45,58 +50,28 @@ public class P5_Testing {
 
 //========================================================================================
 
-   // TODO Use StepVerifier to check that the flux parameter emits a User with "swhite" username
-   // and another one with "jpinkman" then completes successfully.
+   // TODO Check that the flux emits a User with "swhite" username and another one with "jpinkman" then completes successfully.
    public void expectSkylerJesseComplete(Flux<User> flux) {
       fail();
    }
 
 //========================================================================================
 
-   // TODO Expect 5 elements then complete and notice how long the test takes.
-   public void expect5Elements(Flux<Long> flux) {
-      fail();
-   }
-
-//========================================================================================
-
-   // TODO Expect the value "later" to arrive 1 hour after subscribe(). Make the test complete in <1 second
-   // Manipulate virtual with StepVerifier#withVirtualTime/.thenAwait
-   // TODO expect no signal for 30 minutes
-   public void expectDelayedElement() {
-      StepVerifier.create(timeBoundFlow())
-          // TODO
-      ;
-   }
-
-   public Mono<String> timeBoundFlow() {
-      return Mono.just("later").delayElement(Duration.ofHours(1));
-   }
-
-   private void fail() {
-      throw new AssertionError("workshop not implemented");
-   }
-
-
-//========================================================================================
-
-   // 🎖🌟🌟🌟🌟 WARNING HARD CORE 🌟🌟🌟🌟
+   /** TODO make sure a side-effect function is subscribed exactly once */
    public void verifySubscribedOnce(Function<TestedProdClass, Mono<Void>> testedRxCode) {
-      // given
+      // === given
       SomeRxRepo mockRepo = Mockito.mock(SomeRxRepo.class);
       TestedProdClass testedObject = new TestedProdClass(mockRepo);
 
-      // 1: create a TestPublisher that tracks subscribe signals
-      // 2. complete it
-      // 3. program the repoMock to return the stubbed mono
+      // Mono<Void> saveMono = ... // create a completed empty mono
+      // Mockito.when(mockRepo.save(User.SKYLER)). // tell repoMock to return that mono
 
-      // when
-      testedObject.correct().block();
-      // TODO uncomment and make pass
-      // testedRxCode.apply(testedObject).block();
+      // === when - prod call
+      testedObject.correct().block(); // Phase 1: warmup, understand code under test
+      // testedRxCode.apply(testedObject).block(); // Phase 2: test an arbitrary function, to allow the tests to test your test !!
 
-      // then
-      // 4. assert the number of times the TestPublisher was subscribed to = 1
+      // === then
+      // TODO GOAL: check the .save() Mono was subscribed EXACTLY ONCE
    }
 
    public interface SomeRxRepo {
@@ -113,15 +88,19 @@ public class P5_Testing {
       }
       // try to test manually these or just use the
       public void noSubscribe() {
+         // BUG🐞: forgot to subscribe
          repo.save(User.SKYLER);
       }
+
       public Mono<Void> doOnNext_noSubscribe() {
+         // BUG🐞: forgot to subscribe
          return Mono.<Void>fromRunnable(() -> {
                 System.out.println("Pretend some remote work");
              })
              .doOnNext(x -> repo.save(User.SKYLER));
       }
       public Mono<Void> noDataSignal_noSubscribe() {
+         // BUG🐞: flatMap does not execute the -> because there is no data signal from above
          return Mono.<Void>fromRunnable(() -> {
                 System.out.println("Pretend some remote work");
              })
@@ -140,5 +119,23 @@ public class P5_Testing {
       }
    }
    //endregion
+
+
+   //========================================================================================
+   // TODO Expect the value "later" to arrive 1 hour after subscribe(). Make the test complete in <1 second
+   //    Manipulate virtual with StepVerifier#withVirtualTime(->) and #thenAwait
+   // TODO expect no signal for 30 minutes
+
+   public void expectDelayedElement() {
+      StepVerifier.create(timeBoundFlow())
+      // TODO
+      ;
+   }
+
+   public Mono<String> timeBoundFlow() {
+      return Mono.just("later").delayElement(Duration.ofHours(1));
+   }
+
+
 
 }

@@ -49,7 +49,7 @@ public class P2_Enrich {
     //
     // * ALL THE NETWORK CALLS HAVE BEEN CAREFULLY WRAPPED IN NON-BLOCKING FUNCTIONS
     //   eg. relying on WebClient for REST calls
-    //   and reactive drivers for SQL (R2DBC), Mongo, Kafka, Redis, Cassandra, ..
+    //   + reactive drivers for SQL (R2DBC), Mongo, Kafka, Redis, Cassandra, ..
     // * NO FUNCTION EVER BLOCKS THE CALLER THREAD ANYMORE
     // * NO FUNCTION RETURNING MONO THROWS EXCEPTIONS (=> Mono.error(Ex))
     // !! CAREFUL NOT TO SUBSCRIBE TWICE TO THE RETURN Publishers
@@ -112,8 +112,8 @@ public class P2_Enrich {
     /**
      * a(id), then b1(a) || c1(a) ==> ABC(a,b,c)
      * Remember, you are in Reactive Heaven😇:
-     *   calling b1 and c1 launches the network calls and returns immediately,
-     *   without blocking. */
+     *   calling b1() and c1() launch the network calls and return immediately, without blocking.
+     */
     public Mono<ABC> p04_a_then_b1_c1(int id) {
         // Hint mono.flatMap(->mono.zipWith(mono, ->))
         return null;
@@ -155,9 +155,9 @@ public class P2_Enrich {
 
     // ==================================================================================================
     /**
-     * a(id) then b1(a) ==> AB(a,b), but if b(id) returns empty() => AB(a,null)
-     * Hint: watch out not to lose the data signals.
-     * Challenge is that Flux/Mono cannot carry a "null" data signal.
+     * a(id) then b1(a) ==> AB(a,b), but if b1(a) returns empty() => return AB(a,null)
+     * ⚠️ Watch out not to lose the data signals.
+     * Challenge: Reactor's Flux/Mono can never emit a "null" data signal.
      * Hint: you might need an operator containing "empty" in its name
      */
     public Mono<AB> p06_a_then_bMaybe(int id) {
@@ -169,10 +169,10 @@ public class P2_Enrich {
 
     // ==================================================================================================
     /**
-     * a(id) || b(id) ==> AB(a,b), but if b(id) returns empty() => AB(a,null)
+     * a(id) || b(id) ==> AB(a,b), but if b(id) returns empty() => return AB(a,null)
+     * ⚠️ Watch out not to lose the data signals.
+     * Challenge: Reactor's Flux/Mono can never emit a "null" data signal.
      * Finish the flow as fast as possible by starting a() in parallel with b()
-     * Challenge is that Flux/Mono cannot carry a "null" data signal.
-     * Hint: watch out not to lose the data signals.
      */
     public Mono<AB> p07_a_par_bMaybe(int id) {
         // equivalent blocking⛔️ code:
@@ -183,8 +183,8 @@ public class P2_Enrich {
 
     // ==================================================================================================
     /**
-     * a(id) || b(id) ==> AB(a,b), but if b(id) fails => AB(a,null)
-     * Hint: watch out not to lose the data signals.
+     * a(id) || b(id) ==> AB(a,b), but if b(id) returns ERROR => return AB(a,null)
+     * ⚠️ Watch out not to lose the data signals.
      */
     public Mono<AB> p08_a_try_b(int id) {
         // equivalent blocking⛔️ code:
@@ -202,7 +202,7 @@ public class P2_Enrich {
      * a(id), then b1(a), then c2(a,b); also d(id) ==> P10UseCaseContext(a,b,c,d)
      */
     @Value // immutable object
-    @With // public P10UseCaseContext withA(A newa) { return new P10UseCaseContext(newa, b,c,d); }
+    @With // generates: public P10UseCaseContext withA(A newa) { return new P10UseCaseContext(newa, b,c,d); }
     @AllArgsConstructor
     protected static class P10UseCaseContext {
         int id;
