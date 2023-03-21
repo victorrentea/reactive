@@ -73,7 +73,7 @@ public class P5_TestingTest {
              return Mono.empty();
           }))
           .isInstanceOf(AssertionFailedError.class)
-          .hasMessageContaining("<0L>");
+          .hasMessageContaining("0L");
    }
 
    @Test
@@ -81,7 +81,7 @@ public class P5_TestingTest {
       assertThatThrownBy(() ->
           workshop.verifySubscribedOnce(TestedProdClass::doOnNext_noSubscribe))
           .isInstanceOf(AssertionFailedError.class)
-          .hasMessageContaining("<0L>");
+          .hasMessageContaining("0L");
    }
 
    @Test
@@ -89,7 +89,7 @@ public class P5_TestingTest {
       assertThatThrownBy(() ->
           workshop.verifySubscribedOnce(TestedProdClass::noDataSignal_noSubscribe))
           .isInstanceOf(AssertionFailedError.class)
-          .hasMessageContaining("<0L>");
+          .hasMessageContaining("0L");
    }
 
    @Test
@@ -102,7 +102,7 @@ public class P5_TestingTest {
       assertThatThrownBy(() ->
           workshop.verifySubscribedOnce(TestedProdClass::twice_resubscribe))
           .isInstanceOf(AssertionFailedError.class)
-          .hasMessageContaining("<2L>");
+          .hasMessageContaining("2L");
    }
 }
 

@@ -44,8 +44,8 @@ public class P2_Enrich {
         this.dependency = dependency;
     }
 
-    //  😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇
     // ⚠️ ATTENTION ⚠️ ENTERING REACTIVE HEAVEN ⚠️
+    //  😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇 😇
     //
     // * ALL THE NETWORK CALLS HAVE BEEN CAREFULLY WRAPPED IN NON-BLOCKING FUNCTIONS
     //   eg. relying on WebClient for REST calls
@@ -64,7 +64,7 @@ public class P2_Enrich {
      * Hint: .zip
      */
     public Mono<AB> p01_a_par_b(int id) {
-        // equivalent blocking⛔️ code:
+        // approx equivalent blocking⛔️ code:
         // A a = dependency.a(id).block();
         // B b = dependency.b(id).block();
         // return Mono.just(new AB(a, b));
@@ -78,7 +78,7 @@ public class P2_Enrich {
      * a(id) || b(id) || c(id) ==> ABC(a,b,c)
      */
     public Mono<ABC> p02_a_b_c(int id) {
-        // equivalent blocking⛔️ code:
+        // approx equivalent blocking⛔️ code:
         //A a = dependency.a(id).block();
         //B b = dependency.b(id).block();
         //C c = dependency.c(id).block();
@@ -92,11 +92,13 @@ public class P2_Enrich {
     // ==================================================================================================
 
     /**
-     * Call a(id) with the given parameter, then b1(a) with the retrieved a; return both a and b.
+     * Call a(id) with the given parameter,
+     * then b1(a) with the retrieved a;
+     * return both a and b.
      * a(id), then b1(a) ==> AB(a,b)
      */
     public Mono<AB> p03_a_then_b1(int id) {
-        // equivalent blocking⛔️ code:
+        // approx equivalent blocking⛔️ code:
         // A a = dependency.a(id).block();
         // B b = dependency.b1(a).block();
         // return Mono.just(new AB(a, b));
@@ -120,9 +122,7 @@ public class P2_Enrich {
     // ==================================================================================================
 
     /**
-     * Same problem as above:
-     * a(id), then b1(a) || c1(a) ==> ABC(a,b,c)
-     * , but this time solve it by using multiple Mono<> variables.
+     * Solve the same problem as above, by using multiple Mono<> variables.
      * Hint: Use Mono#cache to avoid repeating the call to a(id)
      */
     public Mono<ABC> p04_a_then_b1_c1_cache(int id) {

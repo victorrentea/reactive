@@ -129,7 +129,7 @@ public class P3_ErrorsTest {
 
     assertThatThrownBy(() -> workshop.p06_retryThenLogError().block())
             .isInstanceOf(TestRootCauseException.class);
-    assertThat(systemOutput.toString()).contains("SCRAP LOGS FOR ME");
+    assertThat(systemOutput.toString()).contains("SCRAP-LOGS-TAG");
   }
 
   @Test
@@ -138,7 +138,7 @@ public class P3_ErrorsTest {
     when(dependencyMock.call()).thenReturn(subscribed.times(3, failingMonoTimes(2, "result")));
 
     assertThat(workshop.p06_retryThenLogError().block()).isEqualTo("result");
-    assertThat(systemOutput.toString()).doesNotContain("SCRAP LOGS FOR ME");
+    assertThat(systemOutput.toString()).doesNotContain("SCRAP-LOGS-TAG");
   }
 
   @Test
@@ -147,7 +147,7 @@ public class P3_ErrorsTest {
     when(dependencyMock.call()).thenReturn(subscribed.times(4, failingMonoTimes(3, "result")));
 
     assertThat(workshop.p06_retryThenLogError().block()).isEqualTo("result");
-    assertThat(systemOutput.toString()).doesNotContain("SCRAP LOGS FOR ME");
+    assertThat(systemOutput.toString()).doesNotContain("SCRAP-LOGS-TAG");
   }
 
   private static Mono<String> failingMonoTimes(int timesFailing, String result) {
@@ -169,7 +169,7 @@ public class P3_ErrorsTest {
     ;
 
     assertThat(workshop.p06_retryThenLogError().block()).isEqualTo("result");
-    assertThat(systemOutput.toString()).doesNotContain("SCRAP LOGS FOR ME");
+    assertThat(systemOutput.toString()).doesNotContain("SCRAP-LOGS-TAG");
   }
 
 
@@ -178,7 +178,7 @@ public class P3_ErrorsTest {
     when(dependencyMock.call()).thenReturn(subscribed.times(4, never()));
 
     assertThatThrownBy(() -> workshop.p06_retryThenLogError().block());
-    assertThat(systemOutput.toString()).contains("SCRAP LOGS FOR ME");
+    assertThat(systemOutput.toString()).contains("SCRAP-LOGS-TAG");
   }
 
 

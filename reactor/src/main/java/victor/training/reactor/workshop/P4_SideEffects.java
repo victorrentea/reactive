@@ -32,10 +32,9 @@ public class P4_SideEffects {
   // ==================================================================================================
 
   /**
-   * TODO Call dependency.sendMessage(a) when the mono emits an A.
-   *  Then return the same A further.
-   * Solution1: .flatMap
-   * Solution2: .delayUntil
+   * TODO Call dependency.sendMessage(a) when the mono emits an A; then return the same A.
+   * Solution#1: .flatMap
+   * Solution#2: .delayUntil
    */
   public Mono<A> p01_sendMessageAndReturn(Mono<A> ma) {
     // equivalent blocking⛔️ code:
@@ -60,7 +59,7 @@ public class P4_SideEffects {
 
   /**
    * TODO Call a = .save(a0);
-   *  then, if .retrieveStatus(a) is CONFLICT => .sendMessage(a)
+   *  then, if .retrieveStatus(a) == CONFLICT => .sendMessage(a)
    */
   public Mono<Void> p03_saveSendIfConflict(A a0) {
     // equivalent blocking⛔️ code:
@@ -99,6 +98,7 @@ public class P4_SideEffects {
     try {
       dependency.sendMessage(a).block();
     } catch (Exception e) {
+      log.error("Error sending message: " + e);
     }
     dependency.audit(a).block();
     return Mono.just(a);
@@ -108,8 +108,8 @@ public class P4_SideEffects {
   // ==================================================================================================
 
   /**
-   * TODO a = .save(a0) then .sendMessage(a) and .audit(a) and return the 'a' returned by save, but
-   *  to gain some time, sendMessage and audit should happen in parallel.
+   * TODO a = save(a0) then sendMessage(a) and audit(a); return a.
+   *  BUT: to gain time, sendMessage and audit should happen in parallel.
    * Note: Any error in either save(), send() or audit() should be returned in the returned Mono
    */
   public Mono<A> p06_saveSend_par_AuditReturn(A a0) {
@@ -121,12 +121,13 @@ public class P4_SideEffects {
   // ==================================================================================================
 
   /**
-   * TODO a = save(a0); then call sendMessage(a); but don't wait for this to complete.
-   * In other words, the returned Mono should complete immediately after save() completes with the 'a' returned by it,
-   * leaving in the background the call to sendMessage running (aka 'fire and forget').
+   * TODO a = save(a0); then call sendMessage(a) but don't wait for this to complete.
+   * In other words, the returned Mono should complete immediately after save() completes,
+   * leaving in the background the call to sendMessage (aka 'fire-and-forget').
    * Also, make sure any error from sendMessage is logged in the console.
    *
-   * BONUS: make sure any data in the reactor context sent by the subscriber is propagated into the sendMessage reactor context.
+   * BONUS[HARD]: make sure any data in the Reactor Context is propagated into the sendMessage.
+   *  Why?: propagate call metadata like ReactiveSecurityContext, @Transactional, Sleuth traceID, Logback MDC, ..
    */
   public Mono<A> p07_save_sendFireAndForget(A a0) {
     return dependency.save(a0)

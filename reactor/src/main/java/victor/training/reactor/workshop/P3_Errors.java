@@ -31,12 +31,10 @@ public class P3_Errors {
     Flux<String> downloadManyElements();
   }
 
-  // HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT
-  // HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT
-  // HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT HINT
-  // HINT: Most exercises in this file need operators(=methods) containing the word 'error' :)
+  // HINT 😉: Most solutions involve reactive operators (methods) containing the word 'error'
 
-  // *** Note: methods returning Mono/Flux should never THROW Exceptions but return them in Mono.error(Ex) ***
+  // *** Note: methods returning Mono/Flux should never THROW an Exception.
+  //  Insted, it should return the exception in Mono.error(Ex) ***
 
   // ==================================================================================================
 
@@ -44,13 +42,12 @@ public class P3_Errors {
    * TODO Log any exception from the Mono, and rethrow the same error.
    */
   public Mono<String> p01_log_rethrow() {
-
     // equivalent blocking⛔️ code:
     try {
       String value = dependency.call().block(); // .block() [AVOID in prod] throws any exception in the Mono
       return Mono.just(value);
     } catch (Exception e) {
-      log.error("Exception occurred: " + e, e);  //replace this catch with equivalent reactive code. avoid .block()
+      log.error("Exception occurred: " + e, e);  // <-- do this in a reactive style
       throw e;
     }
   }
@@ -61,9 +58,8 @@ public class P3_Errors {
   public Mono<String> p02_wrap() {
     try {
       return dependency.call();
-    } catch (
-            Exception originalException) { // <-- do this on any exception in the future, then delete this USELESS catch
-      throw new IllegalStateException(originalException);
+    } catch (Exception originalException) {
+      throw new IllegalStateException(originalException); // <-- do this in a reactive style
     }
   }
 
@@ -74,7 +70,7 @@ public class P3_Errors {
     try {
       return dependency.call();
     } catch (Exception e) {
-      return Mono.just("default"); // <-- do this on any exception in the future, then delete this USELESS catch
+      return Mono.just("default"); // <-- do this in a reactive style
     }
   }
 
@@ -85,7 +81,7 @@ public class P3_Errors {
     try {
       return dependency.call();
     } catch (Exception e) {
-      return dependency.backup(); // <-- do this on any exception in the future, then delete this USELESS catch
+      return dependency.backup(); // <-- do this in a reactive style
     }
   }
 
@@ -96,7 +92,7 @@ public class P3_Errors {
     try {
       return dependency.call();
     } catch (Exception e) {
-      dependency.sendError(e).block(); // <-- do this on any exception in the future, then delete this USELESS catch
+      dependency.sendError(e).block(); // <-- do this in a reactive style
       throw e;
     }
   }
@@ -104,8 +100,8 @@ public class P3_Errors {
   // ==================================================================================================
 
   // TODO Call dependency#call() again on error, maximum 4 times in total.
-  //  If last retry is still error, log it along with the text "SCRAP LOGS FOR ME"
-  //  If a call takes more than 200 millis, consider it to be failure and retry.
+  //  If last retry is still error, log it along with the text "SCRAP-LOGS-TAG"
+  //  If a call takes more than 50 millis, consider it to be failure and retry.
   // If needed, investingate using .log("above") / .log("below")
   public Mono<String> p06_retryThenLogError() {
     return dependency.call();

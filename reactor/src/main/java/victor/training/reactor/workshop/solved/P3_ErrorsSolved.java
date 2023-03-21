@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.io.Writer;
 import java.time.Duration;
 
+import static java.time.Duration.ofMillis;
+
 
 public class P3_ErrorsSolved extends P3_Errors {
     private static final Logger log = LoggerFactory.getLogger(P3_ErrorsSolved.class);
@@ -43,16 +45,16 @@ public class P3_ErrorsSolved extends P3_Errors {
 
     public Mono<String> p06_retryThenLogError() {
         return dependency.call()
-                .timeout(Duration.ofMillis(200))
+                .timeout(ofMillis(50))
                 .log("above")
                 .retry(3)
                 .log("below")
-                .doOnError(e -> log.error("Final fail (SCRAP LOGS FOR ME): " + e));
+                .doOnError(e -> log.error("Final fail (SCRAP-LOGS-TAG): " + e));
     }
 
     public Mono<String> p07_retryWithBackoff() {
         return dependency.call()
-                .retryWhen(Retry.backoff(3, Duration.ofMillis(200)));
+                .retryWhen(Retry.backoff(3, ofMillis(200)));
     }
 
     public Mono<Void> p08_usingResourceThatNeedsToBeClosed() throws IOException {
