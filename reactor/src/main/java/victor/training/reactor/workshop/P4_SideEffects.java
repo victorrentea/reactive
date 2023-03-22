@@ -6,9 +6,11 @@ import reactor.core.publisher.Mono;
 
 public class P4_SideEffects {
   protected final Logger log = LoggerFactory.getLogger(P4_SideEffects.class);
+
   protected static class A {
     public boolean updated;
   }
+
   protected enum AStatus {
     NEW, UPDATED, CONFLICT
   }
@@ -37,22 +39,22 @@ public class P4_SideEffects {
    * Solution#2: .delayUntil
    */
   public Mono<A> p01_sendMessageAndReturn(Mono<A> ma) {
-//    return ma.doOnNext(a -> dependency.sendMessage(a)); // NOthing happes
-//    return ma.doOnNext(a -> dependency.sendMessage(a).subscribe()); // NO-bad practice
-        // because it breaks the reactive chaing
+    //    return ma.doOnNext(a -> dependency.sendMessage(a)); // NOthing happes
+    //    return ma.doOnNext(a -> dependency.sendMessage(a).subscribe()); // NO-bad practice
+    // because it breaks the reactive chaing
     // so what ??
-        // 1) the hidden dark metadata does not propaget to sendMessage:
-          // TraceID, @Transactional, ReactiveSecurityContextHolder,
-        // 2) if the client of the Mono<A> that i returned CANCELS the request,
-          // the sendMessage is NOT cancelled
+    // 1) the hidden dark metadata does not propaget to sendMessage:
+    // TraceID, @Transactional, ReactiveSecurityContextHolder,
+    // 2) if the client of the Mono<A> that i returned CANCELS the request,
+    // the sendMessage is NOT cancelled
 
-        // What do do instead: when using Reactive make sure you return the Mono/Flux to Spring
+    // What do do instead: when using Reactive make sure you return the Mono/Flux to Spring
     // eg from a @GetMappng method. ...
 
-//    return ma.flatMap(a -> dependency.sendMessage(a).map(v -> a));
+    //    return ma.flatMap(a -> dependency.sendMessage(a).map(v -> a));
     return ma.flatMap(a -> dependency.sendMessage(a).thenReturn(a));
-//    return ma.delayUntil(a -> dependency.sendMessage(a));
-//    return ma.delayUntil(dependency::sendMessage);
+    //    return ma.delayUntil(a -> dependency.sendMessage(a));
+    //    return ma.delayUntil(dependency::sendMessage);
   }
 
   // ==================================================================================================
@@ -73,10 +75,10 @@ public class P4_SideEffects {
    */
   public Mono<Void> p03_saveSendIfConflict(A a0) {
     // equivalent blocking⛔️ code:
-//    A a = dependency.save(a0).block();
-//    if (dependency.retrieveStatus(a).block() == AStatus.CONFLICT) {
-//      dependency.sendMessage(a).block();
-//    }
+    //    A a = dependency.save(a0).block();
+    //    if (dependency.retrieveStatus(a).block() == AStatus.CONFLICT) {
+    //      dependency.sendMessage(a).block();
+    //    }
 
     return dependency.save(a0)
             .filterWhen(a -> dependency.retrieveStatus(a).map(s -> s == AStatus.CONFLICT))
@@ -104,23 +106,22 @@ public class P4_SideEffects {
    */
   public Mono<A> p05_saveSendAuditKOReturn(A a0) {
     // equivalent blocking⛔️ code:
-//    A a = dependency.save(a0).block();
-//    try {
-//      dependency.sendMessage(a).block();
-//    } catch (Exception e) {
-//      log.error("Error sending message: " + e);
-//    }
-//    dependency.audit(a).block();
-////    return Mono.just(a);
+    //    A a = dependency.save(a0).block();
+    //    try {
+    //      dependency.sendMessage(a).block();
+    //    } catch (Exception e) {
+    //      log.error("Error sending message: " + e);
+    //    }
+    //    dependency.audit(a).block();
+    ////    return Mono.just(a);
 
     return dependency.save(a0)
-            .delayUntil(a->
-                  Mono.zip(
-                    dependency.sendMessage(a)
-                            .doOnError(e-> System.out.println("Error sending message: " + e))
-                            .onErrorResume(e -> Mono.empty()),
-                    dependency.audit(a))
-                  .then());
+            .delayUntil(a -> Mono.zip(
+                            dependency.sendMessage(a)
+                                    .doOnError(e -> System.out.println("Error sending message: " + e))
+                                    .onErrorResume(e -> Mono.empty()),
+                            dependency.audit(a))
+                    .then());
   }
 
 
@@ -141,15 +142,15 @@ public class P4_SideEffects {
 
   /**
    * TODO a = save(a0); then call sendMessage(a) but don't wait for this to complete.
-   *
+   * <p>
    * In other words, the returned Mono should complete immediately after save() completes,
    * leaving in background the call to sendMessage (aka 'fire-and-forget').
-   *    Why: faster response to user
-   *
+   * Why: faster response to user
+   * <p>
    * Also, make sure any error from sendMessage is logged in the console.
-   *
+   * <p>
    * BONUS[HARD]: make sure any data in the Reactor Context is propagated into the sendMessage.
-   *  Why?: propagate call metadata like ReactiveSecurityContext, @Transactional, Sleuth traceID, Logback MDC, ..
+   * Why?: propagate call metadata like ReactiveSecurityContext, @Transactional, Sleuth traceID, Logback MDC, ..
    */
   public Mono<A> p07_save_sendFireAndForget(A a0) {
     return dependency.save(a0)

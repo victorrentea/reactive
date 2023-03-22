@@ -1,6 +1,8 @@
 package victor.training.reactor.workshop;
 
 import lombok.Value;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -41,9 +43,21 @@ public class P7_Flux {
   // TODO #1 fetch each element by id using .fetchOneById(id)
   // TODO #2 Print elements as they come in. What do you observe? (the original IDs are consecutive)
   // TODO #3 Restrict the concurrency to maximum 4 requests in parallel
-  public Flux<A> p01_fetchInParallel_scrambled(List<Integer> idList) {
+  @GetMapping
+  public Flux<A> p01_fetchInParallel_scrambled(@RequestBody List<Integer> idList) {
     System.out.println("IDs to fetch: "+ idList);
-    return Flux.empty(); // Flux.fromIterable(idList)...
+    // preseve order
+//    return Flux.fromIterable(idList).concatMap(id -> dependency.fetchOneById(id));
+//    return Flux.fromIterable(idList).flatMapSequential(id -> dependency.fetchOneById(id));
+    // #1 scrambles but most efficient
+//    return Flux.fromIterable(idList).flatMap(id -> dependency.fetchOneById(id));
+    // are we calling network in a LOOP < the most terrible performance issue in
+
+    // #2 better: fetch data in chunks/pages over the network
+    return Flux.fromIterable(idList)
+            .buffer(30)
+            .flatMap(id -> dependency.fetchPageByIds(id), 3); // #3 limit concurrency of flatMap
+
   }
 
   // ==================================================================================
