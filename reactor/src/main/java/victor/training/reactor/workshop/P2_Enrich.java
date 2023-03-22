@@ -147,8 +147,11 @@ public class P2_Enrich {
    * calling b1() and c1() launch the network calls and return immediately, without blocking.
    */
   public Mono<ABC> p04_a_then_b1_c1(int id) {
-    // Hint mono.flatMap(->mono.zipWith(mono, ->))
-    return null;
+    Mono<A> monoA = dependency.a(id);
+    Mono<B> monoB = monoA.flatMap(a -> dependency.b1(a));
+    Mono<C> monoC = monoA.flatMap(a -> dependency.c1(a));
+    return Mono.zip(monoA, monoB, monoC)
+            .map(function((a, b, c) -> new ABC(a, b, c)));
   }
 
   // ==================================================================================================
