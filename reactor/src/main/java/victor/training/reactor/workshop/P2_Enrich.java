@@ -8,6 +8,9 @@ import reactor.core.publisher.Mono;
 import reactor.function.TupleUtils;
 import reactor.util.function.Tuple3;
 
+import java.util.Optional;
+
+import static java.util.Optional.of;
 import static reactor.function.TupleUtils.function;
 
 @Slf4j
@@ -16,6 +19,7 @@ public class P2_Enrich {
   }
 
   protected static class B {
+    public static final B NO_B = new B();
   }
 
   protected static class C {
@@ -130,8 +134,8 @@ public class P2_Enrich {
 //     return Mono.just(new AB(a, b));
 //    Mono<A> monoA = dependency.a(id);
 //
-////    Mono<AB> monoAB = monoA.flatMap(a-> dependency.b1(a).map(b-> new AB(a,b)));
-////    Mono<AB> monoAB = monoA.zipWhen(a-> dependency.b1(a), (a,b)-> new AB(a,b));
+//    Mono<AB> monoAB = monoA.flatMap(a-> dependency.b1(a).map(b-> new AB(a,b)));
+//    Mono<AB> monoAB = monoA.zipWhen(a-> dependency.b1(a), (a,b)-> new AB(a,b));
 //    Mono<AB> monoAB = monoA.zipWhen(dependency::b1, AB::new);
 //
 //  return monoAB;
@@ -147,7 +151,9 @@ public class P2_Enrich {
    * calling b1() and c1() launch the network calls and return immediately, without blocking.
    */
   public Mono<ABC> p04_a_then_b1_c1(int id) {
-    Mono<A> monoA = dependency.a(id);
+    Mono<A> monoA = dependency.a(id).cache(); // this cache
+    // operates on the level of the MonoA instance only.
+    // not cross-invocations of this method p04
     Mono<B> monoB = monoA.flatMap(a -> dependency.b1(a));
     Mono<C> monoC = monoA.flatMap(a -> dependency.c1(a));
     return Mono.zip(monoA, monoB, monoC)
@@ -174,11 +180,11 @@ public class P2_Enrich {
    * a(id), then b1(a), then c2(a,b) ==> ABC(a,b,c)
    */
   public Mono<ABC> p05_a_then_b1_then_c2(int id) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block();
-    B b = dependency.b1(a).block();
-    C c = dependency.c2(a, b).block();
-    return Mono.just(new ABC(a, b, c));
+    return dependency.a(id)
+            .flatMap(a -> dependency.b1(a)
+            .flatMap(b -> dependency.c2(a,b)
+                    .map(c -> new ABC(a,b,c))));
+
 
     // TODO Solution #1: accumulating data structures (chained flatMap)
 
@@ -191,16 +197,18 @@ public class P2_Enrich {
   // ==================================================================================================
 
   /**
-   * a(id) then b1(a) ==> AB(a,b), but if b1(a) returns empty() => return AB(a,null)
+   * a(id) then b1(a) ==> AB(a,b),
+   * but if b1(a) returns empty() => return AB(a,null)
    * ⚠️ Watch out not to lose the data signals.
    * Challenge: Reactor's Flux/Mono can never emit a "null" data signal.
    * Hint: you might need an operator containing "empty" in its name
    */
   public Mono<AB> p06_a_then_bMaybe(int id) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block();
-    B b = dependency.b1(a).block();
-    return Mono.just(new AB(a, b));
+//    Mono.empty()
+    return dependency.a(id).zipWhen(a -> dependency.b1(a)
+                    .map(b -> of(b))
+                    .defaultIfEmpty(Optional.empty()),
+            (a1, b) -> new AB(a1, b.orElse(null)));
   }
 
   // ==================================================================================================
