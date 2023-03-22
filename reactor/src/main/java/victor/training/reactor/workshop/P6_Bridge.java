@@ -120,9 +120,7 @@ public class P6_Bridge {
   @PostMapping("receive-reply-message") // simulate with a REST api for easier testing.
   public void p06_receiveOnReplyQueue(@RequestParam(defaultValue = "1") long id,
                                       @RequestBody ResponseMessage response) {
-    // TODO write code here to emit the received response in the Mono returned by the method above
-    // the other method has to complete it
-    One<ResponseMessage> sink = futureResponse.get(id);
+    One<ResponseMessage> sink = futureResponse.remove(id);
     sink.tryEmitValue(response);
   }
   // ⭐️ Challenge: Support multiple concurrent requests waiting at the same time
