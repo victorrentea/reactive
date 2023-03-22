@@ -11,11 +11,15 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.core.publisher.Sinks.One;
 import victor.training.reactor.lite.Utils;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+@RestController
 public class P6_Bridge {
 
   protected static Logger log = LoggerFactory.getLogger(P6_Bridge.class);
@@ -59,6 +63,13 @@ public class P6_Bridge {
   // TODO call dependency#save() and block the current thread until it completes, then log.info the returned value
   // Use-Case: block the thread in a @Scheduled / Message Listener, that would otherwise consume a new message (eg Kafka, Rabbit)
   public void p01_blockForMono(String message) {
+    // dependency.save(message).subscribe();
+    //1) @Scheduled this would NOT block the thread and the @Scheduled will tick again 10 minutes later, starting starting another processing
+    //2) if a @RabbitListener methodcompletes w/o error, Rabbit will call it again with the next message
+    // = primitive way to do backpressure
+
+    // corect:
+    dependency.save(message).block();
   }
 
   // ==================================================================================
@@ -89,24 +100,36 @@ public class P6_Bridge {
   }
   // What is the difference between CompletableFuture and Mono? When do they start executing?
 
+
+
+
   // ==================================================================================
   // TODO call dependency#sendMessageOnQueueBlocking(id) and then return a Mono
   //  that emits the ResponseMessage received LATER via the next method (aka callback).
   @GetMapping("message-bridge")
   public Mono<ResponseMessage> p06_messageBridge(@RequestParam(defaultValue = "1") long id) {
-    return null;
+    // One method has to create the Mono
+    One<ResponseMessage> sink = Sinks.one();
+    futureResponse.put(id, sink);
+    return sink.asMono();
   }
 
-  private Sinks.One<ResponseMessage> futureResponse; // TODO
+  private Map<Long, One<ResponseMessage>> futureResponse = new HashMap<>(); // TODO
 
   // @MessageListener imagine..
   @PostMapping("receive-reply-message") // simulate with a REST api for easier testing.
   public void p06_receiveOnReplyQueue(@RequestParam(defaultValue = "1") long id,
                                       @RequestBody ResponseMessage response) {
     // TODO write code here to emit the received response in the Mono returned by the method above
-
+    // the other method has to complete it
+    One<ResponseMessage> sink = futureResponse.get(id);
+    sink.tryEmitValue(response);
   }
   // ⭐️ Challenge: Support multiple concurrent requests waiting at the same time
+
+
+
+
 
 
   // ==================================================================================
