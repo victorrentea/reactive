@@ -12,11 +12,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.One;
+import reactor.core.scheduler.Schedulers;
 import victor.training.reactor.lite.Utils;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.Duration;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -29,6 +29,7 @@ public class P6_Bridge {
 
   @Data
   protected static class ResponseMessage {
+    Long correlationId;
     String data;
   }
 
@@ -107,19 +108,23 @@ public class P6_Bridge {
   // TODO call dependency#sendMessageOnQueueBlocking(id) and then return a Mono
   //  that emits the ResponseMessage received LATER via the next method (aka callback).
   @GetMapping("message-bridge")
-  public Mono<ResponseMessage> p06_messageBridge(@RequestParam(defaultValue = "1") long id) {
+  public Mono<ResponseMessage> p06_messageBridge() {
     // One method has to create the Mono
+    Long uuid = new Random().nextLong();
     One<ResponseMessage> sink = Sinks.one();
-    futureResponse.put(id, sink);
-    return sink.asMono();
+    futureResponse.put(uuid, sink);
+    return Mono.fromRunnable(() -> dependency.sendMessageOnQueueBlocking(uuid))
+            .subscribeOn(Schedulers.boundedElastic())
+            .doOnCancel(() -> futureResponse.remove(uuid))
+            .then(sink.asMono());
   }
 
   private Map<Long, One<ResponseMessage>> futureResponse = new HashMap<>(); // TODO
 
   // @MessageListener imagine..
   @PostMapping("receive-reply-message") // simulate with a REST api for easier testing.
-  public void p06_receiveOnReplyQueue(@RequestParam(defaultValue = "1") long id,
-                                      @RequestBody ResponseMessage response) {
+  public void p06_receiveOnReplyQueue(@RequestBody ResponseMessage response) {
+    Long id = response.correlationId;
     One<ResponseMessage> sink = futureResponse.remove(id);
     sink.tryEmitValue(response);
   }
@@ -137,14 +142,20 @@ public class P6_Bridge {
   // Hint: use Sinks.???
   @GetMapping(value = "flux-broadcast", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   public Flux<Integer> p07_fluxBroadcast() {
-    return null;
+    return fluxSink.asFlux();
   }
 
-  private Sinks.Many<Integer> fluxSink; // TODO = ...
+  private Sinks.Many<Integer> fluxSink = Sinks.many().multicast().onBackpressureBuffer();
 
   @GetMapping("flux-signal")
   public void p07_externalSignal(@RequestParam(defaultValue = "9") Integer data) {
+    fluxSink.tryEmitNext(data);
     // TODO write code here to emit the data in the flux returned in the previous method.
   }
 
+
+  @GetMapping(value = "tick", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+  public Flux<Long> tick() {
+    return Flux.interval(Duration.ofMillis(300));
+  }
 }

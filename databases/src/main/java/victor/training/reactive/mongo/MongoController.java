@@ -31,7 +31,7 @@ public class MongoController {
 
    @GetMapping("send")
    public Mono<String> sendMessage() {
-      Event event = new Event("Message at " + LocalDateTime.now());
+         Event event = new Event("Message at " + LocalDateTime.now());
       return rxRepo.save(event).map(Event::getId);
    }
 

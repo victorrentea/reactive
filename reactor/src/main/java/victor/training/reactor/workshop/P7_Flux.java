@@ -132,6 +132,8 @@ public class P7_Flux {
   }
 
 
+
+
   // ==================================================================================
   // TODO based on the MessageType.forMessage(int) below, do one of the following:
   //  - TYPE1_NEGATIVE: Do nothing (ignore the message)
@@ -141,9 +143,16 @@ public class P7_Flux {
   //      * to optimize network traffic send in pages of size = 3
   //      * avoid delaying an element by more than 200 millis
   // Bonus: debate .buffer vs .window
+
   public Mono<Void> p09_groupedFlux(Flux<Integer> messageStream) {
     return messageStream
-            // .groupBy(MessageType::forMessage)
+            .flatMap(m-> switch (MessageType.forMessage(m)) {
+              case TYPE2_ODD -> Mono.zip(
+                      dependency.sendOdd1(m),
+                      dependency.sendOdd2(m));
+              case TYPE3_EVEN -> dependency.sendEven(List.of(m));
+              case TYPE1_NEGATIVE -> Mono.empty();
+            })
             .then();
   }
 
@@ -159,6 +168,17 @@ public class P7_Flux {
     }
   }
 
+//  @PostConstruct
+//  public void listenToAnInfiniteStreamOfMessagesFromKafka() {
+//    Flux<String> messageFlux = kafkaListener.receive("topic123");
+//    messageFlux
+//            .filter()
+//            .map()
+//            .flatMap()
+//            .delayUntil()
+//            .subscribe(); // the only placewhere you should .subscribe()
+//    // to an infinite stream at startup
+//  }
 
 }
 

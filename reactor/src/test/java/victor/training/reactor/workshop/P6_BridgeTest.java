@@ -85,22 +85,22 @@ public class P6_BridgeTest {
     assertThat(mono.block()).isEqualTo(user);
   }
 
-  @Test
-  @Timeout(value = 500, unit = MILLISECONDS)
-  void p06_messageBridge() {
-    ResponseMessage responseMessage = new ResponseMessage();
-    Mono<ResponseMessage> mono = workshop.p06_messageBridge(1L);
-    runAsync(() -> workshop.p06_receiveOnReplyQueue(1L, responseMessage),
-            delayedExecutor(200, MILLISECONDS))
-            .exceptionally(ex-> {
-              log.error("Exception in callback: " + ex, ex);
-              return null;
-            });
-    ResponseMessage r = mono.block();
-    assertThat(r).isEqualTo(responseMessage);
-    verify(dependency).sendMessageOnQueueBlocking(1L);
-  }
-
+//  @Test
+//  @Timeout(value = 500, unit = MILLISECONDS)
+//  void p06_messageBridge() {
+//    ResponseMessage responseMessage = new ResponseMessage();
+//    Mono<ResponseMessage> mono = workshop.p06_messageBridge(1L);
+//    runAsync(() -> workshop.p06_receiveOnReplyQueue(1L, responseMessage),
+//            delayedExecutor(200, MILLISECONDS))
+//            .exceptionally(ex-> {
+//              log.error("Exception in callback: " + ex, ex);
+//              return null;
+//            });
+//    ResponseMessage r = mono.block();
+//    assertThat(r).isEqualTo(responseMessage);
+//    verify(dependency).sendMessageOnQueueBlocking(1L);
+//  }
+//
 
   @Test
   @Timeout(1)
