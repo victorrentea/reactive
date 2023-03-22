@@ -37,10 +37,22 @@ public class P4_SideEffects {
    * Solution#2: .delayUntil
    */
   public Mono<A> p01_sendMessageAndReturn(Mono<A> ma) {
-    // equivalent blocking⛔️ code:
-    A a = ma.block();
-    dependency.sendMessage(a).block();
-    return Mono.just(a);
+//    return ma.doOnNext(a -> dependency.sendMessage(a)); // NOthing happes
+//    return ma.doOnNext(a -> dependency.sendMessage(a).subscribe()); // NO-bad practice
+        // because it breaks the reactive chaing
+    // so what ??
+        // 1) the hidden dark metadata does not propaget to sendMessage:
+          // TraceID, @Transactional, ReactiveSecurityContextHolder,
+        // 2) if the client of the Mono<A> that i returned CANCELS the request,
+          // the sendMessage is NOT cancelled
+
+        // What do do instead: when using Reactive make sure you return the Mono/Flux to Spring
+    // eg from a @GetMappng method. ...
+
+//    return ma.flatMap(a -> dependency.sendMessage(a).map(v -> a));
+    return ma.flatMap(a -> dependency.sendMessage(a).thenReturn(a));
+//    return ma.delayUntil(a -> dependency.sendMessage(a));
+//    return ma.delayUntil(dependency::sendMessage);
   }
 
   // ==================================================================================================
@@ -49,10 +61,8 @@ public class P4_SideEffects {
    * TODO Call a = .save(a0) then .sendMessage(a) and return only the completion signal
    */
   public Mono<Void> p02_saveAndSend(A a0) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.save(a0).block();
-    dependency.sendMessage(a).block();
-    return Mono.empty();
+    return dependency.save(a0)
+            .flatMap(a -> dependency.sendMessage(a));
   }
 
   // ==================================================================================================
@@ -63,11 +73,14 @@ public class P4_SideEffects {
    */
   public Mono<Void> p03_saveSendIfConflict(A a0) {
     // equivalent blocking⛔️ code:
-    A a = dependency.save(a0).block();
-    if (dependency.retrieveStatus(a).block() == AStatus.CONFLICT) {
-      dependency.sendMessage(a).block();
-    }
-    return Mono.empty();
+//    A a = dependency.save(a0).block();
+//    if (dependency.retrieveStatus(a).block() == AStatus.CONFLICT) {
+//      dependency.sendMessage(a).block();
+//    }
+
+    return dependency.save(a0)
+            .filterWhen(a -> dependency.retrieveStatus(a).map(s -> s == AStatus.CONFLICT))
+            .flatMap(a -> dependency.sendMessage(a));
   }
 
   // ==================================================================================================
@@ -78,12 +91,9 @@ public class P4_SideEffects {
    */
   public Mono<Void> p04_saveSendAuditReturn(A a0) {
     // equivalent blocking⛔️ code:
-    A a = dependency.save(a0).block();
-    if (a.updated) {
-      dependency.sendMessage(a).block();
-      dependency.audit(a).block();
-    }
-    return Mono.empty();
+    return dependency.save(a0)
+            .filter(a -> a.updated)
+            .flatMap(a -> Mono.zip(dependency.sendMessage(a), dependency.audit(a)).then());
   }
 
   // ==================================================================================================
@@ -94,14 +104,23 @@ public class P4_SideEffects {
    */
   public Mono<A> p05_saveSendAuditKOReturn(A a0) {
     // equivalent blocking⛔️ code:
-    A a = dependency.save(a0).block();
-    try {
-      dependency.sendMessage(a).block();
-    } catch (Exception e) {
-      log.error("Error sending message: " + e);
-    }
-    dependency.audit(a).block();
-    return Mono.just(a);
+//    A a = dependency.save(a0).block();
+//    try {
+//      dependency.sendMessage(a).block();
+//    } catch (Exception e) {
+//      log.error("Error sending message: " + e);
+//    }
+//    dependency.audit(a).block();
+////    return Mono.just(a);
+
+    return dependency.save(a0)
+            .delayUntil(a->
+                  Mono.zip(
+                    dependency.sendMessage(a)
+                            .doOnError(e-> System.out.println("Error sending message: " + e))
+                            .onErrorResume(e -> Mono.empty()),
+                    dependency.audit(a))
+                  .then());
   }
 
 

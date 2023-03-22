@@ -110,7 +110,7 @@ public class P2_Enrich {
 //
 //    Mono<Tuple3<A, B, C>> monoTuple = Mono.zip(monoA, monoB, monoC);
 //
-////    Mono<ABC> monoABC = monoTuple.map(t3 -> new ABC(t3.getT1(), t3.getT2(), t3.getT3()));
+//    Mono<ABC> monoABC = monoTuple.map(t3 -> new ABC(t3.getT1(), t3.getT2(), t3.getT3()));
 ////    Mono<ABC> monoABC = monoTuple.map(TupleUtils.function((a, b, c) -> new ABC(a, b, c)));
 //    Mono<ABC> monoABC = monoTuple.map(function(ABC::new));
 //    return monoABC;
@@ -133,7 +133,7 @@ public class P2_Enrich {
 //     B b = dependency.b1(a).block();
 //     return Mono.just(new AB(a, b));
 //    Mono<A> monoA = dependency.a(id);
-//
+////
 //    Mono<AB> monoAB = monoA.flatMap(a-> dependency.b1(a).map(b-> new AB(a,b)));
 //    Mono<AB> monoAB = monoA.zipWhen(a-> dependency.b1(a), (a,b)-> new AB(a,b));
 //    Mono<AB> monoAB = monoA.zipWhen(dependency::b1, AB::new);
@@ -151,13 +151,16 @@ public class P2_Enrich {
    * calling b1() and c1() launch the network calls and return immediately, without blocking.
    */
   public Mono<ABC> p04_a_then_b1_c1(int id) {
-    Mono<A> monoA = dependency.a(id).cache(); // this cache
-    // operates on the level of the MonoA instance only.
-    // not cross-invocations of this method p04
-    Mono<B> monoB = monoA.flatMap(a -> dependency.b1(a));
-    Mono<C> monoC = monoA.flatMap(a -> dependency.c1(a));
-    return Mono.zip(monoA, monoB, monoC)
-            .map(function((a, b, c) -> new ABC(a, b, c)));
+//    Mono<A> monoA = dependency.a(id).cache(); // this cache
+//    Mono<B> monoB = monoA.flatMap(a -> dependency.b1(a));
+//    Mono<C> monoC = monoA.flatMap(a -> dependency.c1(a));
+//    return Mono.zip(monoA, monoB, monoC)
+//            .map(function((a, b, c) -> new ABC(a, b, c)));
+
+    // BEST PRACTICE in reactive code: NEVER DEFINE VARIABLES
+    return dependency.a(id)
+            .flatMap(a -> dependency.b1(a).zipWith(dependency.c1(a))
+                    .map(function((b, c) -> new ABC(a, b, c))));
   }
 
   // ==================================================================================================
