@@ -10,9 +10,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 import static java.lang.System.currentTimeMillis;
+import static victor.training.reactive.intro.mvc.BlockingApp.theadLocal;
 import static victor.training.reactive.intro.mvc.Utils.sleep;
 
 @EnableAsync
@@ -43,9 +46,17 @@ public class BlockingApp {
       return "immediate";
    }
 
+   @PostMapping
+   public void acceptPayment(Double baniiClientului) {
+
+   }
+   // SecurityContextHolder, Logbak MDC, @Transacational, TraceID sleuth
+//   public static ThreadLocal<String> theadLocal = new ThreadLocal<>();
+
    @GetMapping("drink")
    public DillyDilly drink() throws Exception {
       log.info("Talking to barman: " + barman.getClass());
+//      theadLocal.set("ceva");
 
       long t0 = currentTimeMillis();
 
@@ -67,13 +78,14 @@ class Barman {
 
    public Beer pourBeer() {
       log.info("Start beer");
+//      String s = theadLocal.get();
 
       // 1: pretend
-      sleep(1000);
-      Beer beer = new Beer("blond");
+//      sleep(1000);
+//      Beer beer = new Beer("blond");
 
       // 2: blocking REST call
-//      Beer beer = new RestTemplate().getForEntity("http://localhost:9999/api/beer", Beer.class).getBody();
+      Beer beer = new RestTemplate().getForEntity("http://localhost:9999/api/beer", Beer.class).getBody();
       log.info("End beer");
       return beer;
 
