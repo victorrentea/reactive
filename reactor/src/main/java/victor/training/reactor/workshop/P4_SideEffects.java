@@ -59,9 +59,24 @@ public class P4_SideEffects {
 
   /**
    * TODO Call a = .save(a0);
+   *  then, if a.updated => .sendMessage(a)
+   */
+  public Mono<Void> p03_saveSendIfUpdated(A a0) {
+    // equivalent blocking⛔️ code:
+    A a = dependency.save(a0).block();
+    if (a.updated) {
+      dependency.sendMessage(a).block();
+    }
+    return Mono.empty();
+  }
+
+  // ==================================================================================================
+
+  /**
+   * TODO Call a = .save(a0);
    *  then, if .retrieveStatus(a) == CONFLICT => .sendMessage(a)
    */
-  public Mono<Void> p03_saveSendIfConflict(A a0) {
+  public Mono<Void> p04_saveSendIfConflictRemote(A a0) {
     // equivalent blocking⛔️ code:
     A a = dependency.save(a0).block();
     if (dependency.retrieveStatus(a).block() == AStatus.CONFLICT) {
@@ -73,17 +88,14 @@ public class P4_SideEffects {
   // ==================================================================================================
 
   /**
-   * TODO Call a = .save(a0)
-   *  if (a.updated) then .sendMessage(a) and .audit(a)
+   * TODO Call a = .save(a0), then .sendMessage(a), then .audit(a)
    */
-  public Mono<Void> p04_saveSendAuditReturn(A a0) {
+  public Mono<A> p05_saveSendAuditReturn(A a0) {
     // equivalent blocking⛔️ code:
     A a = dependency.save(a0).block();
-    if (a.updated) {
-      dependency.sendMessage(a).block();
-      dependency.audit(a).block();
-    }
-    return Mono.empty();
+    dependency.sendMessage(a).block();
+    dependency.audit(a).block();
+    return Mono.just(a);
   }
 
   // ==================================================================================================
@@ -92,7 +104,7 @@ public class P4_SideEffects {
    * TODO same as above but ignore any errors from sendMessage.
    * ! Make sure audit() is called and the returned Mono<> completes without error.
    */
-  public Mono<A> p05_saveSendAuditKOReturn(A a0) {
+  public Mono<A> p06_ignoreError(A a0) {
     // equivalent blocking⛔️ code:
     A a = dependency.save(a0).block();
     try {
@@ -108,11 +120,10 @@ public class P4_SideEffects {
   // ==================================================================================================
 
   /**
-   * TODO a = save(a0) then sendMessage(a) and audit(a); return a.
-   *  BUT: to gain time, sendMessage and audit should happen in parallel.
+   * TODO same as above, but to gain time, sendMessage and audit should happen in parallel.
    * Note: Any error in either save(), send() or audit() should be returned in the returned Mono
    */
-  public Mono<A> p06_saveSend_par_AuditReturn(A a0) {
+  public Mono<A> p07_parallel(A a0) {
     return dependency.save(a0)
             // TODO
             ;
@@ -121,7 +132,7 @@ public class P4_SideEffects {
   // ==================================================================================================
 
   /**
-   * TODO a = save(a0); then call sendMessage(a) but don't wait for this to complete.
+   * TODO a = save(a0); then call sendMessage(a) but don't wait for the sending to COMPLETE.
    *
    * In other words, the returned Mono should complete immediately after save() completes,
    * leaving in background the call to sendMessage (aka 'fire-and-forget').
@@ -132,7 +143,7 @@ public class P4_SideEffects {
    * BONUS[HARD]: make sure any data in the Reactor Context is propagated into the sendMessage.
    *  Why?: propagate call metadata like ReactiveSecurityContext, @Transactional, Sleuth traceID, Logback MDC, ..
    */
-  public Mono<A> p07_save_sendFireAndForget(A a0) {
+  public Mono<A> p08_fireAndForget(A a0) {
     return dependency.save(a0)
             // TODO
             ;

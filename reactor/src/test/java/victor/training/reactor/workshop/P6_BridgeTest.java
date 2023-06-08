@@ -30,6 +30,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static victor.training.util.RunAsNonBlocking.nonBlocking;
 
 @Slf4j
 @TestMethodOrder(MethodName.class)
@@ -69,8 +70,8 @@ public class P6_BridgeTest {
       Utils.sleep(200);
       return "data";
     });
-    Mono<String> mono = RunAsNonBlocking.nonBlocking(() -> workshop.p03_blockingCalls());
-    assertThat(mono.block()).isEqualTo("data");
+    String s = nonBlocking(() -> workshop.p03_blockingCalls());
+    assertThat(s).isEqualTo("data");
   }
 
   @Test

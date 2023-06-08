@@ -70,7 +70,7 @@ public class P9_ComplexFlowTest {
       } catch (ExecutionException | InterruptedException e) {
         throw new RuntimeException(e);
       }
-    }).block();
+    });
   }
 
   @Test

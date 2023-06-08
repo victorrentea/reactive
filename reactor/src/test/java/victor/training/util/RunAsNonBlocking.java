@@ -18,9 +18,10 @@ public class RunAsNonBlocking {
   /**
    * Together with the dependency blockhound-junit-platform, checks that you don't block() in the called method
    */
-  public static <T> Mono<T> nonBlocking(Supplier<Mono<T>> monoSupplier) {
+  public static <T> T nonBlocking(Supplier<Mono<T>> monoSupplier) {
     return Mono.defer(monoSupplier)
-            .subscribeOn(parallel()); // blockhound detects any blocking in threads of this scheduler
+            .subscribeOn(parallel())
+            .block(); // blockhound detects any blocking in threads of this scheduler
   }
 
   public static <T> T decorateAsNonBlocking(T objectUnderTest, Class<? super T> clazz) {

@@ -104,27 +104,27 @@ public class P2_EnrichTest {
         when(dependency.b1(a)).thenReturn(subscribed.once(just(b)));
         when(dependency.c2(a, b)).thenReturn(subscribed.once(just(c)));
 
-        Mono<ABC> mono = nonBlocking(() -> workshop.p05_a_then_b1_then_c2(1));
+        ABC abc = nonBlocking(() -> workshop.p05_a_then_b1_then_c2(1));
 
-        assertThat(mono.block()).isEqualTo(new ABC(a, b, c));
+        assertThat(abc).isEqualTo(new ABC(a, b, c));
     }
     @Test
     void p06_a_then_bMaybe() {
         when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
         when(dependency.b1(a)).thenReturn(subscribed.once(just(b)));
 
-        Mono<AB> mono = nonBlocking(() -> workshop.p06_a_then_bMaybe(1));
+        AB ab = nonBlocking(() -> workshop.p06_a_then_bMaybe(1));
 
-        assertThat(mono.block()).isEqualTo(new AB(a, b));
+        assertThat(ab).isEqualTo(new AB(a, b));
     }
     @Test
     void p06_a_then_bMaybe_noB() {
         when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
         when(dependency.b1(a)).thenReturn(subscribed.once(empty()));
 
-        Mono<AB> mono = nonBlocking(() -> workshop.p06_a_then_bMaybe(1));
+        AB ab = nonBlocking(() -> workshop.p06_a_then_bMaybe(1));
 
-        assertThat(mono.block()).isEqualTo(new AB(a, null));
+        assertThat(ab).isEqualTo(new AB(a, null));
     }
 
     @Test
@@ -133,36 +133,36 @@ public class P2_EnrichTest {
         when(dependency.a(1)).thenReturn(subscribed.once(just(a).delayElement(Duration.ofMillis(700))));
         when(dependency.b(1)).thenReturn(subscribed.once(just(b).delayElement(Duration.ofMillis(700))));
 
-        Mono<AB> mono = nonBlocking(() -> workshop.p07_a_par_bMaybe(1));
+        AB ab = nonBlocking(() -> workshop.p07_a_par_bMaybe(1));
 
-        assertThat(mono.block()).isEqualTo(new AB(a, b));
+        assertThat(ab).isEqualTo(new AB(a, b));
     }
     @Test
     void p07_a_par_bMaybe_noB() {
         when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
         when(dependency.b(1)).thenReturn(subscribed.once(empty()));
 
-        Mono<AB> mono = nonBlocking(() -> workshop.p07_a_par_bMaybe(1));
+        AB ab = nonBlocking(() -> workshop.p07_a_par_bMaybe(1));
 
-        assertThat(mono.block()).isEqualTo(new AB(a, null));
+        assertThat(ab).isEqualTo(new AB(a, null));
     }
     @Test
     void p08_a_try_b() {
         when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
         when(dependency.b(1)).thenReturn(subscribed.once(just(b)));
 
-        Mono<AB> mono = nonBlocking(() -> workshop.p08_a_try_b(1));
+        AB ab = nonBlocking(() -> workshop.p08_a_try_b(1));
 
-        assertThat(mono.block()).isEqualTo(new AB(a, b));
+        assertThat(ab).isEqualTo(new AB(a, b));
     }
     @Test
     void p08_a_try_b_KO() {
         when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
         when(dependency.b(1)).thenReturn(subscribed.once(error(new IllegalStateException())));
 
-        Mono<AB> mono = nonBlocking(() -> workshop.p08_a_try_b(1));
+        AB ab = nonBlocking(() -> workshop.p08_a_try_b(1));
 
-        assertThat(mono.block()).isEqualTo(new AB(a, null));
+        assertThat(ab).isEqualTo(new AB(a, null));
     }
 
     @Test
@@ -172,8 +172,8 @@ public class P2_EnrichTest {
         when(dependency.c2(a, b)).thenReturn(subscribed.once(just(c)));
         when(dependency.d(1)).thenReturn(subscribed.once(just(d)));
 
-        Mono<P10UseCaseContext> mono = nonBlocking(() -> workshop.p10_contextPattern(1));
+        P10UseCaseContext context = nonBlocking(() -> workshop.p10_contextPattern(1));
 
-        assertThat(mono.block()).isEqualTo(new P10UseCaseContext(1, a,b,c,d));
+        assertThat(context).isEqualTo(new P10UseCaseContext(1, a,b,c,d));
     }
 }

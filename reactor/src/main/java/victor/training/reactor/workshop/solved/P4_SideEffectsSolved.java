@@ -23,49 +23,51 @@ public class P4_SideEffectsSolved extends P4_SideEffects {
   }
 
   @Override
-  public Mono<Void> p03_saveSendIfConflict(A a0) {
+  public Mono<Void> p03_saveSendIfUpdated(A a0) {
+    return dependency.save(a0)
+        .filter(a -> a.updated)
+        .flatMap(dependency::sendMessage);
+  }
+
+  @Override
+  public Mono<Void> p04_saveSendIfConflictRemote(A a0) {
     return dependency.save(a0)
             .filterWhen(a -> dependency.retrieveStatus(a).map(s -> s == AStatus.CONFLICT))
             .flatMap(dependency::sendMessage);
   }
 
   @Override
-  public Mono<Void> p04_saveSendAuditReturn(A a0) {
+  public Mono<A> p05_saveSendAuditReturn(A a0) {
     return dependency.save(a0)
             .filter(a -> a.updated)
             .delayUntil(dependency::sendMessage)
-            .delayUntil(dependency::audit)
-            .then();
-  }
-
-  @Override
-  public Mono<A> p05_saveSendAuditKOReturn(A a0) {
-    return dependency.save(a0)
-            .delayUntil(a -> dependency.sendMessage(a).onErrorResume(e -> Mono.empty()))
             .delayUntil(dependency::audit);
   }
 
   @Override
-  public Mono<A> p06_saveSend_par_AuditReturn(A a0) {
+  public Mono<A> p06_ignoreError(A a0) {
+    return dependency.save(a0)
+            .delayUntil(a -> dependency.sendMessage(a).onErrorResume(e->Mono.empty()))
+            .delayUntil(dependency::audit);
+  }
+
+  @Override
+  public Mono<A> p07_parallel(A a0) {
     return dependency.save(a0)
             .delayUntil(a -> Mono.zip(dependency.sendMessage(a), dependency.audit(a)));
   }
 
   @Override
-  public Mono<A> p07_save_sendFireAndForget(A a0) {
+  public Mono<A> p08_fireAndForget(A a0) {
     return dependency.save(a0)
 //            .doOnNext(a -> dependency.sendMessage(a)
 //                    .doOnError(e -> log.error("Error: " + e))
 //                    .subscribe()
 //            )
-            .doOnEach(signal -> {
-              if (signal.isOnNext()) {
-                dependency.sendMessage(signal.get())
-                        .doOnError(e -> log.error("Error: " + e))
-                        .contextWrite(signal.getContextView())
-                        .subscribe();
-              }
-            })
+            .doOnEach(signal -> dependency.sendMessage(signal.get())
+                    .doOnError(e -> log.error("Error: " + e))
+                    .contextWrite(signal.getContextView())
+                    .subscribe())
             ;
   }
 }
