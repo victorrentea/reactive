@@ -1,5 +1,6 @@
 package victor.training.reactor.workshop;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.jooq.lambda.Unchecked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.time.Duration;
+
+import static java.time.Duration.ofMillis;
+import static reactor.core.publisher.Mono.error;
 
 public class P3_Errors {
   protected final Logger log = LoggerFactory.getLogger(getClass());
@@ -42,26 +46,22 @@ public class P3_Errors {
    * TODO Log any exception from the Mono, and rethrow the same error.
    */
   public Mono<String> p01_log_rethrow() {
-    // equivalent blocking⛔️ code:
-    try {
-      String value = dependency.call().block(); // .block() [AVOID in prod] throws any exception in the Mono
-      return Mono.just(value);
-    } catch (Exception e) {
-      log.error("Exception occurred: " + e, e);  // <-- do this in a reactive style
-      throw e;
-    }
+    return dependency.call()
+        .doOnError(e -> log.error("Exception occurred: " + e, e));
   }
 
   // ==================================================================================================
 
   // TODO Wrap any exception in the call() in a new IllegalStateException("Call failed", originalException).
   public Mono<String> p02_wrap() {
-    try {
-      return dependency.call();
-    } catch (Exception originalException) {
-      throw new IllegalStateException(originalException); // <-- do this in a reactive style
-    }
+    return dependency.call()
+        .onErrorMap(e -> new IllegalStateException("Valeu + id " +e, e));
   }
+//
+//  public Mono<String> call() {
+////    throw new ...
+//    return Mono.error(new IllegalStateException());
+//  }
 
   // ==================================================================================================
 
@@ -76,25 +76,27 @@ public class P3_Errors {
 
   // ==================================================================================================
 
-  // TODO Call dependency#backup() if #call() fails.
+  // TODO Call dependency#backup() if #call() fails. ! both do network!!
   public Mono<String> p04_fallback() {
-    try {
-      return dependency.call();
-    } catch (Exception e) {
-      return dependency.backup(); // <-- do this in a reactive style
-    }
+    return dependency.call()
+        .onErrorResume(e -> dependency.backup())
+        ;
+//        .onErrorContinue()// DARK DARK MAGIC pt streamuri infinite doar eg kafka
+//      return dependency.backup(); // <-- do this in a reactive style
   }
 
   // ==================================================================================================
 
   // TODO Call dependency#sendError(ex) on any exception in the call(), and then let the original error flow to the client
   public Mono<String> p05_sendError() {
-    try {
-      return dependency.call();
-    } catch (Exception e) {
-      dependency.sendError(e).block(); // <-- do this in a reactive style
-      throw e;
-    }
+//    try {
+//      return dependency.call();
+//    } catch (Exception e) {
+//      dependency.sendError(e).block(); // <-- do this in a reactive style
+//      throw e;
+//    }
+    return dependency.call()
+        .onErrorResume(e -> dependency.sendError(e).then(error(e)));
   }
 
   // ==================================================================================================
@@ -103,16 +105,25 @@ public class P3_Errors {
   //  If last retry is still error, log it along with the text "SCRAP-LOGS-TAG"
   //  If a call takes more than 50 millis, consider it to be failure and retry.
   // If needed, investingate using .log("above") / .log("below")
+
   public Mono<String> p06_retryThenLogError() {
-    return dependency.call();
+    return dependency.call()
+        .timeout(ofMillis(50))
+        .retry(3)
+        .doOnError(e -> log.error("SCRAP-LOGS-TAG valeu " + e, e));
   }
+
+  // ai face on call support 1/2 zile pt +50% sa sal daca sunt 1/luni in medie
 
   // ==================================================================================================
 
   // TODO Call dependency#call() again on error, maximum 4 times in total (as above)
   //  but leave 200 millis backoff between the calls.
+//  @CircuitBreaker()
   public Mono<String> p07_retryWithBackoff() {
-    return dependency.call();
+    return dependency.call()
+        .retryWhen(Retry.backoff(4, ofMillis(200)));
+    // mai profy pt retryuri poti plugin-a resilience4j (ala de ofera si @Retry)
   }
 
   // ==================================================================================================

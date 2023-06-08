@@ -21,6 +21,8 @@ public class MongoController {
 
    @GetMapping("mono")
    public Mono<List<Event>> mono() {
+
+//      rxRepo.findById()
       return rxRepo.findAll().collectList();
    }
 

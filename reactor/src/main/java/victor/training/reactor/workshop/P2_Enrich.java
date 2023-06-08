@@ -6,6 +6,8 @@ import lombok.With;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+import java.util.Optional;
+
 import static reactor.function.TupleUtils.function;
 
 @Slf4j
@@ -151,8 +153,11 @@ public class P2_Enrich {
    * calling b1() and c1() launch the network calls and return immediately, without blocking.
    */
   public Mono<ABC> p04_a_then_b1_c1(int id) {
-    // Hint mono.flatMap(->mono.zipWith(mono, ->))
-    return null;
+    return dependency.a(id)
+        .flatMap(a -> Mono.zip(
+            dependency.b1(a),
+            dependency.c1(a),
+            (b, c) -> new ABC(a, b, c)));
   }
 
   // ==================================================================================================
@@ -175,11 +180,12 @@ public class P2_Enrich {
    * a(id), then b1(a), then c2(a,b) ==> ABC(a,b,c)
    */
   public Mono<ABC> p05_a_then_b1_then_c2(int id) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block();
-    B b = dependency.b1(a).block();
-    C c = dependency.c2(a, b).block();
-    return Mono.just(new ABC(a, b, c));
+    return dependency.a(id)
+        .flatMap(a -> dependency.b1(a)
+            .flatMap(b -> dependency.c2(a, b)
+                .map(c -> new ABC(a, b, c))));
+  }
+
 
     // TODO Solution #1: accumulating data structures (chained flatMap)
 
@@ -187,7 +193,6 @@ public class P2_Enrich {
 
     // TODO Solution #3 (risky): cached Mono<>
     //      eg Mono<A> ma = dependency.a(id).cache();
-  }
 
   // ==================================================================================================
 
@@ -207,33 +212,35 @@ public class P2_Enrich {
   // ==================================================================================================
 
   /**
-   * a(id) || b(id) ==> AB(a,b), but if b(id) returns empty() => return AB(a,null)
+   * a(id) || b(id) ==> AB(a,b),
+   * but if b(id) returns empty() => return AB(a,null)
    * ⚠️ Watch out not to lose the data signals.
    * Challenge: Reactor's Flux/Mono can never emit a "null" data signal.
    * Finish the flow as fast as possible by starting a() in parallel with b()
    */
   public Mono<AB> p07_a_par_bMaybe(int id) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block(); // in parallel
-    B b = dependency.b(id).block(); // in parallel
-    return Mono.just(new AB(a, b));
+    return Mono.zip(
+        dependency.a(id),
+        dependency.b(id)
+            .map(Optional::of)
+            .defaultIfEmpty(Optional.empty()),
+        (a, bopt) -> new AB(a, bopt.orElse(null)));
   }
 
   // ==================================================================================================
 
   /**
-   * a(id) || b(id) ==> AB(a,b), but if b(id) returns ERROR => return AB(a,null)
+   * a(id) || b(id) ==> AB(a,b),
+   * but if b(id) returns error(..) => return AB(a,null)
    * ⚠️ Watch out not to lose the data signals.
    */
   public Mono<AB> p08_a_try_b(int id) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block();
-    B b = null;
-    try {
-      b = dependency.b(id).block();
-    } catch (Exception e) {
-    }
-    return Mono.just(new AB(a, b));
+    return Mono.zip(
+        dependency.a(id),
+        dependency.b(id)
+            .map(Optional::of)
+            .onErrorReturn(Optional.empty()),
+        (a, bopt) -> new AB(a, bopt.orElse(null)));
   }
 
   // ==================================================================================================

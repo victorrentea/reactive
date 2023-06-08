@@ -19,6 +19,7 @@ import victor.training.reactor.workshop.P4_SideEffects.A;
 import victor.training.reactor.workshop.P4_SideEffects.AStatus;
 import victor.training.reactor.workshop.P4_SideEffects.Dependency;
 import victor.training.util.CaptureSystemOutputExtension;
+import victor.training.util.NonBlockingTest;
 import victor.training.util.SubscribedProbe;
 
 import java.util.concurrent.ArrayBlockingQueue;
@@ -47,6 +48,7 @@ public class P4_SideEffectsTest {
   private static final A a = new A();
 
   @Test
+  @NonBlockingTest
   void p01_sendMessageAndReturn() {
     Mono<A> ma = subscribed.once(Mono.just(a0));
     when(dependency.sendMessage(a0)).thenReturn(subscribed.once(Mono.empty()));
