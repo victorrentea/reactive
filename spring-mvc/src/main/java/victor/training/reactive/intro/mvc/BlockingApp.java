@@ -4,19 +4,19 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static java.lang.System.currentTimeMillis;
@@ -55,16 +55,20 @@ public class BlockingApp {
 
    }
 
+   @Autowired
+   private  ThreadPoolTaskExecutor barPool; // MUST HAVE pt ca spring asa propaga SecurityContext, TraceID
+   // shutdown cand opresti app.
+
    @GetMapping("drink")
    public DillyDilly drink() throws Exception {
       log.info("Talking to barman: " + barman.getClass());
 
       long t0 = currentTimeMillis();
 
-      ExecutorService pool = Executors.newFixedThreadPool(2);
+//      ExecutorService pool = Executors.newFixedThreadPool(2);
 
-      Future<Beer> futureBeer = pool.submit(() -> barman.pourBeer());
-      Future<Vodka> futureVodka = pool.submit(() -> barman.pourVodka());
+      Future<Beer> futureBeer = barPool.submit(() -> barman.pourBeer());
+      Future<Vodka> futureVodka = barPool.submit(() -> barman.pourVodka());
       // a plecat fata cu comanda....
 
       Beer beer = futureBeer.get();
@@ -76,6 +80,20 @@ public class BlockingApp {
       return dilly;
    }
 
+}
+@Configuration
+class Config {
+   @Bean
+   public ThreadPoolTaskExecutor barPool(@Value("${bar.pool.size}")int barPoolSize) {
+      ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+      executor.setCorePoolSize(barPoolSize);
+      executor.setMaxPoolSize(barPoolSize);
+      executor.setQueueCapacity(500);
+      executor.setThreadNamePrefix("bar-");
+      executor.initialize();
+      executor.setWaitForTasksToCompleteOnShutdown(true);
+      return executor;
+   }
 }
 
 @Service
