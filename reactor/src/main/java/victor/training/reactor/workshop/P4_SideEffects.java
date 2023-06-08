@@ -37,37 +37,52 @@ public class P4_SideEffects {
    * Solution#2: .delayUntil
    */
   public Mono<A> p01_sendMessageAndReturn(Mono<A> ma) {
-    // equivalent blocking⛔️ code:
-    A a = ma.block();
-    dependency.sendMessage(a).block();
-    return Mono.just(a);
+//    return ma.flatMap(a -> dependency.sendMessage(a).thenReturn(a));
+//    return ma.delayUntil(a -> dependency.sendMessage(a));
+    return ma.delayUntil(dependency::sendMessage);
   }
-
+  //IntelliJ ar fi stiut sa iti dea refactor suggestion de la flatMap la zipWhen? NU.
+  //doar ca daca poti implementa o asa sugestie:
+  //a) IntelliJ plugin
+  //b) refaster https://errorprone.info/docs/refaster + https://www.youtube.com/watch?v=KPNimQMH0k4
   // ==================================================================================================
 
   /**
    * TODO Call a = .save(a0) then .sendMessage(a) and return only the completion signal
    */
   public Mono<Void> p02_saveAndSend(A a0) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.save(a0).block();
-    dependency.sendMessage(a).block();
-    return Mono.empty();
+//    return dependency.save(a0).flatMap(a -> dependency.sendMessage(a).then());
+//    return dependency.save(a0).delayUntil(a -> dependency.sendMessage(a)).then();
+    return dependency.save(a0)
+        .delayUntil(dependency::sendMessage)
+        .then();
   }
 
   // ==================================================================================================
+//    if (dependency.retrieveStatus(a).block() == AStatus.CONFLICT) {
+//      dependency.sendMessage(a).block();
+//    }
 
   /**
    * TODO Call a = .save(a0);
    *  then, if .retrieveStatus(a) == CONFLICT => .sendMessage(a)
    */
   public Mono<Void> p03_saveSendIfConflict(A a0) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.save(a0).block();
-    if (dependency.retrieveStatus(a).block() == AStatus.CONFLICT) {
-      dependency.sendMessage(a).block();
-    }
-    return Mono.empty();
+//    A a = dependency.save(a0).block();
+//    if (a.updated) {
+//        dependency.sendMessage(a).block();
+//    }
+//            repo.findIdByName(name).... Mono<boolean>
+//    return Mono.empty();
+    return dependency.save(a0)
+//        .filter(a -> a.updated) // in-memory filtering nu IO => .filter
+        .filterWhen(a -> // daca atingi retea
+            dependency.retrieveStatus(a).map(status -> status == AStatus.CONFLICT)
+            // tre sa intorc un Mono<Boolean>
+        )
+        .flatMap(a -> dependency.sendMessage(a));
+//        .doOnNext(a -> dependency.sendMessage(a)); // NU se trimite mesaj pt ca nu subscrie nimeni la sendMessage Mono
+
   }
 
   // ==================================================================================================
@@ -77,13 +92,16 @@ public class P4_SideEffects {
    *  if (a.updated) then .sendMessage(a) and .audit(a)
    */
   public Mono<Void> p04_saveSendAuditReturn(A a0) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.save(a0).block();
-    if (a.updated) {
-      dependency.sendMessage(a).block();
-      dependency.audit(a).block();
-    }
-    return Mono.empty();
+//    A a = dependency.save(a0).block();
+//    if (a.updated) {
+//      dependency.sendMessage(a).block();
+//      dependency.audit(a).block();
+//    }
+//    return Mono.empty();
+    return dependency.save(a0)
+        .filter(a -> a.updated)
+        .delayUntil(a -> dependency.sendMessage(a))
+        .flatMap(a -> dependency.audit(a));
   }
 
   // ==================================================================================================
@@ -93,15 +111,18 @@ public class P4_SideEffects {
    * ! Make sure audit() is called and the returned Mono<> completes without error.
    */
   public Mono<A> p05_saveSendAuditKOReturn(A a0) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.save(a0).block();
-    try {
-      dependency.sendMessage(a).block();
-    } catch (Exception e) {
-      log.error("Error sending message: " + e);
-    }
-    dependency.audit(a).block();
-    return Mono.just(a);
+    return dependency.save(a0)
+        .filter(a -> a.updated)
+        .delayUntil(a -> dependency.sendMessage(a)
+            .doOnError(e->log.error("Audit: ", e))
+            .then(Mono.empty()))
+        .delayUntil(a -> dependency.audit(a));
+
+//    try {
+//    } catch (Exce) {
+//      dependency.audit(a) //2
+//    }
+//    dependency.audit(a) //1
   }
 
 
@@ -134,8 +155,17 @@ public class P4_SideEffects {
    */
   public Mono<A> p07_save_sendFireAndForget(A a0) {
     return dependency.save(a0)
-            // TODO
-            ;
+//        .doOnNext(a -> dependency.sendMessage(a).subscribe())
+        // sa faci .subscribe in cod de prod este rau pt ca:
+        // 1) pierzi Reactor Context in care vin metadate de request 😱: TraceId, SecuritContext, MDC - fixabila, dar urat
+        // 2) daca subscriberul TAU (care cheama p07_save_sendFireAndForget) da CANCEL, sendMessage s-a dus
+        // 3) exceptiile in sendMessage nu le vezi
+        .delayUntil(a-> Mono.deferContextual(contextView -> {
+          dependency.sendMessage(a).contextWrite(contextView).subscribe();
+          return Mono.empty();
+        }))
+        // echivalent: apelul unei metode @Async, sau CompletableFuture.runAsync(->)
+        ;
   }
 
 }

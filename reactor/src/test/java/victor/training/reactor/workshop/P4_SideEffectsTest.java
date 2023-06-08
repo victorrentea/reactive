@@ -48,7 +48,6 @@ public class P4_SideEffectsTest {
   private static final A a = new A();
 
   @Test
-  @NonBlockingTest
   void p01_sendMessageAndReturn() {
     Mono<A> ma = subscribed.once(Mono.just(a0));
     when(dependency.sendMessage(a0)).thenReturn(subscribed.once(Mono.empty()));
@@ -101,7 +100,8 @@ public class P4_SideEffectsTest {
   }
 
   @Test
-  void p05_saveSendAuditKOReturn() {
+  void p05_saveSendAuditOKReturn() {
+    a.updated = true;
     when(dependency.save(a0)).thenReturn(subscribed.once(Mono.just(a)));
     when(dependency.sendMessage(a)).thenReturn(subscribed.once(Mono.empty()));
     when(dependency.audit(a)).thenReturn(subscribed.once(Mono.empty()));
@@ -111,6 +111,7 @@ public class P4_SideEffectsTest {
 
   @Test
   void p05_saveSendAuditKOReturn_KO() {
+    a.updated = true;
     when(dependency.save(a0)).thenReturn(subscribed.once(Mono.just(a)));
     when(dependency.sendMessage(a)).thenReturn(subscribed.once(Mono.error(new IllegalArgumentException())));
     when(dependency.audit(a)).thenReturn(subscribed.once(Mono.empty()));
@@ -133,7 +134,9 @@ public class P4_SideEffectsTest {
     when(dependency.save(a0)).thenReturn(subscribed.once(Mono.just(a)));
     when(dependency.sendMessage(a)).thenReturn(subscribed.once(Mono.empty()));
 
-    assertThat(nonBlocking(() -> workshop.p07_save_sendFireAndForget(a0)).block()).isEqualTo(a);
+    assertThat(nonBlocking(() -> workshop.p07_save_sendFireAndForget(a0)
+        .contextWrite(context->context.put("context-key", "context-value"))
+    ).block()).isEqualTo(a);
   }
 
   @Test
@@ -141,7 +144,9 @@ public class P4_SideEffectsTest {
     when(dependency.save(a0)).thenReturn(subscribed.once(Mono.just(a)));
     when(dependency.sendMessage(a)).thenReturn(subscribed.once(Mono.error(new IllegalStateException("TEST ERROR"))));
 
-    assertThat(nonBlocking(() -> workshop.p07_save_sendFireAndForget(a0)).block()).isEqualTo(a);
+    assertThat(nonBlocking(() -> workshop.p07_save_sendFireAndForget(a0)
+        .contextWrite(context->context.put("context-key", "context-value"))
+    ).block()).isEqualTo(a);
     Utils.sleep(300);
     assertThat(systemOutput.toString()).contains("TEST ERROR");
   }
@@ -152,7 +157,9 @@ public class P4_SideEffectsTest {
     when(dependency.save(a0)).thenReturn(subscribed.once(Mono.just(a)));
     when(dependency.sendMessage(a)).thenReturn(subscribed.once(Mono.delay(ofMillis(2000)).then()));
 
-    assertThat(nonBlocking(() -> workshop.p07_save_sendFireAndForget(a0)).block()).isEqualTo(a);
+    assertThat(nonBlocking(() -> workshop.p07_save_sendFireAndForget(a0)
+        .contextWrite(context->context.put("context-key", "context-value"))
+    ).block()).isEqualTo(a);
   }
 
   @Test
