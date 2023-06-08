@@ -121,14 +121,26 @@ public class P2_Enrich {
    * then b1(a) with the retrieved a;
    * return both a and b.
    * a(id), then b1(a) ==> AB(a,b)
-   *  vii cu playerId, te duci sa scoti PlayerProfile, cu care scoti si Promotions dupa profile.stars
+   * vii cu playerId, te duci sa scoti PlayerProfile, cu care scoti si Promotions dupa profile.stars
    */
   public Mono<AB> p03_a_then_b1(int id) {
-    Mono<A> ma = dependency.a(id)
-        .log();
-    Mono<B> mb = ma.flatMap(dependency::b1);
+    // apel de retea de 2 ori => regula: nu tii variabile de tip Mono/Flux
+//    Mono<A> ma = dependency.a(id).log();
+//    Mono<B> mb = ma.flatMap(dependency::b1);
+//    return Mono.zip(ma, mb, AB::new);
 
-    return Mono.zip(ma, mb, AB::new);
+    // A) -> in ->
+//    return dependency.a(id)
+//        .flatMap(a -> dependency.b1(a).map(b -> new AB(a, b)));
+
+    // B) operator dedicat - fitza
+    return dependency.a(id)
+        .zipWhen(a -> dependency.b1(a), (a, b) -> new AB(a, b));
+
+    // C) nerecomandat: .cache() sa nu ceri de mai sus din chain a doua oara
+//    Mono<A> ma = dependency.a(id).log().cache();
+//    Mono<B> mb = ma.flatMap(dependency::b1);
+//    return Mono.zip(ma, mb, AB::new);
   }
 
   // ==================================================================================================
