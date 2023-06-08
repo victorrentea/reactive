@@ -4,11 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.With;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.function.TupleUtils;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
+
+import static reactor.function.TupleUtils.function;
 
 @Slf4j
 public class P2_Enrich {
@@ -94,26 +92,27 @@ public class P2_Enrich {
 //        .zipWith(dependency.b(id), AB::new);
 
     return Mono.zip(
-          dependency.a(id),
-          dependency.b(id),
-          AB::new);
+        dependency.a(id),
+        dependency.b(id),
+        AB::new);
   }
 
   // ==================================================================================================
+
   /**
    * a(id) || b(id) || c(id) ==> ABC(a,b,c)
    */
   public Mono<ABC> p02_a_b_c(int id) {
-    Mono<A> ma = dependency.a(id);
-    Mono<B> mb = dependency.b(id);
-    Mono<C> mc = dependency.c(id);
-
-    Mono<Tuple2<A, B>> mt2 = ma.zipWith(mb, (a, b) ->
-        Tuples.of(a, b));
-    Mono<ABC> mabc = mt2.zipWith(mc, (ab, c) ->
-        new ABC(ab.getT1(), ab.getT2(), c));
-    return mabc;
+    return Mono.zip(dependency.a(id), dependency.b(id), dependency.c(id))
+        .map(function(ABC::new)); // [Functional] Reactive Programming
   }
+//        .map(abc -> new ABC(abc.getT1(), abc.getT2(), abc.getT3()));
+//        .map(TupleUtils.function((a,b,c)->new ABC(a,b,c)));
+
+//    Mono<Tuple2<A, B>> mt2 = ma.zipWith(mb, (a, b) ->
+//        Tuples.of(a, b));
+//    Mono<ABC> mabc = mt2.zipWith(mc, (ab, c) ->
+//        new ABC(ab.getT1(), ab.getT2(), c));
 
   // ==================================================================================================
 
@@ -122,15 +121,14 @@ public class P2_Enrich {
    * then b1(a) with the retrieved a;
    * return both a and b.
    * a(id), then b1(a) ==> AB(a,b)
+   *  vii cu playerId, te duci sa scoti PlayerProfile, cu care scoti si Promotions dupa profile.stars
    */
   public Mono<AB> p03_a_then_b1(int id) {
-    // approx equivalent blocking⛔️ code:
-    // A a = dependency.a(id).block();
-    // B b = dependency.b1(a).block();
-    // return Mono.just(new AB(a, b));
+    Mono<A> ma = dependency.a(id)
+        .log();
+    Mono<B> mb = ma.flatMap(dependency::b1);
 
-    // Hint: Mono#flatMap
-    return null;
+    return Mono.zip(ma, mb, AB::new);
   }
 
   // ==================================================================================================
