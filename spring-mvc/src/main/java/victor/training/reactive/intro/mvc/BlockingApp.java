@@ -69,7 +69,9 @@ public class BlockingApp {
     CompletableFuture<Beer> beerPromise = barman.pourBeer();
     CompletableFuture<Vodka> vodkaPromise = CompletableFuture.supplyAsync(() -> barman.pourVodka(), barPool);
 
-    CompletableFuture<DillyDilly> dillyPromise = beerPromise.thenCombine(vodkaPromise, (beer, vodka) ->
+    CompletableFuture<DillyDilly> dillyPromise =
+        beerPromise.thenCombine(vodkaPromise,
+            (beer, vodka) ->
         barman.mixCocktail(beer, vodka));
 
     log.debug("HTTP thread was blocked for {} millis ", (currentTimeMillis() - t0));

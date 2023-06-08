@@ -17,6 +17,8 @@ import java.util.List;
 
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
+import static java.time.LocalDateTime.*;
+import static java.time.temporal.ChronoUnit.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.*;
 
@@ -83,7 +85,7 @@ public class P1_CreationTest {
     Mono<LocalDateTime> resultMono = workshop.mono7_fromCallable();
     Thread.sleep(110);
     LocalDateTime time = resultMono.block();
-    assertThat(time).isCloseTo(LocalDateTime.now(), byLessThan(100, ChronoUnit.MILLIS));
+    assertThat(time).isCloseTo(now(), byLessThan(100, MILLIS));
   }
 
 
