@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 import static java.lang.System.currentTimeMillis;
 import static victor.training.reactive.intro.mvc.Utils.sleep;
@@ -60,24 +60,23 @@ public class BlockingApp {
    // shutdown cand opresti app.
 
    @GetMapping("drink")
-   public DillyDilly drink() throws Exception {
+   public CompletableFuture<DillyDilly> drink() throws Exception {
       log.info("Talking to barman: " + barman.getClass());
 
       long t0 = currentTimeMillis();
 
-//      ExecutorService pool = Executors.newFixedThreadPool(2);
+      // promise, deferred === CompletableFuture
+      CompletableFuture<Beer> beerPromise = CompletableFuture.supplyAsync(() -> barman.pourBeer(), barPool);
+      CompletableFuture<Vodka> vodkaPromise = CompletableFuture.supplyAsync(() -> barman.pourVodka(), barPool);
 
-      Future<Beer> futureBeer = barPool.submit(() -> barman.pourBeer());
-      Future<Vodka> futureVodka = barPool.submit(() -> barman.pourVodka());
-      // a plecat fata cu comanda....
-
-      Beer beer = futureBeer.get();
-      Vodka vodka = futureVodka.get();
-
-      DillyDilly dilly = barman.mixCocktail(beer, vodka);
+      CompletableFuture<DillyDilly> dillyPromise = beerPromise.thenCombine(vodkaPromise, (beer, vodka) ->
+          barman.mixCocktail(beer, vodka));
 
       log.debug("HTTP thread was blocked for {} millis ", (currentTimeMillis() - t0));
-      return dilly;
+      return dillyPromise;
+      // nu ma blochez eu dupa rezultat ci ii dau promiseul lui spring, care
+      // va agata un callback eg .thenAccept(dilly- > .....)
+      // prin care va scrie pe HTTP response ce a venit
    }
 
 }
