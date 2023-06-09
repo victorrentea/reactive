@@ -18,7 +18,7 @@ public class P7_FluxSolved extends P7_Flux {
   public P7_FluxSolved(P7_Flux.Dependency dependency) {
     super(dependency);
   }
-  public Flux<A> p01_fetchInParallel_scrambled(List<Integer> idList) {
+  public Flux<A> p01_fetchMany(List<Integer> idList) {
     System.out.println("IDs to fetch: "+ idList);
     return Flux.fromIterable(idList)
             .flatMap(dependency::fetchOneById, 4)
@@ -38,8 +38,8 @@ public class P7_FluxSolved extends P7_Flux {
             .doOnNext(System.out::println);
   }
 
-  public Flux<A> p04_fetchInPages(Flux<Integer> flux) {
-    return flux
+  public Flux<A> p04_fetchInPages(Flux<Integer> idFlux) {
+    return idFlux
             .bufferTimeout(4, ofMillis(200))
             .flatMapSequential(page -> dependency.fetchPageByIds(page), 2);
   }

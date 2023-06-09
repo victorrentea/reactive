@@ -41,7 +41,7 @@ public class P7_Flux {
   // TODO #1 fetch each element by id using .fetchOneById(id)
   // TODO #2 Print elements as they come in. What do you observe? (the original IDs are consecutive)
   // TODO #3 Restrict the concurrency to maximum 4 requests in parallel
-  public Flux<A> p01_fetchInParallel_scrambled(List<Integer> idList) {
+  public Flux<A> p01_fetchMany(List<Integer> idList) {
     System.out.println("IDs to fetch: "+ idList);
     return Flux.empty(); // Flux.fromIterable(idList)...
   }
@@ -63,7 +63,7 @@ public class P7_Flux {
   // TODO #1 to save network latency, fetch items in pages of size=4, using .fetchPageByIds
   // TODO #2 don't allow any ID to wait more than 200 millis  (hint: look for a buffer* variant)
   // TODO #3 limit concurrent request to max 2 in parallel and make sure you don't scramble the elements
-  public Flux<A> p04_fetchInPages(Flux<Integer> flux) {
+  public Flux<A> p04_fetchInPages(Flux<Integer> idFlux) {
     return Flux.empty();
   }
 
