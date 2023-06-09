@@ -62,16 +62,15 @@ public class P7_FluxTest {
 
   @Test
   @Timeout(value = 500, unit = MILLISECONDS)
-  void p01_fetchInParallel_scrambled() {
+  void p01_fetchMany() {
     when(dependency.fetchOneById(any())).thenAnswer(call ->
             delayedMono(new A(call.getArgument(0)), 20, 100));
 
-    List<A> results = workshop.p01_fetchInParallel_scrambled(LIST_OF_IDS).collectList().block();
+    List<A> results = workshop.p01_fetchMany(LIST_OF_IDS).collectList().block();
 
-    assertThat(results).map(A::getId).describedAs("Contains all elements").containsExactlyInAnyOrderElementsOf(LIST_OF_IDS);
-    assertThat(systemOutput.toString()).describedAs("Printed elements to console").contains("A(id=2)");
-    assertThat(maxParallelism).describedAs("Max number of requests in parallel").isLessThanOrEqualTo(4);
-
+    assertThat(results).map(A::getId).describedAs("TODO1: Contains all elements").containsExactlyInAnyOrderElementsOf(LIST_OF_IDS);
+    assertThat(systemOutput.toString()).describedAs("TODO2: Printed elements to console").contains("A(id=2)");
+    assertThat(maxParallelism).describedAs("TODO3: Max number of requests in parallel").isLessThanOrEqualTo(4);
   }
 
 
@@ -142,7 +141,7 @@ public class P7_FluxTest {
     }
 
     @Test
-    void fluxWorks() {
+    void works() {
       when(dependency.fetchOneById(1)).thenReturn(subscribed.once(Mono.just(new A(1))));
       when(dependency.sendMessage(new A(1))).thenReturn(subscribed.once(Mono.empty()));
       publisher.next(1);
@@ -155,7 +154,7 @@ public class P7_FluxTest {
       assertThat(systemOutput.toString()).contains("ExceptionFetch");
       publisher.assertWasNotCancelled();
 
-      fluxWorks(); // flux still works
+      works(); // flux still works
     }
 
     @Test
@@ -166,7 +165,7 @@ public class P7_FluxTest {
       assertThat(systemOutput.toString()).contains("ExceptionSend");
       publisher.assertWasNotCancelled();
 
-      fluxWorks(); // flux still works
+      works(); // flux still works
     }
   }
 
