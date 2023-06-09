@@ -10,6 +10,7 @@ import reactor.core.publisher.Sinks.One;
 import javax.annotation.PostConstruct;
 import java.util.List;
 
+import static java.time.Duration.of;
 import static java.time.Duration.ofMillis;
 
 public class P7_Flux {
@@ -173,8 +174,23 @@ public class P7_Flux {
   //      * avoid delaying an element by more than 200 millis
   // Bonus: debate .buffer vs .window
   public Mono<Void> p09_groupedFlux(Flux<Integer> messageStream) {
+
     return messageStream
-        // .groupBy(MessageType::forMessage)
+        .groupBy(MessageType::forMessage)
+        .flatMap(fluxE -> {
+          switch (fluxE.key()) {
+            case TYPE2_ODD:
+//              return Mono.zip(dependency.sendOdd1(fluxE), dependency.sendOdd2(fluxE)).then();
+              return fluxE.flatMap(e -> Mono.zip(dependency.sendOdd1(e), dependency.sendOdd2(e)).then());
+            case TYPE3_EVEN:
+//              return dependency.sendEven(List.of(fluxE));
+              return fluxE.bufferTimeout(3,ofMillis(200))
+                  .flatMap(dependency::sendEven);
+            default:
+              return Mono.empty();
+          }
+
+        })
         .then();
   }
 

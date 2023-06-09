@@ -4,10 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.With;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.function.TupleUtils.function;
 
 @Slf4j
@@ -85,18 +88,21 @@ public class P2_Enrich {
    * Hint: .zip
    */
   public Mono<AB> p01_a_par_b(int id) {
-//      A a = dependency.a(id).block();
-//      B b = dependency.b(id).block();
-//      return Mono.just(new AB(a, b));
-//HttpServletRequest (servlet are 20 ani). WebFlux NU e scris pe Servlet
-
-//    return dependency.a(id)
-//        .zipWith(dependency.b(id), AB::new);
-
     return Mono.zip(
         dependency.a(id),
         dependency.b(id),
         AB::new);
+  }
+  @Test
+  void explore() {
+    Dependency mock = Mockito.mock(Dependency.class);
+    A a = new A();
+    B b = new B();
+    Mockito.when(mock.a(1)).thenReturn(Mono.just(a));
+    Mockito.when(mock.b(1)).thenReturn(Mono.just(b));
+
+    AB ab = new P2_Enrich(mock).p01_a_par_b(1).block();
+    assertThat(ab).isEqualTo(new AB(a, b));
   }
 
   // ==================================================================================================

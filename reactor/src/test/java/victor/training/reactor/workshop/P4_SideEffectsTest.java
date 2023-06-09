@@ -84,19 +84,24 @@ public class P4_SideEffectsTest {
   @Test
   void p04_saveSendAuditReturn() {
     a.updated=true;
+    PublisherProbe<Void> sendProbe = PublisherProbe.empty();
     when(dependency.save(a0)).thenReturn(subscribed.once(Mono.just(a)));
-    when(dependency.sendMessage(a)).thenReturn(subscribed.once(Mono.empty()));
+    when(dependency.sendMessage(a)).thenReturn(sendProbe.mono());
     when(dependency.audit(a)).thenReturn(subscribed.once(Mono.empty()));
 
     nonBlocking(() -> workshop.p04_saveSendAuditReturn(a0)).block();
+    sendProbe.assertWasSubscribed();
   }
   @Test
   void p04_saveSendAuditReturnNotUpdated() {
     a.updated=false;
-    when(dependency.save(a0)).thenReturn(subscribed.once(Mono.just(a)));
+    PublisherProbe<A> probe = PublisherProbe.of(Mono.just(a));
+    when(dependency.save(a0)).thenReturn(probe.mono());
+//    when(dependency.save(a0)).thenReturn(subscribed.once(Mono.just(a)));
     // Note: org.mockito.configuration.DefaultErrorSignalException makes all non-stubbed methods to emits an error signal by default
 
     nonBlocking(() -> workshop.p04_saveSendAuditReturn(a0)).block();
+    probe.assertWasSubscribed();
   }
 
   @Test

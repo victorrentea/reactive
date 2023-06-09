@@ -101,8 +101,13 @@ public class P4_SideEffects {
     return dependency.save(a0)
         .filter(a -> a.updated)
         .delayUntil(a -> dependency.sendMessage(a))
+//        .doOnNext(a -> {
+//          Mono<Void> voidMono = dependency.sendMessage(a);
+//        })
         .flatMap(a -> dependency.audit(a));
   }
+
+
 
   // ==================================================================================================
 
@@ -124,6 +129,9 @@ public class P4_SideEffects {
 //    }
 //    dependency.audit(a) //1
   }
+
+
+
 
 
   // ==================================================================================================
