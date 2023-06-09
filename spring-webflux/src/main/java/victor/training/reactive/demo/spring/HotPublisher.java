@@ -12,6 +12,7 @@ import java.util.Objects;
 
 @RestController
 public class HotPublisher {
+   // incepe sa emita cand te-ai subscris la el
    private static final Flux<Long> coldFlux = Flux.interval(Duration.ofSeconds(1));
    @GetMapping(value = "tick/cold", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
    public Flux<String> cold() {
@@ -19,6 +20,9 @@ public class HotPublisher {
               .log()
               .map(o -> o + "s passed since your connection");
    }
+
+
+
 
    private ConnectableFlux<Long> hotFlux;
    @PostConstruct
@@ -29,7 +33,7 @@ public class HotPublisher {
    @GetMapping(value = "tick/hot", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
    public Flux<String> hot() {
       return hotFlux.log()
-              .map(o -> o + "s passed since the .connect()");
+              .map(o -> o + "s passed since the .connect() (since the app started)");
    }
 
 

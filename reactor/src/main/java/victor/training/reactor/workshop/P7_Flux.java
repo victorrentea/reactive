@@ -2,38 +2,39 @@ package victor.training.reactor.workshop;
 
 import lombok.Value;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.One;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 import javax.annotation.PostConstruct;
-import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static java.time.Duration.ofMillis;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 
 public class P7_Flux {
   protected Dependency dependency;
+
   public P7_Flux(Dependency dependency) {
     this.dependency = dependency;
   }
 
   @Value
-  protected static class A{int id;}
+  protected static class A {
+    int id;
+  }
+
   protected interface Dependency {
     Mono<A> fetchOneById(Integer id);
+
     Flux<A> fetchPageByIds(List<Integer> idPage);
+
     Mono<Void> sendMessage(A a);
 
     Mono<Void> sendOdd1(Integer oddMessage);
+
     Mono<Void> sendOdd2(Integer oddMessage);
+
     Mono<Void> sendEven(List<Integer> evenMessagePage);
   }
 
@@ -41,30 +42,53 @@ public class P7_Flux {
   // TODO #1 fetch each element by id using .fetchOneById(id)
   // TODO #2 Print elements as they come in. What do you observe? (the original IDs are consecutive)
   // TODO #3 Restrict the concurrency to maximum 4 requests in parallel
+
+  // Doamne fereste! daca ai 1000 de elemente x 50 millis = 50 secunde !!
+  // dar avem max 4 in lista SAU nu avem cum sa modificam acel API
   public Flux<A> p01_fetchInParallel_scrambled(List<Integer> idList) {
-    System.out.println("IDs to fetch: "+ idList);
-    return Flux.empty(); // Flux.fromIterable(idList)...
+    System.out.println("IDs to fetch: " + idList);
+
+    return Flux.fromIterable(idList)
+//        .transform(RateLimiter)
+//        .flatMap(id -> dependency.fetchOneById(id));// trimite max 256  req simultane max= prea multe
+        .flatMap(id -> dependency.fetchOneById(id), 4); // must have!
+//        .flatMapSequential(id -> dependency.fetchOneById(id), 4);
+    // intarzie ce da mai departe ca sa pastreze ordinea originaka - mem - intarzieri
+//        .concatMap(id -> dependency.fetchOneById(id)); // trimite req pe rand - intarzieri 1 req/odata
   }
 
   // ==================================================================================
   // TODO same as above, but fire all requests in parallel.
   //  Still, preserve the order of the items in the list
   public Flux<A> p02_fetchInParallel_preservingOrder(List<Integer> idList) {
-    return Flux.empty();
+    return Flux.fromIterable(idList)
+        .flatMapSequential(dependency::fetchOneById);
   }
 
   // ==================================================================================
   // TODO same as above, but fire only one request in parallel at a time (thus, still preserve order).
   public Flux<A> p03_fetchOneByOne(List<Integer> idList) {
-    return Flux.empty();
+    return Flux.fromIterable(idList)
+        .concatMap(dependency::fetchOneById);
   }
 
   // ==================================================================================
   // TODO #1 to save network latency, fetch items in pages of size=4, using .fetchPageByIds
   // TODO #2 don't allow any ID to wait more than 200 millis  (hint: look for a buffer* variant)
   // TODO #3 limit concurrent request to max 2 in parallel and make sure you don't scramble the elements
-  public Flux<A> p04_fetchInPages(Flux<Integer> flux) {
-    return Flux.empty();
+  public Flux<A> p04_fetchInPages(Flux<Integer> ids) {
+    return ids
+        .bufferTimeout(4, ofMillis(200))
+        .flatMapSequential(dependency::fetchPageByIds, 2)
+        ;
+  }
+
+  static {
+    Hooks.onOperatorDebug(); // asta inveleste toti operatorii in niste 'aspecte'/decoratori care adauga
+    // tracing ca atunci cand crapa o exceptie sau faci debug cu IntelliJ ultimate https://www.jetbrains.com/help/idea/reactor.html#reactor-debug
+    // sa vezi prin ce operatori ai trecut pana ai ajuns aclo.
+
+//    ReactorDebugAgent.init(); // IJ specific
   }
 
   // ==================================================================================
@@ -76,7 +100,26 @@ public class P7_Flux {
   //  Hint: onErrorContinue
   @PostConstruct
   public void p05_infinite(Flux<Integer> infiniteFlux) {
-    // .subscribe(); // <- the only safe place ?
+    infiniteFlux
+//        .doOnNext(receiverRecord -> receiverRecord.ack())
+        .filter(id -> id > 0)
+        .flatMap(id -> dependency.fetchOneById(id)
+//            .doOnError(e-> System.out.println("ELEMENT NOT FOUND:" + e))
+//            .onErrorResume(e-> Mono.empty())
+        )
+        .flatMap(a -> dependency.sendMessage(a)
+//            .doOnError(e-> System.out.println("ELEMENT NOT FOUND:" + e))
+//            .onErrorResume(e-> Mono.empty())
+        )
+        .onErrorContinue((ex, elementulCareACauzato)-> {
+          System.out.println("Elementul " + elementulCareACauzato + " a cauzat " + ex);
+        })
+        .subscribe();// <- the only safe place ?
+    // de ce nu e bine .subscribe in general:
+    // a) pierzi cancellation - N/A daca asculti la un MQ/time
+    // b) pierzi ReactorContext (metadate de request) - N/A ca n-am request in spate
+    // c) pierzi erorile daca nu esti atent -> DACA VREODATA apare vreo eroare pe un
+    // flux nici un alt element de date nu poate veni dupa. Tre sa te resubscrii sau onErrorContinue
   }
 
   // ==================================================================================
@@ -89,16 +132,18 @@ public class P7_Flux {
     int id;
     One<A> promise;
   }
+
   protected Sinks.Many<Request> requests = Sinks.many().unicast().onBackpressureBuffer();
 
   public void p06_configureRequestFlux() {
     requests.asFlux()
-            // TODO
-            //dependency.fetchPageByIds(idPage)
-            //request.getPromise().tryEmitValue(a)
-            .subscribe();
+        // TODO
+        //dependency.fetchPageByIds(idPage)
+        //request.getPromise().tryEmitValue(a)
+        .subscribe();
 
   }
+
   public Mono<A> p06_submitRequest(int id) {
     One<A> promise = Sinks.one();
     requests.tryEmitNext(new Request(id, promise));
@@ -129,8 +174,8 @@ public class P7_Flux {
   // Bonus: debate .buffer vs .window
   public Mono<Void> p09_groupedFlux(Flux<Integer> messageStream) {
     return messageStream
-            // .groupBy(MessageType::forMessage)
-            .then();
+        // .groupBy(MessageType::forMessage)
+        .then();
   }
 
   protected enum MessageType {

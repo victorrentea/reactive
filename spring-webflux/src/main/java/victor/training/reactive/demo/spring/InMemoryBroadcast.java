@@ -13,6 +13,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.EmitResult;
 
+import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -23,19 +24,23 @@ public class InMemoryBroadcast {
    private Sinks.Many<ChatMessage> sink = Sinks.many().multicast().onBackpressureBuffer();
 
    @GetMapping(value = "message/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-   public Flux<ServerSentEvent<ChatMessage>> messageStream(@RequestParam String topic) {
-
+   public Flux<ServerSentEvent<ChatMessage>> messageStream(@RequestParam Topic topic) {
+//      retungkafkaReactiveListener.asFlux().map;
       return sink.asFlux()
+//          .sample(Duration.ofSeconds(1)) // ultimul din fiecare 1 sec
+//          .onBackpressureBuffer(100) // tii in buffer
+//          .onBackpressureDrop() // pana nu-mi request() nu-ti dau nimic
           .log()
-
-          .filter(message -> message.getTopic().equals(Topic.valueOf(topic)))
+          .filter(message -> message.getTopic() == topic)
+          // inter
           .map(message -> ServerSentEvent.builder(message).build());
    }
 
    @GetMapping("message/send")
-   public void sendMessage() {
-      Topic randTopic = Topic.values()[new Random().nextInt(2)];
-      EmitResult emitResult = sink.tryEmitNext(new ChatMessage(randTopic, "Hello " + integer.incrementAndGet()));
+   public void sendMessage(@RequestParam Topic topic) {
+//      Topic randTopic = Topic.values()[new Random().nextInt(2)];
+      EmitResult emitResult = sink.tryEmitNext(new ChatMessage(topic, "Hello " + integer.incrementAndGet()));
+//      kafkasender.send();
       System.out.println("result: " + emitResult);
    }
 

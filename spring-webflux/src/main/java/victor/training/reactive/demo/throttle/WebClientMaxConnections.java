@@ -2,8 +2,11 @@ package victor.training.reactive.demo.throttle;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ClientHttpRequest;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
@@ -28,6 +31,7 @@ public class WebClientMaxConnections {
       WebClient webClient = WebClient.builder()
           .clientConnector(new ReactorClientHttpConnector(HttpClient.from(tcpClient)))
           .build();
+      Flux<String> kafkaMessageFlux = Flux.just("a");
       return webClient.post()
           .uri(url)
           .accept(MediaType.ALL)
@@ -35,5 +39,14 @@ public class WebClientMaxConnections {
           .syncBody("hello world")
           .retrieve().bodyToMono(String.class)
           .doOnNext(b -> log.info("Got request "+ id));
+
+      //return webClient.post()
+      //          .uri(url)
+      //          .accept(MediaType.ALL)
+      //          .contentType(MediaType.TEXT_PLAIN)
+      //          .body(kafkaMessageFlux, String.class)
+      //          .retrieve()
+      //          .bodyToFlux()
+      //          .doOnNext(b -> log.info("Got request "+ id));
    }
 }

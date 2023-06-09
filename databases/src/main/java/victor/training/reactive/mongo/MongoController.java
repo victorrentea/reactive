@@ -21,7 +21,6 @@ public class MongoController {
 
    @GetMapping("mono")
    public Mono<List<Event>> mono() {
-
 //      rxRepo.findById()
       return rxRepo.findAll().collectList();
    }
@@ -31,17 +30,17 @@ public class MongoController {
       return rxRepo.findAll();
    }
 
+   @GetMapping(value = "flux-live", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+   public Flux<ServerSentEvent<String>> messageStream() {
+      return rxRepo.findAllByIdNotNull()
+          .map(Event::getValue)
+          .map(b -> ServerSentEvent.builder(b).build());
+   }
+
    @GetMapping("send")
    public Mono<String> sendMessage() {
       Event event = new Event("Message at " + LocalDateTime.now());
       return rxRepo.save(event).map(Event::getId);
-   }
-
-   @GetMapping(value = "flux-live", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-   public Flux<ServerSentEvent<String>> messageStream() {
-      return rxRepo.findAllByIdNotNull()
-              .map(Event::getValue)
-              .map(b -> ServerSentEvent.builder(b).build());
    }
 }
 
