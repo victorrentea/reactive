@@ -12,6 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
+import reactor.test.publisher.PublisherProbe;
 import victor.training.reactor.lite.Utils;
 import victor.training.reactor.workshop.C4_SideEffects.A;
 import victor.training.reactor.workshop.C4_SideEffects.AStatus;
@@ -134,6 +135,22 @@ public class C4_SideEffectsTest {
     when(dependency.audit(a)).thenReturn(subscribed.once(Mono.delay(ofMillis(600)).then()));
 
     assertThat(nonBlocking(() -> workshop.p07_parallel(a0))).isEqualTo(a);
+  }
+
+  @Test
+  void p07_parallel_noCancel() {
+    PublisherProbe<Void> sendMessageProbe = PublisherProbe.of(Mono.delay(ofMillis(10)).then());
+    PublisherProbe<Void> auditProbe = PublisherProbe.of(Mono.delay(ofMillis(10)).then());
+    when(dependency.save(a0)).thenReturn(subscribed.once(Mono.just(a)));
+    when(dependency.sendMessage(a)).thenReturn(sendMessageProbe.mono());
+    when(dependency.audit(a)).thenReturn(auditProbe.mono());
+
+    assertThat(nonBlocking(() -> workshop.p07_parallel(a0))).isEqualTo(a);
+
+    sendMessageProbe.assertWasSubscribed();
+    sendMessageProbe.assertWasNotCancelled();
+    auditProbe.assertWasSubscribed();
+    auditProbe.assertWasNotCancelled();
   }
 
   @Test

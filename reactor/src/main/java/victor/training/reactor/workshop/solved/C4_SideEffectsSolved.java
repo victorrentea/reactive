@@ -54,7 +54,10 @@ public class C4_SideEffectsSolved extends C4_SideEffects {
   @Override
   public Mono<A> p07_parallel(A a0) {
     return dependency.save(a0)
-            .delayUntil(a -> Mono.zip(dependency.sendMessage(a), dependency.audit(a)));
+            .delayUntil(a -> Mono.zip(
+                dependency.sendMessage(a).thenReturn(1), // 1 - to avoid cancelling the other
+                dependency.audit(a).thenReturn(1)) //
+            );
   }
 
   @Override
