@@ -2,11 +2,13 @@ package victor.training.reactor.workshop;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.platform.commons.function.Try;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -132,6 +134,22 @@ public class P4_SideEffectsTest {
     when(dependency.audit(a)).thenReturn(subscribed.once(Mono.delay(ofMillis(600)).then()));
 
     assertThat(nonBlocking(() -> workshop.p06_saveSend_par_AuditReturn(a0)).block()).isEqualTo(a);
+  }
+
+  @Test
+  void p06_saveSend_par_AuditReturn_noRaceBug() {
+    PublisherProbe<Void> sendMessageProbe = PublisherProbe.of(Mono.delay(ofMillis(10)).then());
+    PublisherProbe<Void> auditProbe = PublisherProbe.of(Mono.delay(ofMillis(10)).then());
+    when(dependency.save(a0)).thenReturn(subscribed.once(Mono.just(a)));
+    when(dependency.sendMessage(a)).thenReturn(sendMessageProbe.mono());
+    when(dependency.audit(a)).thenReturn(auditProbe.mono());
+
+    assertThat(nonBlocking(() -> workshop.p06_saveSend_par_AuditReturn(a0)).block()).isEqualTo(a);
+
+    sendMessageProbe.assertWasSubscribed();
+    sendMessageProbe.assertWasNotCancelled();
+    auditProbe.assertWasSubscribed();
+    auditProbe.assertWasNotCancelled();
   }
 
   @Test

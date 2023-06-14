@@ -137,9 +137,10 @@ public class P4_SideEffects {
   // ==================================================================================================
 
   /**
-   * TODO a = save(a0) then sendMessage(a) and audit(a); return a.
+   * TODO a = save(a0), then sendMessage(a) and audit(a); return a.
    *  BUT: to gain time, sendMessage and audit should happen in parallel.
-   * Note: Any error in either save(), send() or audit() should be returned in the returned Mono
+   *  WARNING: read the description of .zip carefully
+   * Note: Don't handle any error (any error in either save(), send() or audit() is allowed to flow in the returned Mono)
    */
   public Mono<A> p06_saveSend_par_AuditReturn(A a0) {
     return dependency.save(a0)
