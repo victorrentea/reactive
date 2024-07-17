@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.With;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.client.RestTemplate;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -64,12 +65,24 @@ public class C2_Enrich {
      * Hint: .zip
      */
     public Mono<AB> p01_a_par_b(int id) {
+//        RestTemplate restTemplate;
+//        restTemplate.getForEntity("http://some-api/customer/1",Customer.class) // blocant
+        // Mono<CUstomer> cm=WebClient.builder().baseUrl("http://some-api/customer/1").build().get().retrieve().bodyToMono(Customer.class) // non-blocant
+
         // approx equivalent blocking⛔️ code:
-        // A a = dependency.a(id).block();
-        // B b = dependency.b(id).block();
         // return Mono.just(new AB(a, b));
 
-        return null;
+        // asa se facea acum 15 ani
+        // $.http("url", function (result) {
+            // $.http("url", function (result) {
+            // }
+        // });
+        // promise-uri in js:  fetch("url").catch(=>).then(=>) // inlamtui callbackuri
+
+//        A a = dependency.a(id).block();
+//        B b = dependency.b(id).block();
+        return dependency.a(id)
+            .map(a->new AB(a, dependency.b(id).block()));
     }
 
     // ==================================================================================================
