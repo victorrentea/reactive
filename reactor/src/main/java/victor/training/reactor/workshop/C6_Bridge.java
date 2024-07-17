@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import victor.training.reactor.lite.Utils;
 
 import java.util.List;
@@ -71,8 +73,20 @@ public class C6_Bridge {
   // TODO call dependency#legacyBlockingCall() and return its result wrapped in a Mono.
   //  NOTE: you are only allowed to block threads of Schedulers.boundedElastic()
   public Mono<String> p03_blockingCalls() {
-    return null;
+    return Mono.fromSupplier(() -> dependency.legacyBlockingCall())
+        .log("SUS")
+        .subscribeOn(Schedulers.boundedElastic())
+        .log("JOS")
+        .publishOn(Schedulers.parallel())
+        .log("WTF")
+        ;
   }
+
+
+
+
+
+
 
   // ==================================================================================
   // TODO Adapt Mono to Java 8+ CompletableFuture

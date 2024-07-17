@@ -5,6 +5,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -36,8 +37,9 @@ public class MongoController {
    }
 
    @GetMapping(value = "flux-live", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-   public Flux<ServerSentEvent<String>> messageStream() {
+   public Flux<ServerSentEvent<String>> messageStream(@RequestParam String clientId) {
       return rxRepo.findAllByIdNotNull()
+               .filter(e->e.getValue().contains(clientId))
               .map(Event::getValue)
               .map(b -> ServerSentEvent.builder(b).build());
    }

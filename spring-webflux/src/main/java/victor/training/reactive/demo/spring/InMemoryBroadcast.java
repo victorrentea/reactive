@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +17,7 @@ import reactor.core.publisher.Sinks.EmitResult;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Slf4j
 @RestController
 public class InMemoryBroadcast {
    private AtomicInteger integer = new AtomicInteger(0);
@@ -24,11 +26,17 @@ public class InMemoryBroadcast {
 
    @GetMapping(value = "message/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
    public Flux<ServerSentEvent<ChatMessage>> messageStream(@RequestParam String topic) {
-
+      log.info("aa");
       return sink.asFlux()
           .log()
 
           .filter(message -> message.getTopic().equals(Topic.valueOf(topic)))
+          .map(message -> ServerSentEvent.builder(message).build());
+   }
+   @GetMapping(value = "message/stream2", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+   public Flux<ServerSentEvent<ChatMessage>> messageStre2am(@RequestParam String topic) {
+      log.info("aa");
+      return Flux.just(new ChatMessage(Topic.CHILD, "Hello"))
           .map(message -> ServerSentEvent.builder(message).build());
    }
 
