@@ -16,6 +16,9 @@ import java.util.List;
 public class Server {
   @PostMapping("process")
   public void process(@RequestBody List<Integer> elemente) {
+    if (elemente.stream().anyMatch(e -> e % 13 == 0)) {
+      throw new RuntimeException("Simulated error");
+    }
     log.info("Procesez elementele: {}", elemente);
   }
 }

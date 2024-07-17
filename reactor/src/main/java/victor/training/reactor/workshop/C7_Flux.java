@@ -59,17 +59,35 @@ public class C7_Flux {
     return Flux.empty();
   }
 
+
+
+
+
   // ==================================================================================
-  // TODO #1 for any incoming id > 0, .fetchOneById(id) and then send it to .sendMessage(a)
-  //  Hint: this method runs at startup of a fictitious app => It has to .subscribe() to the flux!
-  // TODO #2 any error in fetchOneById should be logged and the element discarded, but DO NOT cancel/stop the flux
+  // TODO #2 any error in fetchOneById should be logged and the element discarded,
+  //    but DO NOT cancel/stop the flux
   //  Hint: onError...
   // TODO #3 any error (fetch OR send) should be logged and the element discarded, but DO NOT cancel/stop the flux
   //  Hint: onErrorContinue
-  @PostConstruct
+//  KafkaReceiver kafkaReceiver;
+//  @PostConstruct // ma prefact
   public void p05_infinite(Flux<Integer> infiniteFlux) {
-    // .subscribe(); // <- the only safe place ?
+    infiniteFlux
+        .filter(id -> id > 0)
+        .flatMap(id -> dependency.fetchOneById(id)
+            .doOnError(ex-> System.err.println(ex))
+            .onErrorResume(ex->Mono.empty())
+        )
+        .flatMap(a -> dependency.sendMessage(a)
+            .onErrorResume(ex->Mono.empty())
+        )
+        .subscribe();// ma abonez
   }
+
+
+
+
+
 
   // ==================================================================================
   // TODO Batch requests together in pages of max 4 items, each element waiting max 200ms to be sent (bufferTimeout).

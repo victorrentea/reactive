@@ -9,7 +9,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -19,17 +19,34 @@ import java.util.stream.IntStream;
 @RequiredArgsConstructor
 public class Client {
   @GetMapping("/vali")
-  public Mono<Void> trimitLaUnServerGrameziDeDate() {
+  public Flux<Integer> trimitLaUnServerGrameziDeDate() {
 //    List<Integer> numbers = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
     //10000 elemente
     List<Integer> numbers = IntStream.range(0, 100).boxed().collect(Collectors.toList());
     return Flux.fromIterable(numbers)
         .buffer(5)
-        .flatMap(this::sendChunk)
-        .then();
+        .flatMap(this::sendChunk, 1) // max 3 pag odata trimit
+        ;
   }
 
-  private Mono<Void> sendChunk(List<Integer> numbers) {
+  private Flux<Integer> sendChunk(List<Integer> numbers) {
+    // cerinta daca crapa o pagina de 10,
+    // incearca sa trimiti cate 1 element odata
+    return send(numbers)
+        .thenMany(Flux.<Integer>empty())
+//        .sample(Duration.ofMillis(50))
+//        .onBackpressureBuffer()
+        .onErrorResume(err ->
+            Flux.fromIterable(numbers)
+                .flatMap(element -> send(List.of(element))
+                    .doOnError(e-> log.error("EROARE LA " + element))
+                    .thenMany(Flux.<Integer>empty())
+                    .onErrorResume(e-> Flux.just(element))
+                )
+        );
+  }
+
+  private @NotNull Mono<Void> send(List<Integer> numbers) {
     return WebClient.create().post().uri("http://localhost:8080/process")
         .bodyValue(numbers)
         .retrieve()
