@@ -1,5 +1,6 @@
 package victor.training.reactor.workshop;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,6 +22,7 @@ import static org.mockito.Mockito.*;
 import static reactor.core.publisher.Mono.*;
 import static victor.training.util.RunAsNonBlocking.nonBlocking;
 
+@Slf4j
 @ExtendWith(MockitoExtension.class)
 @TestMethodOrder(MethodName.class)
 public class C2_EnrichTest {
@@ -44,8 +46,16 @@ public class C2_EnrichTest {
 
     @Test
     void p01_a_par_b() {
-        when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
-        when(dependency.b(1)).thenReturn(subscribed.once(just(b)));
+//        when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
+//        when(dependency.b(1)).thenReturn(subscribed.once(just(b)));
+        when(dependency.a(1)).thenAnswer(invocation -> {
+            log.info("a(1) invoked");
+            return just(a);
+        });
+        when(dependency.b(1)).thenAnswer(invocation -> {
+           log.info("b(1) invoked");
+            return just(b);
+        });
 
         assertThat(workshop.p01_a_par_b(1).block()).isEqualTo(new AB(a, b));
     }
