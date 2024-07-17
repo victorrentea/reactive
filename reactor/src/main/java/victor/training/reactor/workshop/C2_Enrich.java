@@ -144,22 +144,25 @@ public class C2_Enrich {
    */
   public Mono<ABC> p04_a_then_b1_c1(int id) {
     return dependency.a(id)
-        .flatMap(a -> dependency.b1(a).zipWith(dependency.c1(a),
-                (b,c)-> new ABC(a, b,c))
-            );
+//        .flatMap(a -> dependency.b1(a).zipWith(dependency.c1(a),
+        .flatMap(a -> Mono.zip(
+            dependency.b1(a),
+            dependency.c1(a),
+            (b, c) -> new ABC(a, b, c))
+        );
   }
 
   // ==================================================================================================
 
   /**
    * Solve the same problem as above, by using multiple Mono<> variables.
-   * Hint: Use Mono#cache to avoid repeating the call to a(id)
    */
   public Mono<ABC> p04_a_then_b1_c1_cache(int id) {
     Mono<A> ma = dependency.a(id);
-    // Mono<B> mb =
-    // etc...
-    return null;
+    Mono<B> mb = ma.flatMap(a -> dependency.b1(a));
+    Mono<C> mc = ma.flatMap(a -> dependency.c1(a));
+    return Mono.zip(ma,mb,mc)
+        .map(function(ABC::new));
   }
 
 
