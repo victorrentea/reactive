@@ -159,6 +159,12 @@ public class C2_Enrich {
    */
   public Mono<ABC> p04_a_then_b1_c1_cache(int id) {
     Mono<A> ma = dependency.a(id);
+    // batranii reactivi evita variable de tip Mono/Flux
+    // pt a nu se subscrie accidental de 2-3 ori ca aici
+    // #bugInProd in Nordu capitalei
+
+    // filozofie: variabila ma nu e date. ci e o promisiune de date.
+    // chaineuind-o de mai multe ori = repet subcribe signal = trage mai multe requesturi
     Mono<B> mb = ma.flatMap(a -> dependency.b1(a));
     Mono<C> mc = ma.flatMap(a -> dependency.c1(a));
     return Mono.zip(ma,mb,mc)
