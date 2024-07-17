@@ -76,11 +76,11 @@ public class C7_Flux {
         .filter(id -> id > 0)
         .flatMap(id -> dependency.fetchOneById(id)
             .doOnError(ex-> System.err.println(ex))
-            .onErrorResume(ex->Mono.empty())
         )
-        .flatMap(a -> dependency.sendMessage(a)
-            .onErrorResume(ex->Mono.empty())
-        )
+        .flatMap(a -> dependency.sendMessage(a))
+        .onErrorContinue((exception, element) -> System.err.println("Valeu crapa el " + element + " cu err " + exception)) // un fel de AOP ce se propaga in sus
+        // pe flux si inveleste in siguranta toti operatorii
+        // linistindu-i precum Diazepamul
         .subscribe();// ma abonez
   }
 
