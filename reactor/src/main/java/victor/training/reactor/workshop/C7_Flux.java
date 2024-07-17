@@ -6,26 +6,32 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.One;
 
-import javax.annotation.PostConstruct;
+import java.time.Duration;
 import java.util.List;
-
-import static java.util.stream.Collectors.toMap;
 
 public class C7_Flux {
   protected Dependency dependency;
+
   public C7_Flux(Dependency dependency) {
     this.dependency = dependency;
   }
 
   @Value
-  protected static class A{int id;}
+  protected static class A {
+    int id;
+  }
+
   protected interface Dependency {
     Mono<A> fetchOneById(Integer id);
+
     Flux<A> fetchPageByIds(List<Integer> idPage);
+
     Mono<Void> sendMessage(A a);
 
     Mono<Void> sendOdd1(Integer oddMessage);
+
     Mono<Void> sendOdd2(Integer oddMessage);
+
     Mono<Void> sendEven(List<Integer> evenMessagePage);
   }
 
@@ -34,7 +40,7 @@ public class C7_Flux {
   // TODO #2 Print elements as they come in. What do you observe? (the original IDs are consecutive)
   // TODO #3 Restrict the concurrency to maximum 4 requests in parallel
   public Flux<A> p01_fetchMany(List<Integer> idList) {
-    System.out.println("IDs to fetch: "+ idList);
+    System.out.println("IDs to fetch: " + idList);
     return Flux.empty(); // Flux.fromIterable(idList)...
   }
 
@@ -60,9 +66,6 @@ public class C7_Flux {
   }
 
 
-
-
-
   // ==================================================================================
   // TODO #2 any error in fetchOneById should be logged and the element discarded,
   //    but DO NOT cancel/stop the flux
@@ -75,7 +78,7 @@ public class C7_Flux {
     infiniteFlux
         .filter(id -> id > 0)
         .flatMap(id -> dependency.fetchOneById(id)
-            .doOnError(ex-> System.err.println(ex))
+            .doOnError(ex -> System.err.println(ex))
         )
         .flatMap(a -> dependency.sendMessage(a))
         .onErrorContinue((exception, element) -> System.err.println("Valeu crapa el " + element + " cu err " + exception)) // un fel de AOP ce se propaga in sus
@@ -83,10 +86,6 @@ public class C7_Flux {
         // linistindu-i precum Diazepamul
         .subscribe();// ma abonez
   }
-
-
-
-
 
 
   // ==================================================================================
@@ -99,16 +98,18 @@ public class C7_Flux {
     int id;
     One<A> promise;
   }
+
   protected Sinks.Many<Request> requests = Sinks.many().unicast().onBackpressureBuffer();
 
   public void p06_configureRequestFlux() {
     requests.asFlux()
-            // TODO
-            //dependency.fetchPageByIds(idPage)
-            //request.getPromise().tryEmitValue(a)
-            .subscribe();
+        // TODO
+        //dependency.fetchPageByIds(idPage)
+        //request.getPromise().tryEmitValue(a)
+        .subscribe();
 
   }
+
   public Mono<A> p06_submitRequest(int id) {
     One<A> promise = Sinks.one();
     requests.tryEmitNext(new Request(id, promise));
@@ -137,12 +138,16 @@ public class C7_Flux {
   // Bonus: debate .buffer vs .window
   public Mono<Void> p09_groupedFlux(Flux<Integer> messageStream) {
     return messageStream
-        .flatMap(e -> switch (MessageType.forMessage(e)) {
-          case TYPE3_EVEN -> dependency.sendEven(List.of(e)).thenReturn(e);
-          case TYPE2_ODD -> Mono.zip(
-              dependency.sendOdd1(e).thenReturn(42),
-              dependency.sendOdd2(e).thenReturn(42)
-          );
+        .groupBy(e -> MessageType.forMessage(e))
+        .flatMap(groupedFlux -> switch (groupedFlux.key()) {
+          case TYPE3_EVEN ->
+              groupedFlux.bufferTimeout(3, Duration.ofMillis(200))
+                  .flatMap(grupuletzDeEven -> dependency.sendEven(grupuletzDeEven));
+          case TYPE2_ODD -> groupedFlux
+              .flatMap(e -> Mono.zip(
+                  dependency.sendOdd1(e).thenReturn(42),
+                  dependency.sendOdd2(e).thenReturn(42))
+              );
           case TYPE1_NEGATIVE -> Mono.empty();
         })
         .then();
