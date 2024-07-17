@@ -5,6 +5,7 @@ import lombok.Value;
 import lombok.With;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.client.RestTemplate;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -81,8 +82,9 @@ public class C2_Enrich {
 
 //        A a = dependency.a(id).block();
 //        B b = dependency.b(id).block();
-        return dependency.a(id)
-            .map(a->new AB(a, dependency.b(id).block()));
+        Mono<A> am = dependency.a(id);
+        Mono<B> bm = dependency.b(id);
+        return Mono.zip(am, bm, (a,b)->new AB(a,b));
     }
 
     // ==================================================================================================
