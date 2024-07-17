@@ -130,8 +130,6 @@ public class C7_Flux {
 
   // ==================================================================================
   // TODO based on the MessageType.forMessage(int) below, do one of the following:
-  //  - TYPE1_NEGATIVE: Do nothing (ignore the message)
-  //  - TYPE2_ODD: Call .sendOdd1(message) and .sendOdd2(message) in parallel
   //  - TYPE3_EVEN: Call .sendEven(List.of(oneMessage))
   //  - TYPE3_EVEN: Call .sendEven(pageOfMessages) <- ⭐️⭐️⭐️ HARD
   //      * to optimize network traffic send in pages of size = 3
@@ -139,8 +137,19 @@ public class C7_Flux {
   // Bonus: debate .buffer vs .window
   public Mono<Void> p09_groupedFlux(Flux<Integer> messageStream) {
     return messageStream
-            // .groupBy(MessageType::forMessage)
-            .then();
+        .flatMap(e->{
+          if (MessageType.forMessage(e) == MessageType.TYPE3_EVEN) {
+            return dependency.sendEven(List.of(e)).thenReturn(e);
+          } else {
+            return Mono.just(e);
+          }
+        })
+        .filter(e->MessageType.forMessage(e) == MessageType.TYPE2_ODD)
+        .flatMap(odd -> Mono.zip(
+            dependency.sendOdd1(odd).thenReturn(42),
+            dependency.sendOdd2(odd).thenReturn(42)
+        ))
+        .then();
   }
 
   protected enum MessageType {
