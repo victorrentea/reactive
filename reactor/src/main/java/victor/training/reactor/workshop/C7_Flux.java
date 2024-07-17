@@ -137,18 +137,14 @@ public class C7_Flux {
   // Bonus: debate .buffer vs .window
   public Mono<Void> p09_groupedFlux(Flux<Integer> messageStream) {
     return messageStream
-        .flatMap(e->{
-          if (MessageType.forMessage(e) == MessageType.TYPE3_EVEN) {
-            return dependency.sendEven(List.of(e)).thenReturn(e);
-          } else {
-            return Mono.just(e);
-          }
+        .flatMap(e -> switch (MessageType.forMessage(e)) {
+          case TYPE3_EVEN -> dependency.sendEven(List.of(e)).thenReturn(e);
+          case TYPE2_ODD -> Mono.zip(
+              dependency.sendOdd1(e).thenReturn(42),
+              dependency.sendOdd2(e).thenReturn(42)
+          );
+          case TYPE1_NEGATIVE -> Mono.empty();
         })
-        .filter(e->MessageType.forMessage(e) == MessageType.TYPE2_ODD)
-        .flatMap(odd -> Mono.zip(
-            dependency.sendOdd1(odd).thenReturn(42),
-            dependency.sendOdd2(odd).thenReturn(42)
-        ))
         .then();
   }
 
