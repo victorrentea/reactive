@@ -24,7 +24,8 @@ public class Part02MonoTest {
 
 	@Test
 	public void monoWithNoSignal() {
-		Mono<String> mono = workshop.monoWithNoSignal();
+		Mono<String> mono = workshop.monoWithNoSignal()
+				/*.timeout(Duration.ofMillis(300))*/;
 		StepVerifier
 				.create(mono)
 				.expectSubscription()
