@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.With;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import reactor.core.publisher.Mono;
 
 import static reactor.function.TupleUtils.function;
@@ -157,8 +158,10 @@ public class C2_Enrich {
   /**
    * Solve the same problem as above, by using multiple Mono<> variables.
    */
+//  @Cacheable
   public Mono<ABC> p04_a_then_b1_c1_cache(int id) {
-    Mono<A> ma = dependency.a(id).cache();
+    Mono<A> ma = dependency.a(id)
+        .cache(); // ATENTIE asta nu e cache intre requesturi
     // batranii reactivi evita variable de tip Mono/Flux
     // pt a nu se subscrie accidental de 2-3 ori ca aici
     // #bugInProd in Nordu capitalei
