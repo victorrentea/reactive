@@ -20,7 +20,8 @@ public class R2DBCController {
 
    @GetMapping(value = "flux", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
    public Flux<String> flux() {
-      return userRepository.findAll().map(User::getName);
+      return userRepository.findAll()
+          .map(User::getName);
    }
 
    @GetMapping("create")

@@ -172,8 +172,8 @@ public class C2_EnrichTest {
         when(dependency.c2(a, b)).thenReturn(subscribed.once(just(c)));
         when(dependency.d(1)).thenReturn(subscribed.once(just(d)));
 
-        P10UseCaseContext context = nonBlocking(() -> workshop.p10_contextPattern(1));
+        P10Context context = nonBlocking(() -> workshop.p10_contextPattern(1));
 
-        assertThat(context).isEqualTo(new P10UseCaseContext(1, a,b,c,d));
+        assertThat(context).isEqualTo(new P10Context(1, a,b,c,d));
     }
 }

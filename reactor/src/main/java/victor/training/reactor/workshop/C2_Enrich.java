@@ -204,19 +204,19 @@ public class C2_Enrich {
     @Value // immutable object
     @With // generates: public P10UseCaseContext withA(A newa) { return new P10UseCaseContext(newa, b,c,d); }
     @AllArgsConstructor
-    protected static class P10UseCaseContext {
+    protected static class P10Context {
         int id;
         A a;
         B b;
         C c;
         D d;
-        public P10UseCaseContext(int id) { // initial UC parameters
+        public P10Context(int id) { // initial UC parameters
             this(id, null, null, null, null);
         }
     }
-    public Mono<P10UseCaseContext> p10_contextPattern(int id) {
+    public Mono<P10Context> p10_contextPattern(int id) {
         // equivalent blocking⛔️ code:
-        P10UseCaseContext context = new P10UseCaseContext(id);
+        P10Context context = new P10Context(id);
         context = context.withA(dependency.a(context.getId()).block());
         context = context.withB(dependency.b1(context.getA()).block());
         context = context.withC(dependency.c2(context.getA(), context.getB()).block());
