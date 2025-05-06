@@ -84,8 +84,7 @@ public class C2_EnrichSolved extends C2_Enrich {
 
 
     public Mono<P10Context> p10_contextPattern(int id) {
-        return dependency.a(id).zipWith(dependency.d(id),
-                        (a, d) -> new P10Context(id).withA(a).withD(d))
+        return dependency.a(id).zipWith(dependency.d(id), (a, d) -> new P10Context(id).withA(a).withD(d))
                 .flatMap(context -> dependency.b1(context.getA()).map(context::withB))
                 .flatMap(context -> dependency.c2(context.getA(), context.getB()).map(context::withC));
     }

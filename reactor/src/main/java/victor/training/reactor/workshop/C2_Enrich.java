@@ -199,10 +199,10 @@ public class C2_Enrich {
     /**
      * === UseCase Context Pattern ===
      * The moral of the above example is to avoid method variables completely.
-     * a(id), then b1(a), then c2(a,b); also d(id) ==> P10UseCaseContext(a,b,c,d)
+     * a(id), then b1(a), then c2(a,b); also d(id) ==> P10Context(a,b,c,d)
      */
     @Value // immutable object
-    @With // generates: public P10UseCaseContext withA(A newa) { return new P10UseCaseContext(newa, b,c,d); }
+    @With // generates: public P10Context withA(A newa) { return new P10Context(newa, b,c,d); }
     @AllArgsConstructor
     protected static class P10Context {
         int id;
