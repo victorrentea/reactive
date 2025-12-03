@@ -12,6 +12,7 @@ import reactor.util.function.Tuple2;
 import java.util.List;
 import java.util.Scanner;
 import java.util.ServiceLoader;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 public class Utils {
@@ -42,6 +43,22 @@ public class Utils {
 
 
 	public static Mono<ResponseEntity<Void>> refreshWireMockStubsFromJson() {
-		return WebClient.create().post().uri("http://localhost:9999/__admin/mappings/reset").retrieve().toBodilessEntity();
-	}
+    CompletableFuture<ResponseEntity<String>> f1 = WebClient.create().post()
+        .uri("http://localhost:9999/__admin/mappings/reset")
+        .retrieve()
+        .toEntity(String.class)
+        .toFuture();
+
+    CompletableFuture<ResponseEntity<String>> f2 = WebClient.create().post()
+        .uri("http://localhost:9999/__admin/mappings/reset")
+        .retrieve()
+        .toEntity(String.class)
+        .toFuture();
+
+//    ResponseEntity<String> r1 = f1.get();
+//    ResponseEntity<String> r2 = f2.get();
+
+
+    return null;
+  }
 }

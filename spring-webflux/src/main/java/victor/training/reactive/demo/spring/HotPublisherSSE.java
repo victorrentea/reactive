@@ -8,10 +8,9 @@ import reactor.core.publisher.Flux;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
-import java.util.Objects;
 
 @RestController
-public class HotPublisher {
+public class HotPublisherSSE {
    private static final Flux<Long> coldFlux = Flux.interval(Duration.ofSeconds(1));
    @GetMapping(value = "tick/cold", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
    public Flux<String> cold() {
