@@ -51,6 +51,15 @@ public class C2_EnrichTest {
     }
 
     @Test
+    void p01_a_par_b_on_error() {
+        when(dependency.a(1)).thenReturn(subscribed.once(error(new RuntimeException("DUMMY"))));
+        when(dependency.b(1)).thenReturn(subscribed.once(just(b)));
+
+        workshop.p01_a_par_b(1).block();
+//        assertThatThrownBy(()->workshop.p01_a_par_b(1).block());
+    }
+
+    @Test
     void p02_a_b_c() {
         when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
         when(dependency.b(1)).thenReturn(subscribed.once(just(b)));

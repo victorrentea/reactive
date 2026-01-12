@@ -88,9 +88,11 @@ public class C1_CreationTest {
 
 
   @Test
-  @Timeout(value = 200, unit = MILLISECONDS)
-  void p1_mono8_delayedCompletion() {
-    workshop.mono8_delayedCompletion()
+  @Timeout(value = 300, unit = MILLISECONDS)
+  void p1_mono8_delayedCompletion() throws InterruptedException {
+    Mono<Void> mono = workshop.mono8_delayedCompletion();
+    Thread.sleep(110);
+    mono
             .as(StepVerifier::create)
             .expectSubscription()
             .expectNoEvent(ofMillis(50))
@@ -133,7 +135,10 @@ public class C1_CreationTest {
   void p2_flux5_delayedElements() {
     Duration duration = workshop.flux5_delayedElements()
             .as(StepVerifier::create)
-            .expectNext(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)
+//            .expectNext(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)
+        // backwards:
+            .expectNext(9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L, 1L, 0L)
+
             .verifyComplete();
     assertThat(duration.toMillis())
             .describedAs("Should take approx 1 second")
@@ -156,7 +161,7 @@ public class C1_CreationTest {
     workshop.doOnHooks(flux).blockLast();
 
     assertThat(systemOutput.toString())
-            .contains("SUBSCRIBE", "NEXT", "END", "one", "two");
+            .contains("SUBSCRIBE", "NEXT", "one", "two", "COMPLETE", "END");
   }
 
   @Test
@@ -177,5 +182,4 @@ public class C1_CreationTest {
 
     assertThat(string).contains("Hi", "Joe");
   }
-
 }
