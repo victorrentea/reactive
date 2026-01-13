@@ -6,6 +6,9 @@ import lombok.With;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.function.TupleUtils;
+
+import static reactor.function.TupleUtils.function;
 
 @Slf4j
 public class C2_Enrich {
@@ -84,9 +87,10 @@ public class C2_Enrich {
   public Mono<AB> p01_a_par_b(int id) {
     // approx equivalent blocking⛔️ code:
 
-    // why should you never .block() in /src/main/** in all but boundedElastic Scheduler
+    // ⭐️ do not .block() in /src/main/** in all but boundedElastic Scheduler
     // can hijack the promises of massive parallelism that reactive gives
-    // 👍 if you ever call network, that method must return a Publisher
+
+    // 👍 if you ever call network, that method must return a Publisher (mono/flux)
     var ma = dependency.a(id); // 1s
     var mb = dependency.b(id); // 2s
 
@@ -94,10 +98,16 @@ public class C2_Enrich {
 
     return ma.zipWith(mb, (a, b) -> new AB(a, b)); // if ma is "more important"
 //    return Mono.zip(ma, mb, AB::new); // === identical, or ≥3
-    // a() and b() happen in PARALLEL, that is: returned mono emits after 2s after subscription
+    // a() and b() network calls happen in PARALLEL,
+    // that is: returned mono emits after 2s after subscription
+
+    // Java CompletableFuture equivalent:
+    // CompletableFuture<A> futureA = supplyAsync(() -> blockingA(id));
+    // CompletableFuture<B> futureB = supplyAsync(() -> blockingB(id));
+    // return futureA.thenCombine(futureB, (a, b) -> new AB(a, b));
   }
 
-  // Zip RACE 😱😱😱
+  // ☢️☢️☢️ Zip RACE 😱😱😱
   // Mono<Void> sideEffect1; // no data, just completion
   // Mono<UUID> createEffect2; // emits the generated id
   // sideEffect1.zipWith(createEffect2).then();
@@ -114,14 +124,16 @@ public class C2_Enrich {
    */
   public Mono<ABC> p02_a_b_c(int id) {
     // approx equivalent blocking⛔️ code:
-    //A a = dependency.a(id).block();
-    //B b = dependency.b(id).block();
-    //C c = dependency.c(id).block();
-    //return Mono.just(new ABC(a, b, c));
+    var ma = dependency.a(id);
+    var mb = dependency.b(id);
+    var mc = dependency.c(id);
+    var mabc = Mono.zip(ma,mb,mc);//Function<P1,P2,P3,R>
+//    return mabc.map(t -> new ABC(t.getT1(), t.getT2(), t.getT3()));
 
-    // Hint: use Mono.zip (static method)
-    // Hint: avoid tuple -> {} by using TupleUtils.function((a,b,c) -> {})
-    return null;
+    // using reactor-utils
+//    return mabc.map(TupleUtils.function((a,b,c)->new ABC(a,b,c)));
+//    return mabc.map(TupleUtils.function(ABC::new));
+    return mabc.map(function(ABC::new));
   }
 
   // ==================================================================================================
@@ -133,15 +145,16 @@ public class C2_Enrich {
    * a(id), then b1(a) ==> AB(a,b)
    */
   public Mono<AB> p03_a_then_b1(int id) {
-    // approx equivalent blocking⛔️ code:
-    // A a = dependency.a(id).block();
-    // B b = dependency.b1(a).block();
-    // return Mono.just(new AB(a, b));
+//     A a = dependency.a(id).block(); // find user by id
+//     B b = dependency.b1(a).block(); // by the user.departmentId, fetch department by id
+//     return Mono.just(new AB(a, b)); // return user.name + dept name
 
-    // Hint: Mono#flatMap
-    return null;
+    return dependency.a(id)
+//        .flatMap(a->dependency.b1(a).map(b->new AB(a,b))) // same, but uglier
+        .zipWhen(dependency::b1, AB::new);//✅
   }
-
+  // use .map when your -> does not do IO
+  // use .flatMap when your -> hits network
   // ==================================================================================================
 
   /**
@@ -150,9 +163,13 @@ public class C2_Enrich {
    * calling b1() and c1() launch the network calls and return immediately, without blocking.
    */
   public Mono<ABC> p04_a_then_b1_c1(int id) {
-    // Hint mono.flatMap(->mono.zipWith(mono, ->))
-    return null;
+    var result =  dependency.a(id)
+        .zipWhen(a-> Mono.zip(dependency.b1(a), dependency.c1(a))
+            .map(tuple ->new ABC(a,tuple.getT1(), tuple.getT2())))
+        .map(t->t.getT2());
+    return result;
   }
+    // Hint mono.flatMap(->mono.zipWith(mono, ->))
 
   // ==================================================================================================
 
