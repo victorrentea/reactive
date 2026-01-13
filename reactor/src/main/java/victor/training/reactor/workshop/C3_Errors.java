@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 public class C3_Errors {
   protected final Logger log = LoggerFactory.getLogger(getClass());
@@ -99,13 +100,18 @@ public class C3_Errors {
   // TODO Call dependency#sendError(ex) on any exception in the call(),
   //  and then let the original error flow to the client
   public Mono<String> p05_sendError() {
+
 //    try {
 //      return dependency.call();
 //    } catch (Exception e) {
 //      dependency.sendError(e).block(); // <-- do this in a reactive style
 //      // when payment fails, call notification-service to tell the user that payment failed
 //      throw e;
-//    }
+//    }\
+
+//    Flux<String> fromADB;
+//    fromADB.subscribe(e->api.send(e));
+
     return dependency.call()
         .delaySubscription(Duration.ofMillis(5))
 //        .publishOn(Schedulers.newBoundedElastic(20, 100, "my-hibernate-pool"))
@@ -117,8 +123,27 @@ public class C3_Errors {
         // runs on parallel-1 (ot of max #CPUs=10)
         // tomcat had 200 threads default
 //        .doOnError(e -> dependency.sendError(e).block()); // ❌ don't block in src/main; blocked 10% of parallel scheduler (aka thread pool)
-        .doOnError(e -> dependency.sendError(e)); // ❌ NOTHING HAPPENS if you DON'T SUBSCRIBE ™️; no call is made2
+//        .doOnError(e -> dependency.sendError(e)); // ❌ NOTHING HAPPENS if you DON'T SUBSCRIBE ™️; no call is made2
 
+//        .onErrorResume(e->dependency.sendError(e).then(Mono.error(e))); // ⭐️
+
+        .doOnError(e -> dependency.sendError(e).subscribe());
+        // aka fire-and-forget vs ⭐️
+        // ± don't know if/when the action happened ⚠️any errors❌?
+        // - Broken-Chain effect: you don't propagate the ReactorContext metadata: security, OTEL traceId...
+        //      ie. sendError can't use any parent JWT AccessToken, won't propagate TraceID on that call
+        // ± cancellation of outer chain does not propagate in the fire-and-forget
+        // - backpressure
+        // ~ CompletableFuture.runAsync(()->backroundWork());
+
+        // Reactor COntext propagation
+//        .doOnEach(signal -> {
+//          if (signal.isOnError()) {
+//              dependency.sendError(signal.getThrowable())
+//                  .contextWrite(signal.getContextView())
+//                  .subscribe();
+//          }
+//        });
   }
 
   // ==================================================================================================
