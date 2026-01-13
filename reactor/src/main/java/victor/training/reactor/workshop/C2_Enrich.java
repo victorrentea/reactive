@@ -221,7 +221,7 @@ public class C2_Enrich {
         context = context.withD(dependency.d(id).block());
         // TODO propagate context along the reactive chain of .zipWith/.flatMap, enriching with each step's response
         return Mono.just(context);
-        // TODO optimize the flow (reduce its latency)
+        // TODO optimize the flow (reduce its latency) by parallelizing a call
     }
 
 }
