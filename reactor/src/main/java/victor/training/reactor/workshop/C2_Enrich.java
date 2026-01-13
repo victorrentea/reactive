@@ -103,7 +103,7 @@ public class C2_Enrich {
         // B b = dependency.b1(a).block();
         // return Mono.just(new AB(a, b));
 
-        // Hint: Mono#flatMap
+        // Mono.flatMap or Mono.zipWith ?
         return null;
     }
 
@@ -111,8 +111,6 @@ public class C2_Enrich {
 
     /**
      * a(id), then b1(a) || c1(a) ==> ABC(a,b,c)
-     * Remember, you are in Reactive Heaven😇:
-     *   calling b1() and c1() launch the network calls and return immediately, without blocking.
      */
     public Mono<ABC> p04_a_then_b1_c1(int id) {
         // Hint mono.flatMap(->mono.zipWith(mono, ->))
