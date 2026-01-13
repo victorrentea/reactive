@@ -13,6 +13,8 @@ import victor.training.util.SubscribedProbe;
 
 import java.time.Duration;
 
+import static java.time.Duration.ofMillis;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -167,13 +169,19 @@ public class C2_EnrichTest {
 
     @Test
     void p10_contextPattern() {
-        when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
-        when(dependency.b1(a)).thenReturn(subscribed.once(just(b)));
-        when(dependency.c2(a, b)).thenReturn(subscribed.once(just(c)));
-        when(dependency.d(1)).thenReturn(subscribed.once(just(d)));
+        when(dependency.a(1)).thenReturn(subscribed.once(just(a).delayElement(ofMillis(100))));
+        when(dependency.b1(a)).thenReturn(subscribed.once(just(b).delayElement(ofMillis(200))));
+        when(dependency.c2(a, b)).thenReturn(subscribed.once(just(c).delayElement(ofMillis(300))));
+        when(dependency.d(1)).thenReturn(subscribed.once(just(d).delayElement(ofMillis(400))));
 
         P10Context context = nonBlocking(() -> workshop.p10_contextPattern(1));
 
         assertThat(context).isEqualTo(new P10Context(1, a,b,c,d));
+    }
+
+    @Test
+    @Timeout(value = 700, unit = MILLISECONDS) // = max(a + b + c, d)
+    void p10_contextPattern_optimized() {
+        p10_contextPattern();
     }
 }
