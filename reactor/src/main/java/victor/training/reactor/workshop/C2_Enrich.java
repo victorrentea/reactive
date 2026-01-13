@@ -163,11 +163,11 @@ public class C2_Enrich {
    * calling b1() and c1() launch the network calls and return immediately, without blocking.
    */
   public Mono<ABC> p04_a_then_b1_c1(int id) {
-    var result =  dependency.a(id)
-        .zipWhen(a-> Mono.zip(dependency.b1(a), dependency.c1(a))
-            .map(tuple ->new ABC(a,tuple.getT1(), tuple.getT2())))
-        .map(t->t.getT2());
-    return result;
+    return dependency.a(id)
+        .flatMap(a-> Mono.zip(
+            dependency.b1(a),
+            dependency.c1(a),
+            (b,c)->new ABC(a,b,c)));
   }
     // Hint mono.flatMap(->mono.zipWith(mono, ->))
 
