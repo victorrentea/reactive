@@ -4,9 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.With;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.function.TupleUtils;
+
+import java.util.Optional;
 
 import static reactor.function.TupleUtils.function;
 
@@ -127,7 +127,7 @@ public class C2_Enrich {
     var ma = dependency.a(id);
     var mb = dependency.b(id);
     var mc = dependency.c(id);
-    var mabc = Mono.zip(ma,mb,mc);//Function<P1,P2,P3,R>
+    var mabc = Mono.zip(ma, mb, mc);//Function<P1,P2,P3,R>
 //    return mabc.map(t -> new ABC(t.getT1(), t.getT2(), t.getT3()));
 
     // using reactor-utils
@@ -163,13 +163,13 @@ public class C2_Enrich {
    * calling b1() and c1() launch the network calls and return immediately, without blocking.
    */
   public Mono<ABC> p04_a_then_b1_c1(int id) {
-    return dependency.a(id)
-        .flatMap(a-> Mono.zip(
+    return dependency.a(id) // ❤️❤️❤️ = expression function
+        .flatMap(a -> Mono.zip(
             dependency.b1(a),
             dependency.c1(a),
-            (b,c)->new ABC(a,b,c)));
+            (b, c) -> new ABC(a, b, c)));
   }
-    // Hint mono.flatMap(->mono.zipWith(mono, ->))
+  // Hint mono.flatMap(->mono.zipWith(mono, ->))
 
   // ==================================================================================================
 
@@ -178,12 +178,31 @@ public class C2_Enrich {
    * Hint: Use Mono#cache to avoid repeating the call to a(id)
    */
   public Mono<ABC> p04_a_then_b1_c1_cache(int id) {
-    Mono<A> ma = dependency.a(id);
-    // Mono<B> mb =
-    // etc...
-    return null;
+    // PROBLEM: A api call called 3x for subscribing 3 times to it: mb,mc,zip
+//    Mono<A> ma = dependency.a(id);
+//    Mono<B> mb = ma.flatMap(dependency::b1);
+//    Mono<C> mc = ma.flatMap(dependency::c1);
+//    return Mono.zip(ma, mb, mc).map(function(ABC::new));
+
+    // ☢️ impossible to spot this issue in Code Review ⚠️
+    // 👍 Takeaway: never define variables of type Mono/Flux ⭐️⭐️⭐️
+    Mono<A> ma = dependency.a(id).cache(); // ⚠️safe against concurrent subscriptions
+    // someone will forget .cache one day => resubscribing
+    return Mono.zip(ma,
+            ma.flatMap(dependency::b1),
+            ma.flatMap(dependency::c1))
+        .map(function(ABC::new));
   }
 
+  // expression functions: functions whose body is a single expression
+  // = extreme functional programming style
+
+  // Reactive Programming = Reactive Functional Programming
+
+//  @Cacheable
+//  Data fetchExpensiveData() {
+//     10s
+//  }
 
   // ==================================================================================================
 
@@ -191,34 +210,74 @@ public class C2_Enrich {
    * a(id), then b1(a), then c2(a,b) ==> ABC(a,b,c)
    */
   public Mono<ABC> p05_a_then_b1_then_c2(int id) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block();
-    B b = dependency.b1(a).block();
-    C c = dependency.c2(a, b).block();
-    return Mono.just(new ABC(a, b, c));
+    // TODO Solution #1: "traditional" .cache() -> avoid!❌
+//    var ma = dependency.a(id).cache();
+//    var mb = ma.flatMap(a->dependency.b1(a)).cache();
+////    var mc = Mono.zip(ma, mb, (a,b)-> dependency.c2(a, b))
+////        .flatMap(Function.identity()) // m->m; put the contents of the inner box into the outer box
+////                                      // [[1]] -> [1]
+////        /*.cache()*/; // not useful here;dangerous
+//    var mc = Mono.zip(ma, mb)
+//        .flatMap(tuple -> dependency.c2(tuple.getT1(), tuple.getT2()))
+//        .cache(); // for habbit
+//    return Mono.zip(ma,mb,mc).map(function(ABC::new));
 
-    // TODO Solution #1: accumulating data structures (chained flatMap)
+    // =============================
+    // EXTREME FP = CORRECT REACTIVE WAY @aditya ❤️❤️❤️❤️❤️❤️❤️
+    // TODO Solution #2 nested flatMap
+    var result = dependency.a(id)
+        .flatMap(a -> dependency.b1(a)
+            .flatMap(b -> dependency.c2(a,b)
+                .map(c -> new ABC(a,b,c))));
 
-    // TODO Solution #2 (geek): nested flatMap
+    // =============================
+    // TODO Solution #3: accumulating data structures (linear flatMap/zipWhen)
+    // aka Context pattern
+//    var result = dependency.a(id)
+//        .zipWhen(a -> dependency.b1(a), AB::new)
+//        .zipWhen(ab -> dependency.c2(ab.a, ab.b),
+//            (tab,c)->new ABC(tab.a, tab.b, c));
 
-    // TODO Solution #3 (risky): cached Mono<>
-    //      eg Mono<A> ma = dependency.a(id).cache();
+    return result;
   }
 
   // ==================================================================================================
 
   /**
    * a(id) then b1(a) ==> AB(a,b), but if b1(a) returns empty() => return AB(a,null)
-   * ⚠️ Watch out not to lose the data signals.
-   * Challenge: Reactor's Flux/Mono can never emit a "null" data signal.
-   * Hint: you might need an operator containing "empty" in its name
+   * a=user
+   * b=pshycho profile
    */
   public Mono<AB> p06_a_then_bMaybe(int id) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block();
-    B b = dependency.b1(a).block();
-    return Mono.just(new AB(a, b));
+    return dependency.a(id)
+        .flatMap(a -> dependency.b1(a)
+            .map(b -> new AB(a, b))
+            .defaultIfEmpty(new AB(a, null)));
+        // OptionalB.map(b->new AB(a,b)).orElse(new AB(a,null))
+
   }
+
+  // a+b => AB(a,b)
+  // a+null=>AB(a,null)
+  // null+b=>AB(null,b)
+  public Mono<AB> method(int aId, int bId) {
+    return Mono.zip(
+        // I NEED a data signal anyway in zip!!!, not an empty publisher
+        dependency.a(aId)
+            .map(Optional::of)
+            .defaultIfEmpty(Optional.empty()),
+        dependency.b(bId)
+            .map(Optional::of)
+            .defaultIfEmpty(Optional.empty()),
+//            .switchIfEmpty(Mono.just(Optional.empty())), overkill
+        (oa, ob) -> new AB(oa.orElse(null), ob.orElse(null))
+    );
+  }
+  // 1=boring; 3=business as usual; 5=bind-blown
+
+//           redisCache.findById(id).switchIfEmpty(repo.findById(id));
+
+  // new AB(a(id)? , b(id)?)
 
   // ==================================================================================================
 
@@ -229,28 +288,34 @@ public class C2_Enrich {
    * Finish the flow as fast as possible by starting a() in parallel with b()
    */
   public Mono<AB> p07_a_par_bMaybe(int id) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block(); // in parallel
-    B b = dependency.b(id).block(); // in parallel
-    return Mono.just(new AB(a, b));
+    return Mono.zip(dependency.a(id),
+        dependency.b(id).map(Optional::of).defaultIfEmpty(Optional.empty()),
+        (a, b) -> new AB(a, b.orElse(null)));
   }
 
   // ==================================================================================================
 
   /**
-   * a(id) || b(id) ==> AB(a,b), but if b(id) returns ERROR => return AB(a,null)
-   * ⚠️ Watch out not to lose the data signals.
+   * a(id) || b(id) ==> AB(a,b)
+   * but if b(id) returns ERROR => return AB(a,null)
    */
   public Mono<AB> p08_a_try_b(int id) {
-    // equivalent blocking⛔️ code:
-    A a = dependency.a(id).block();
-    B b = null;
-    try {
-      b = dependency.b(id).block();
-    } catch (Exception e) {
-    }
-    return Mono.just(new AB(a, b));
+//    A a = dependency.a(id).block();
+//    B b = null;
+//    try {
+//      b = dependency.b(id).block();
+//    } catch (Exception e) {
+//    }
+//    return Mono.just(new AB(a, b));
+    return Mono.zip(
+        dependency.a(id),
+        dependency.b(id)
+            .map(Optional::of)
+            .onErrorReturn(Optional.empty()), // lookup in some flaky system
+        (a, ob) -> new AB(a, ob.orElse(null)));
   }
+
+
 
   // ==================================================================================================
 
@@ -268,21 +333,36 @@ public class C2_Enrich {
     B b;
     C c;
     D d;
-
+//    public P10Context withA(A a) { // @With generates this automatically
+//      return this.a == a ? this : new P10Context(this.id, a, this.b, this.c, this.d);
+//    }
     public P10Context(int id) { // initial UC parameters
       this(id, null, null, null, null);
+    }
+
+    public void logMe() {
+      log.info("{}", this);
     }
   }
 
   public Mono<P10Context> p10_contextPattern(int id) {
-    // equivalent blocking⛔️ code:
-    P10Context context = new P10Context(id);
-    context = context.withA(dependency.a(context.getId()).block());
-    context = context.withB(dependency.b1(context.getA()).block());
-    context = context.withC(dependency.c2(context.getA(), context.getB()).block());
-    context = context.withD(dependency.d(id).block());
-    // propagate context along a chain, enriching it along a chain of .zipWith or .flatMap
-    return Mono.just(context);
+//    return Mono.just(new P10Context(id))
+//        .zipWhen(ctx-> dependency.a(ctx.getId()), P10Context::withA)
+//            // 👍§ NEVER do P10Context::withA again on this chain
+//        .zipWhen(ctx -> dependency.b1(ctx.a), P10Context::withB)
+//        .zipWhen(ctx -> dependency.c2(ctx.a, ctx.b), P10Context::withC)
+//
+//        .zipWith(dependency.d(id), P10Context::withD);
+
+    return Mono.just(new P10Context(id))
+        .zipWhen(ctx-> dependency.a(ctx.getId()), P10Context::withA)
+        .doOnNext(P10Context::logMe)
+            // 👍§ NEVER do P10Context::withA again on this chain
+        .zipWhen(ctx -> dependency.b1(ctx.a), P10Context::withB)
+        .zipWhen(ctx -> dependency.c2(ctx.a, ctx.b), P10Context::withC)
+
+        .zipWith(dependency.d(id), P10Context::withD); // - 400ms
+//        .zipWhen(ctx->dependency.d(id), P10Context::withD);
   }
 
 }

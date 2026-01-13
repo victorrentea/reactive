@@ -17,6 +17,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
+// TODO copy this to my project
 public class SubscribedProbe implements InvocationInterceptor {
   @Value
   private static class ProbeSpec {

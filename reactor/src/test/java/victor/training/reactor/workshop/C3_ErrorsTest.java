@@ -116,10 +116,13 @@ public class C3_ErrorsTest {
   void p05_sendError_KO() {
     TestRootCauseException ex = new TestRootCauseException();
     when(dependencyMock.call()).thenReturn(error(ex));
-    when(dependencyMock.sendError(ex)).thenReturn(subscribed.once(empty()));
+    when(dependencyMock.sendError(ex)).thenReturn(empty());
 
     assertThatThrownBy(() -> workshop.p05_sendError().block())
             .isInstanceOf(TestRootCauseException.class);
+
+    Mockito.verify(dependencyMock).sendError(ex); // BAD, LYING TEST
+    // means NOTHING; Mono was created, not necessarily subscribed!!!!!!!!
   }
 
   @Test

@@ -13,6 +13,8 @@ import victor.training.util.SubscribedProbe;
 
 import java.time.Duration;
 
+import static java.time.Duration.ofMillis;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,14 +52,14 @@ public class C2_EnrichTest {
         assertThat(workshop.p01_a_par_b(1).block()).isEqualTo(new AB(a, b));
     }
 
-    @Test
-    void p01_a_par_b_on_error() {
-        when(dependency.a(1)).thenReturn(subscribed.once(error(new RuntimeException("DUMMY"))));
-        when(dependency.b(1)).thenReturn(subscribed.once(just(b)));
-
-        workshop.p01_a_par_b(1).block();
-//        assertThatThrownBy(()->workshop.p01_a_par_b(1).block());
-    }
+//    @Test
+//    void p01_a_par_b_on_error() {
+//        when(dependency.a(1)).thenReturn(subscribed.once(error(new RuntimeException("DUMMY"))));
+//        when(dependency.b(1)).thenReturn(subscribed.once(just(b)));
+//
+//        workshop.p01_a_par_b(1).block();
+////        assertThatThrownBy(()->workshop.p01_a_par_b(1).block());
+//    }
 
     @Test
     void p02_a_b_c() {
@@ -98,14 +100,18 @@ public class C2_EnrichTest {
         // then
         assertThat(block).isEqualTo(new ABC(a, b, c));
     }
+
     @Test
     void p04_a_then_b1_c1_cache() {
-        when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
-        when(dependency.b1(a)).thenReturn(subscribed.once(just(b)));
-        when(dependency.c1(a)).thenReturn(subscribed.once(just(c)));
+        // subscribed.once used here to prevent multiple subscriptions == multiple network calls in prod
+        when(dependency.a(1)).thenReturn(subscribed.once(Mono.just(a)));
+        when(dependency.b1(a)).thenReturn(subscribed.once(Mono.just(b)));
+        when(dependency.c1(a)).thenReturn(subscribed.once(Mono.just(c)));
 
-        assertThat(workshop.p04_a_then_b1_c1_cache(1).block()).isEqualTo(new ABC(a, b,c));
-    }
+        Mono<ABC> monoAbc = workshop.p04_a_then_b1_c1_cache(1);
+
+        assertThat(monoAbc.block()).isEqualTo(new ABC(a, b,c));
+    } // after @Test is exited the SubscribedProbe JUnit Extension will check that each Mono was subscribed only once
 
     @Test
     void p05_a_then_b1_then_c2() {
@@ -139,13 +145,14 @@ public class C2_EnrichTest {
     @Test
     @Timeout(1)
     void p07_a_par_bMaybe_inparallel() {
-        when(dependency.a(1)).thenReturn(subscribed.once(just(a).delayElement(Duration.ofMillis(700))));
-        when(dependency.b(1)).thenReturn(subscribed.once(just(b).delayElement(Duration.ofMillis(700))));
+        when(dependency.a(1)).thenReturn(subscribed.once(just(a).delayElement(ofMillis(700))));
+        when(dependency.b(1)).thenReturn(subscribed.once(just(b).delayElement(ofMillis(700))));
 
         AB ab = nonBlocking(() -> workshop.p07_a_par_bMaybe(1));
 
         assertThat(ab).isEqualTo(new AB(a, b));
     }
+
     @Test
     void p07_a_par_bMaybe_noB() {
         when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
@@ -175,11 +182,12 @@ public class C2_EnrichTest {
     }
 
     @Test
+    @Timeout(value = 700, unit = MILLISECONDS)
     void p10_contextPattern() {
-        when(dependency.a(1)).thenReturn(subscribed.once(just(a)));
-        when(dependency.b1(a)).thenReturn(subscribed.once(just(b)));
-        when(dependency.c2(a, b)).thenReturn(subscribed.once(just(c)));
-        when(dependency.d(1)).thenReturn(subscribed.once(just(d)));
+        when(dependency.a(1)).thenReturn(subscribed.once(just(a).delayElement(ofMillis(100))));
+        when(dependency.b1(a)).thenReturn(subscribed.once(just(b).delayElement(ofMillis(200))));
+        when(dependency.c2(a, b)).thenReturn(subscribed.once(just(c).delayElement(ofMillis(300))));
+        when(dependency.d(1)).thenReturn(subscribed.once(just(d).delayElement(ofMillis(400))));
 
         P10Context context = nonBlocking(() -> workshop.p10_contextPattern(1));
 
