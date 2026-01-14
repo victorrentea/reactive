@@ -45,6 +45,7 @@ public class ComplexFlowSolved {
                 .map(product::withRating)
                 .defaultIfEmpty(product);
     }
+
     private static Flux<Product> retrieveMultipleProducts(List<Long> productIdList) {
         if (true) Flux.error(new RuntimeException());
 

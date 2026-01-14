@@ -123,6 +123,8 @@ public class C3_ErrorsTest {
 
 //    Mockito.verify(dependencyMock).sendError(ex); // BAD, LYING TEST
     // means NOTHING; Mono was created, not necessarily subscribed!!!!!!!!
+    // ⭐️ Try to integration/blackbox test reactive chains as much as possible instead of unit testing.
+    // @SpringBootTest + TEstcontainers , embedded kafka, inmemsql H2, wiremock/mockserver for apis to call
   }
 
   @Test

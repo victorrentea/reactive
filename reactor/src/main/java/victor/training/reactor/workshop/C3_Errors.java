@@ -14,6 +14,9 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
+import static java.time.Duration.ofMillis;
+import static reactor.util.retry.Retry.*;
+
 public class C3_Errors {
   protected final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -113,7 +116,7 @@ public class C3_Errors {
 //    fromADB.subscribe(e->api.send(e));
 
     return dependency.call()
-        .delaySubscription(Duration.ofMillis(5))
+        .delaySubscription(ofMillis(5))
 //        .publishOn(Schedulers.newBoundedElastic(20, 100, "my-hibernate-pool"))
 //        .publishOn(Schedulers.newBoundedElastic(Integer.MAX_VALUE, 0, Thread::ofVirtual,"my-hibernate-pool"))
 //        .flatMap
@@ -153,15 +156,43 @@ public class C3_Errors {
   //  If a call takes more than 50 millis, consider it to be failure and retry.
   // If needed, investingate using .log("above") / .log("below")
   public Mono<String> p06_retryThenLogError() {
-    return dependency.call();
+    return dependency.call()
+        .log("before timeout")
+        .timeout(ofMillis(50))
+        .log("after timeout")
+
+        // signal hook do to non-blocking stuff (typically logging)
+        .doOnError(e->log.error("x"))
+          //does not change any signal.
+          //reactor context is not changed/used
+
+        // handling the error: replacing, retrying,wrapping
+//        .onErrorResume(mono)
+//        .onErrorReturn(value)
+
+        .retry(3)
+//        .timeout(Duration.ofMillis(150)) // 150ms here for ALL THE RETRIES SUM
+        .doOnError(e -> log.error("SCRAP-LOGS-TAG " + e))
+        ;
   }
+
+
+
+
+
 
   // ==================================================================================================
 
   // TODO Call dependency#call() again on error, maximum 4 times in total (as above)
   //  but leave 200 millis backoff between the calls.
   public Mono<String> p07_retryWithBackoff() {
-    return dependency.call();
+//    Bulkhead bulkhead = Bulkhead.ofDefaults("name").maxConcurrency(3);
+    // from resilience4j https://resilience4j.readme.io/docs/examples-1
+    return dependency.call()
+//        .log()
+        .doOnSubscribe(s-> log.info("CALL"))
+        .retryWhen(backoff(3, ofMillis(200)).maxBackoff(ofMillis(200)))
+        ;
   }
 
   // ==================================================================================================
@@ -171,11 +202,29 @@ public class C3_Errors {
    * Close the resource (Writer) *after* the future completes.
    */
   public Mono<Void> p08_usingResourceThatNeedsToBeClosed() throws IOException {
-    try (Writer writer = new FileWriter("out.txt")) {// <-- make sure you close the writer AFTER the Mono completes
-      return dependency.downloadManyElements()
-              .doOnNext(Unchecked.consumer(s -> writer.write(s))) // Unchecked.consumer converts any exception into a runtime one
-              .then();
-    }
+//    try (Writer writer = new FileWriter("out.txt")) {// <-- make sure you close the writer AFTER the Mono completes
+//      return dependency.downloadManyElements()
+//              .doOnNext(Unchecked.consumer(s -> writer.write(s))) // Unchecked.consumer converts any exception into a runtime one
+//              .then();
+//    }
+    return Mono.using( //~ try-with-resources
+        // produce the resource
+        () -> new FileWriter("out.txt"),
+
+        // act with it
+        writer -> dependency.downloadManyElements() // network download "GET"
+
+            .doOnNext(Unchecked.consumer(s -> writer.write(s)))
+            // what if writing throw an exception?
+
+//            .onErrorContinue()
+            // lack of backpressure could become a problem if writing is slower than downloading = NOT LIKELY
+            // to enable backpressure if I were sending to another system (eg. Kafka), I'd use .flatMap(.., concurrency: X)
+            .then(),
+
+        // close it
+        Unchecked.consumer(Writer::close)
+    );
   }
 
 }
