@@ -59,9 +59,10 @@ public class C2_Enrich {
     // ==================================================================================================
 
     /**
-     * Call a(id) and b(id) with the given id, then call AB(a,b) with the results retrieved.
+     * Call a(id) and b(id) with the given id,
+     * then call AB(a,b) with the results retrieved.
      * a(id) || b(id) ==> AB(a,b)
-     * Hint: .zip
+     * Hint: Mono.zip
      */
     public Mono<AB> p01_a_par_b(int id) {
         // approx equivalent blocking⛔️ code:
@@ -92,9 +93,7 @@ public class C2_Enrich {
     // ==================================================================================================
 
     /**
-     * Call a(id) with the given parameter,
-     * then b1(a) with the retrieved a;
-     * return both a and b.
+     * Call a(id) with the given parameter, then b1(a) with the retrieved a; return both.
      * a(id), then b1(a) ==> AB(a,b)
      */
     public Mono<AB> p03_a_then_b1(int id) {
@@ -120,8 +119,8 @@ public class C2_Enrich {
     // ==================================================================================================
 
     /**
-     * Solve the same problem as above, by using multiple Mono<> variables.
-     * Hint: Use Mono#cache to avoid repeating the call to a(id)
+     * Solve the same problem as above by using multiple Mono<> variables.
+     * Hint: Mono#cache can avoid resubscribing (repeating the call) to a(id)
      */
     public Mono<ABC> p04_a_then_b1_c1_cache(int id) {
         Mono<A> ma = dependency.a(id);
@@ -143,19 +142,18 @@ public class C2_Enrich {
          C c = dependency.c2(a, b).block();
          return Mono.just(new ABC(a, b, c));
 
-        // TODO Solution #1: accumulating data structures (chained flatMap)
+        // TODO Solution: accumulate data using flat, chained flatMap/zipWhen
 
-        // TODO Solution #2 (geek): nested flatMap
+        // TODO Solution: nested flatMap
 
-        // TODO Solution #3 (risky): cached Mono<>
-        //      eg Mono<A> ma = dependency.a(id).cache();
+        // TODO Solution: eg Mono<A> ma = dependency.a(id).cache();
     }
 
     // ==================================================================================================
     /**
-     * a(id) then b1(a) ==> AB(a,b), but if b1(a) returns empty() => return AB(a,null)
-     * ⚠️ Watch out not to lose the data signals.
-     * Challenge: Reactor's Flux/Mono can never emit a "null" data signal.
+     * a(id) then b1(a) ==> AB(a,b), ⚠️ but if b1(a) returns empty() => return AB(a,null)
+     * ⚠️ Don't lose data signals.
+     * Remember: Reactor's Flux/Mono cannot emit a "null" data signal.
      * Hint: you might need an operator containing "empty" in its name
      */
     public Mono<AB> p06_a_then_bMaybe(int id) {
@@ -168,9 +166,8 @@ public class C2_Enrich {
     // ==================================================================================================
     /**
      * a(id) || b(id) ==> AB(a,b), but if b(id) returns empty() => return AB(a,null)
-     * ⚠️ Watch out not to lose the data signals.
-     * Challenge: Reactor's Flux/Mono can never emit a "null" data signal.
-     * Finish the flow as fast as possible by starting a() in parallel with b()
+     * ⚠️ Don't lose data signals.
+     * Challenge: Finish the flow as fast as possible by starting a() in parallel with b()
      */
     public Mono<AB> p07_a_par_bMaybe(int id) {
         // equivalent blocking⛔️ code:
