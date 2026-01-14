@@ -185,6 +185,11 @@ public class C7_FluxTest {
             workshop.p06_submitRequest(4).toFuture(),
             workshop.p06_submitRequest(5).toFuture()
     );
+   // create a list of 100 requests using stream
+//    List<Future<A>> futures = IntStream.rangeClosed(1, 100)
+//            .mapToObj(workshop::p06_submitRequest)
+//            .map(Mono::toFuture)
+//            .collect(toList());
     List<A> results = futures.stream().map(Unchecked.function(Future::get)).collect(toList());
     assertThat(results).containsExactly(new A(1), new A(2), new A(3), new A(4), new A(5));
   }

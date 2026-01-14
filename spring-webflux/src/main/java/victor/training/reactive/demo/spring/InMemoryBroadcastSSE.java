@@ -30,6 +30,7 @@ public class InMemoryBroadcastSSE {
   ) {
     return sink.asFlux()
         .log()
+//        . filter(message->message.recipient.includes(current user))
         .filter(message -> message.getTopic() == topic)
         .map(message -> ServerSentEvent.builder(message).build());
   }

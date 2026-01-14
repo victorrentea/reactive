@@ -6,10 +6,17 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.One;
+import reactor.core.scheduler.Schedulers;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 @Slf4j
 public class C7_Flux {
@@ -96,7 +103,21 @@ public class C7_Flux {
     return idFlux
 //        .buffer(4)
         .bufferTimeout(4, Duration.ofMillis(200))
-        .flatMapSequential(idPage -> dependency.fetchPageByIds(idPage), 2);
+        .flatMapSequential(idPage -> dependency.fetchPageByIds(idPage), 2)
+
+        .parallel() // spans over all CPUS
+        .runOn(Schedulers.parallel())
+        .map(e->cpuBoundWork(e)) // GPU
+        .sequential()
+
+//        .parallel(40 gpus) // spans over all CPUS
+//        .runOn(Schedulers.newParallel(gpu,40))
+        ;
+  }
+
+  public A cpuBoundWork(A a) {
+    // dig sig, compression, bezier curves, ML inferencing
+    return a;
   }
 
   // ==================================================================================
@@ -130,38 +151,55 @@ public class C7_Flux {
         //aspect all above operators with a try { } cathch. magic, but must-have in infinite fluxes
         .onErrorContinue((ex,previousElement)->log.info("Elem "+previousElement+" failed with "+ex))
 
+        // if this were a flux coming from a Kafka topic via Reactor-Kafka,
+        //  you'd want to ack the message only after sendMessage() completes successfully
+        //Flux<Record>  having record.ackowledge()
+
         .subscribe(); //⭐️ <- the only safe place ?
     // at startup fire in background the processing of messages, and let it run forever
   }
 
-
   // ==================================================================================
+  // Multiplexed reading from a service that supports bulk reads
   // TODO Batch requests together in pages of max 4 items, each element waiting max 200ms to be sent (bufferTimeout).
   //  when a page of results comes back, complete the respective opened Mono<>
   // Any call to submit request is returned a MOno that is completed later when the item in the page returns
   // WARNING: EXTRA-EXTRA-EXTRA HARD
+
+//  @GetMapping // client http request asking for 1 item
+  public Mono<A> p06_submitRequest(int id) {
+    One<A> promise = Sinks.one(); // will emit 1 element in the future ~ CompletableFuture === promise
+    // Sink.one is a Mono that later you can manually push a value into
+    requests.tryEmitNext(new Request(id, promise)).orThrow(); // imperative push into a Flux
+    return promise.asMono(); // spring will wait on this promise without blocking
+  }
   @Value
   protected static class Request {
     int id;
     One<A> promise;
   }
-
-  protected Sinks.Many<Request> requests = Sinks.many().unicast().onBackpressureBuffer();
-
+  protected Sinks.Many<Request> requests = Sinks.many() // Flux that to which we can imperatively push elements
+      .unicast() // only 1 subscriber allowed
+      .onBackpressureBuffer(/*new ArrayBlockingQueue<>(1000)*/); /*default:unbounded*/
+//      .onBackpressureError();
+  // @PostConstruct
   public void p06_configureRequestFlux() {
     requests.asFlux()
-        // TODO
-        //dependency.fetchPageByIds(idPage)
-        //request.getPromise().tryEmitValue(a)
+        .log("request")
+        .bufferTimeout(4, Duration.ofMillis(200))
+        .flatMap(idList -> {
+          List<Integer> ids = idList.stream().map(Request::getId).collect(toList());
+          Map<Integer, One<A>> promisesById = idList.stream().collect(toMap(Request::getId, Request::getPromise));
+          return dependency.fetchPageByIds(ids)
+              .map(a->promisesById.get(a.id).tryEmitValue(a));
+        }, 2)
+        //request.getPromise().tryEmitValue(a)<<<<<<<<
         .subscribe();
-
   }
 
-  public Mono<A> p06_submitRequest(int id) {
-    One<A> promise = Sinks.one();
-    requests.tryEmitNext(new Request(id, promise));
-    return promise.asMono();
-  }
+  //Real world example use cases of
+  // Sinks.one().unicast(), Sinks.one().multicast(), Sinks.many().unicast(), Sinks.many().multicast() so we can wrap our head around ?
+
 
 
   // ==================================================================================
