@@ -1,29 +1,26 @@
 package victor.training.reactor.workshop;
 
 import lombok.AllArgsConstructor;
-import lombok.Value;
 import lombok.With;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.ExecutionException;
 
 public class C9_ComplexFlow {
-  @Value protected static class A {String value;}
-  @Value protected static class B {String value;}
-  @Value protected static class C {String value;}
-  @Value protected static class D {String value;}
+  protected static final Logger log = LoggerFactory.getLogger(C9_ComplexFlow.class);
 
-  @Value
+  protected record A(String value) { }
+  protected record B(String value) { }
+  protected record C(String value) { }
+  protected record D(String value) { }
+
   @With
-  @AllArgsConstructor
-  protected static class MyContext {
-    A a;
-    B b;
-    C c;
-    D d;
-    A a1;
+  protected record MyContext(A a, B b, C c, D d, A a1) {
     public MyContext() {
-      this(null, null, null, null, null);}
+      this(null, null, null, null, null);
+    }
   }
   protected interface Dependency {
     Mono<A> a(int id);
@@ -40,36 +37,35 @@ public class C9_ComplexFlow {
     this.dependency = dependency;
   }
 
-  // ==================================================================================================
-  // ⭐️⭐️⭐️ Final Challenge ⭐️⭐️⭐️
-
   /**
-   * a0 = a(id), b = b1(a0), c = c1(a0), d = d(id)
+   * READ: a0 = a(id), b = b1(a0), c = c1(a0), d = d(id)
    * --
-   * a1=logic(a0,b,c,d)
+   * PROCESS: a1=logic(a0,b,c,d)
    * --
+   * WRITE:
    * saveA(a1)
    * auditA(a1,a0); <- !! Don't wait for this to complete (=fire-and-forget),
    *     but make sure any errors in audit are logged in console
+   * RETURN saved a.id
    *
    * You are allowed to create any new data structures (immutable, of course)
    * Play: redesign to propagate an Immutable Context (pattern) around
    */
   public Mono<Void> p06_complexFlow(int id) throws ExecutionException, InterruptedException {
-    // equivalent blocking⛔️ code:
-    // 1. data fetching
+    // equivalent, broken blocking⛔️ code:
+    // 1. READ
     A a0 = dependency.a(id).block();
     B b = dependency.b(a0).block();
     C c = dependency.c(a0).block();
     D d = dependency.d(id).block();
 
-    // 2. logic
+    // 2. PROCESS
     A a1 = logic(a0, b, c, d);
 
     // 3. save & side effects
     dependency.saveA(a1).block();
     dependency.auditA(a1, a0); // <- don't wait for this to complete
-    return Mono.just(null);
+    return Mono.empty();
   }
 
   public A logic(A a, B b, C c, D d) {
