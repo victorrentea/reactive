@@ -26,14 +26,15 @@ import java.util.stream.IntStream;
  */
 public class ThenManyThreadSelection {
 
-  private static final int PARALLELISM = 4;
+  private static final int PARALLELISM = 4;//RUntime,availableProcessors();
   private static final int PREFETCH = 20;
   private static final Random RANDOM = new Random();
   private static final Logger log = LoggerFactory.getLogger(ThenManyThreadSelection.class);
 
   // Shared scheduler across multiple concurrent Flux operations, ~ prod
   private final Scheduler sharedParallelScheduler =
-      Schedulers.newParallel("shared-worker", PARALLELISM);
+      Schedulers.newParallel("shared-worker", PARALLELISM /** 3*/); // Fix#2, costs +8 threads x .5 MB = 4MB more RAM
+  // that supports up to 3 concurrent process() invocation
 
   private static void logRail(String message, String operationId, Integer railId) {
     log.info("{}, rail={}: {}", operationId, railId, message);
@@ -51,29 +52,31 @@ public class ThenManyThreadSelection {
    * (e.g., "shared-worker-1") across different concurrent Flux executions,
    * causing serialization.
    */
-  public Flux<Output> process(Flux<Input> items, String operationId) {
+  public Flux<Output> process(Flux<Input> items, String operationId) { // called in parallel 3 times op-1,op-2,op-3
     logRail("Starting process()", operationId, null);
     return items
         .parallel(PARALLELISM, PREFETCH)
         .runOn(sharedParallelScheduler, PREFETCH)
         .groups()
-        .flatMap(groupedFlux -> groupedFlux
+        .flatMap(groupedFlux -> groupedFlux // 4 of them
+            // by the time you enter this .flatMap, the items were already assigned to rails
             .doOnNext(input -> {
-              doSomeWork(input,operationId, groupedFlux.key());
+              doSomeWork(input,operationId, groupedFlux.key()); // fast work
             })
             .doOnComplete(() -> logRail("Rail complete", operationId, groupedFlux.key())),
             PARALLELISM)
         // After parallel completes, thenMany runs
         // QUESTION: Which thread runs this? Often seems to be the same one
         // across concurrent operations, causing serialization
-        .thenMany(runExpensiveGatherOperation(operationId)
-//            .subscribeOn(gatherScheduler) // ✅Recommended FIX
+        .thenMany(runExpensiveGatherOperation(operationId) // long work
+            .subscribeOn(gatherScheduler) // ✅Recommended FIX#1 , reduces 4438ms down to 1879ms
         )
+        // Both solutions rely on having more threads eager for CPU in runnable state for OS scheduler to pick from
         .doOnComplete(() -> logRail("process() COMPLETE", operationId, null))
         ;
   }
 
-  Scheduler gatherScheduler = Schedulers.newParallel("gather-worker", PARALLELISM);
+  Scheduler gatherScheduler = Schedulers.newParallel("gather-worker", PARALLELISM); // other +4 threads
 
 
 
@@ -158,11 +161,11 @@ public class ThenManyThreadSelection {
 
     // Create more substantial test data for each operation
     Flux<Input> items1 = Flux.fromStream(
-        IntStream.range(0, 10).mapToObj(i -> new Input("op1-item-" + i)));
+        IntStream.range(0, 7).mapToObj(i -> new Input("op1-item-" + i)));
     Flux<Input> items2 = Flux.fromStream(
-        IntStream.range(0, 20).mapToObj(i -> new Input("op2-item-" + i)));
+        IntStream.range(0, 7).mapToObj(i -> new Input("op2-item-" + i)));
     Flux<Input> items3 = Flux.fromStream(
-        IntStream.range(0, 30).mapToObj(i -> new Input("op3-item-" + i)));
+        IntStream.range(0, 7).mapToObj(i -> new Input("op3-item-" + i)));
 
     // Use CountDownLatch to wait for all operations to complete
     CountDownLatch latch = new CountDownLatch(3);

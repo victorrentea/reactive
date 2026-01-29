@@ -37,16 +37,16 @@ public class ParallelMapVisibility {
    * merging values for the same key across different buckets
    */
   public Flux<Result> process(Flux<Item> items) {
-    return Flux.using(
+    return Flux.using( // try-with-resources style
         // Create shared state that will be modified by parallel rails
-        () -> new BucketedState(PARALLELISM),
+        () -> new BucketedState(PARALLELISM), // new FileOutputStream("...")
 
         state -> items
             .parallel(PARALLELISM, PREFETCH)
             .runOn(parallelScheduler, PREFETCH)
             .groups()
             .flatMap(
-                groupedFlux -> {
+                groupedFlux -> { // 4 of them
                   // Each rail gets its own bucket ID
                   int bucketId = groupedFlux.key();
 
@@ -61,13 +61,14 @@ public class ParallelMapVisibility {
                 PARALLELISM)
             // After all parallel rails complete, thenMany runs
             // QUESTION: Are the writes to the bucket maps visible here?
+            // L1,L2 of CPU
 
             // ANSWER YES: https://docs.google.com/document/d/10L034c6KTLYDW82O-uNIKy45suRjlB-kVAiCpBiXUOA/edit?tab=t.0
-
+            // later operator is guaranteed to HAPPEN-AFTER earlier operators complete (L1,L2 cache are flushed to RAM)
             // TODO why pre-aggregate per bucket before merging? go FP
             .thenMany(gatherResultsFromAllBuckets(state)),
 
-        BucketedState::close
+        BucketedState::close // auto-close the state (like closing a file)
     );
   }
 
@@ -117,7 +118,8 @@ public class ParallelMapVisibility {
 
     // Called from parallel rails - each bucket only accessed by one rail
     void addToBucket(int bucketId, String key, String value) {
-      bucketMaps[bucketId]
+      Map<String, Set<String>> mapOfMyRail = bucketMaps[bucketId];
+      mapOfMyRail
           .computeIfAbsent(key, k -> new HashSet<>())
           .add(value);
     }
@@ -130,6 +132,7 @@ public class ParallelMapVisibility {
     @Override
     public void close() {
       // cleanup TODO is it really needed?
+      // if not needed -> you dont need to use .using
     }
   }
 

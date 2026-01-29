@@ -16,41 +16,42 @@ public class MetadataPropagation {
 
   public static void main(String[] args) {
     Listener listener = new Listener();
-    /*from io.micrometer:context-propagation*/
-    ContextRegistry.getInstance().registerThreadLocalAccessor(
+    ContextRegistry.getInstance().registerThreadLocalAccessor(  /*from io.micrometer:context-propagation:1.1.3*/
         "mdc",
-        MDC::getCopyOfContextMap,      // capture
+        () -> {
+//          log.info("AHA!");
+          return MDC.getCopyOfContextMap();
+        },      // capture
         m -> { if (m == null) MDC.clear(); else MDC.setContextMap(m); }, // restore
         MDC::clear                     // cleanup
     );
-
-    Hooks.enableAutomaticContextPropagation();
+    Hooks.enableAutomaticContextPropagation(); // reactor 3.7
 
     MDC.put("myKey", "myValue");
     log.info("in main thread: " + MDC.get("myKey"));
-    Flux.fromStream(IntStream.range(0, 10)
-            .mapToObj(Integer::toString))
+    Flux.just("1")
         .doOnNext(listener::onEvent)
-//        .contextCapture() // only needed if Hooks.enableAutomaticContextPropagation() is not used
-        .blockLast();
+//        .contextCapture() // not needed if using Hooks.enableAutomaticContextPropagation()
+        .subscribeOn(Schedulers.boundedElastic())
+        .blockLast(); // runs all the work in main as there's no delay operator or network netty call
   }
-
   static class Listener {
     Sinks.Many<String> outputs = Sinks.many().unicast().onBackpressureBuffer();
 
-    void onEvent(String event) {
-      log.info("onEvent: " + MDC.get("myKey"));
-      outputs.tryEmitNext(event);
+    Listener() { // running in main() before⚠️ MDC is set
+      log.info("Listener constructor: " + MDC.get("myKey"));
+      outputs.asFlux()
+          .doOnNext(e -> log.info(".doOnNext: " + MDC.get("myKey")))
+          .publishOn(Schedulers.newParallel("listener2-", 4)) // move to a new thread
+          .doOnNext(e -> log.info(".doOnNext AFTER publishOn: " + MDC.get("myKey")))
+          .subscribe(msg -> log.info(".subscribe: " + MDC.get("myKey")));
     }
 
-    Listener() {
-      outputs.asFlux()
-          .doOnNext(e -> log.info("doOnNext : " + MDC.get("myKey")))
-          .publishOn(Schedulers.newParallel("listener-", 4))
-//          .subscribeOn(Schedulers.newParallel("listener-", 4))
-          .doOnNext(e -> log.info("doOnNext AFTER publishOn: " + MDC.get("myKey")))
-//          .contextCapture()
-          .subscribe(msg -> log.info(".subscribe: " + MDC.get("myKey")));
+    void onEvent(String event) {
+      log.info("onEvent call: " + MDC.get("myKey"));
+      MDC.put("myKey", "myValue-modified-in-onEvent"); // bad practice to modify MDC in such method
+      outputs.tryEmitNext(event); // copies current THreadLocal MDC into the emitted element's reactor context
+      log.info("After emit");
     }
   }
 }
