@@ -111,46 +111,6 @@ public class ThenManyThreadSelectionPrototype {
 
   LinkedHashSet<String> threadsThatRanThenMany = new LinkedHashSet<>();
 
-  /**
-   * Alternative approach to potentially ameliorate the serialization issue:
-   * Use subscribeOn to force thenMany onto a different scheduler
-   */
-  public Flux<Output> processWithSubscribeOnWorkaround(Flux<Input> items, String operationId) {
-    // Separate scheduler for gather operations
-    Scheduler gatherScheduler = Schedulers.newParallel("gather-worker", PARALLELISM);
-
-    return items
-        .parallel(PARALLELISM, PREFETCH)
-        .runOn(sharedParallelScheduler, PREFETCH)
-        .groups()
-        .flatMap(
-            groupedFlux -> groupedFlux.doOnNext(input -> doSomeWork(input, operationId, groupedFlux.key())),
-            PARALLELISM)
-        .thenMany(
-            Flux.defer(() -> {
-              logRail("thenMany with subscribeOn", operationId, null);
-              return Flux.fromIterable(() -> createExpensiveIterator(operationId));
-            }).subscribeOn(gatherScheduler)  // Force onto different scheduler
-        );
-  }
-
-  /**
-   * Another alternative: Use publishOn before thenMany
-   */
-  public Flux<Output> processWithPublishOnWorkaround(Flux<Input> items, String operationId) {
-    Scheduler gatherScheduler = Schedulers.boundedElastic();
-    return items
-        .parallel(PARALLELISM, PREFETCH)
-        .runOn(sharedParallelScheduler, PREFETCH)
-        .groups()
-        .flatMap(
-            groupedFlux -> groupedFlux.doOnNext(input -> doSomeWork(input, operationId, groupedFlux.key())),
-            PARALLELISM)
-        .thenMany(
-            runExpensiveGatherOperation(operationId)
-                .publishOn(gatherScheduler)  // Switch execution context
-        );
-  }
 
 
   private Iterator<Output> createExpensiveIterator(String operationId) {
