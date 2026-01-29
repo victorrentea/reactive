@@ -1,5 +1,7 @@
 package victor.training.reactor.study;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
@@ -8,12 +10,12 @@ import reactor.core.scheduler.Schedulers;
 import java.util.stream.IntStream;
 
 public class Main2 {
-    private static final Logger logger = LoggerFactory.getLogger(Main2.class);
+    private static final Logger log = LoggerFactory.getLogger(Main2.class);
     public static void main(String[] args) {
         Listener listener = new Listener();
 
         MDC.put("myKey", "myValue");
-        logger.info("start");
+        log.info("start");
         Flux.fromStream(IntStream.range(0, 1000)
             .mapToObj(Integer::toString))
             .doOnNext(listener::onEvent)
@@ -29,7 +31,7 @@ public class Main2 {
         Listener() {
             outputs.asFlux()
                 .publishOn(Schedulers.newParallel("listener-", 4))
-                .subscribe(logger::info);
+                .subscribe(log::info);
         }
     }
 }

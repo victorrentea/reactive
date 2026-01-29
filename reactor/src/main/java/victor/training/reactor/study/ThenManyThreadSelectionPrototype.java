@@ -1,14 +1,12 @@
 package victor.training.reactor.study;
 
-import org.xmlunit.builder.Input;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.IntStream;
 
@@ -31,10 +29,15 @@ public class ThenManyThreadSelectionPrototype {
   private static final int PARALLELISM = 4;
   private static final int PREFETCH = 20;
   private static final Random RANDOM = new Random();
+  private static final Logger log = LoggerFactory.getLogger(ThenManyThreadSelectionPrototype.class);
 
   // Shared scheduler across multiple concurrent Flux operations, ~ prod
   private final Scheduler sharedParallelScheduler =
       Schedulers.newParallel("shared-worker", PARALLELISM);
+
+  private static void logRail(String message, String operationId, Integer railId) {
+    log.info("{}, rail={}: {}", operationId, railId, message);
+  }
 
   /**
    * This method creates a Flux that:
@@ -49,28 +52,40 @@ public class ThenManyThreadSelectionPrototype {
    * causing serialization.
    */
   public Flux<Output> process(Flux<Input> items, String operationId) {
+    logRail("Starting process()", operationId, null);
     return items
         .parallel(PARALLELISM, PREFETCH)
         .runOn(sharedParallelScheduler, PREFETCH)
         .groups()
-        .flatMap(groupedFlux -> {
-              int railId = groupedFlux.key();
-
-              return groupedFlux
-                  .doOnNext(input -> {
-                    // Parallel processing work
-                    logThread("Parallel CPU work", operationId, railId);
-                    doSomeWork(input);
-                  })
-                  .doOnComplete(() -> {
-                    logThread("Rail complete", operationId, railId);
-                  });
-            },
+        .flatMap(groupedFlux -> groupedFlux
+            .doOnNext(input -> {
+              doSomeWork(input,operationId, groupedFlux.key());
+            })
+            .doOnComplete(() -> logRail("Rail complete", operationId, groupedFlux.key())),
             PARALLELISM)
         // After parallel completes, thenMany runs
         // QUESTION: Which thread runs this? Often seems to be the same one
         // across concurrent operations, causing serialization
-        .thenMany(runExpensiveGatherOperation(operationId));
+        .thenMany(runExpensiveGatherOperation(operationId)
+//            .subscribeOn(gatherScheduler) // ✅Recommended FIX
+        )
+        .doOnComplete(() -> logRail("process() COMPLETE", operationId, null))
+        ;
+  }
+
+  Scheduler gatherScheduler = Schedulers.newParallel("gather-worker", PARALLELISM);
+
+
+
+  private void doSomeWork(Input input, String operationId, Integer railId) {
+    try {
+      int sleepTime = 5 + RANDOM.nextInt(96);
+      logRail("Parallel CPU work taking ms="+sleepTime + " on " + input, operationId, railId);
+      Thread.sleep(sleepTime);
+      logRail("Parallel CPU work DONE", operationId, railId);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
   }
 
   /**
@@ -81,18 +96,20 @@ public class ThenManyThreadSelectionPrototype {
   private Flux<Output> runExpensiveGatherOperation(String operationId) {
     return Flux.defer(() -> {
       long startTime = System.currentTimeMillis();
-      logThread("thenMany gather operation START", operationId, -1);
+      logRail("🟢thenMany gather operation START", operationId, null);
 
-      // Simulate expensive work that we want to parallelize across
-      // multiple concurrent Flux operations
+      // Simulate expensive work that we want to parallelize across multiple concurrent Flux chains
       Iterator<Output> expensiveIterator = createExpensiveIterator(operationId);
 
       long elapsed = System.currentTimeMillis() - startTime;
-      logThread("thenMany gather operation END (took " + elapsed + "ms)", operationId, -1);
+      logRail("🔴thenMany gather operation END (took " + elapsed + "ms)", operationId, null);
+      threadsThatRanThenMany.add(Thread.currentThread().getName());
 
       return Flux.fromIterable(() -> expensiveIterator);
     });
   }
+
+  LinkedHashSet<String> threadsThatRanThenMany = new LinkedHashSet<>();
 
   /**
    * Alternative approach to potentially ameliorate the serialization issue:
@@ -107,11 +124,11 @@ public class ThenManyThreadSelectionPrototype {
         .runOn(sharedParallelScheduler, PREFETCH)
         .groups()
         .flatMap(
-            groupedFlux -> groupedFlux.doOnNext(input -> doSomeWork(input)),
+            groupedFlux -> groupedFlux.doOnNext(input -> doSomeWork(input, operationId, groupedFlux.key())),
             PARALLELISM)
         .thenMany(
             Flux.defer(() -> {
-              logThread("thenMany with subscribeOn", operationId, -1);
+              logRail("thenMany with subscribeOn", operationId, null);
               return Flux.fromIterable(() -> createExpensiveIterator(operationId));
             }).subscribeOn(gatherScheduler)  // Force onto different scheduler
         );
@@ -122,13 +139,12 @@ public class ThenManyThreadSelectionPrototype {
    */
   public Flux<Output> processWithPublishOnWorkaround(Flux<Input> items, String operationId) {
     Scheduler gatherScheduler = Schedulers.boundedElastic();
-
     return items
         .parallel(PARALLELISM, PREFETCH)
         .runOn(sharedParallelScheduler, PREFETCH)
         .groups()
         .flatMap(
-            groupedFlux -> groupedFlux.doOnNext(input -> doSomeWork(input)),
+            groupedFlux -> groupedFlux.doOnNext(input -> doSomeWork(input, operationId, groupedFlux.key())),
             PARALLELISM)
         .thenMany(
             runExpensiveGatherOperation(operationId)
@@ -136,20 +152,6 @@ public class ThenManyThreadSelectionPrototype {
         );
   }
 
-  private void logThread(String phase, String operationId, int railId) {
-    System.out.printf("[%s] %s - operation=%s, rail=%d%n",
-        Thread.currentThread().getName(), phase, operationId, railId);
-  }
-
-  private void doSomeWork(Input input) {
-    // Simulate work with random duration (5-50ms)
-    try {
-      int sleepTime = 5 + RANDOM.nextInt(46);
-      Thread.sleep(sleepTime);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-    }
-  }
 
   private Iterator<Output> createExpensiveIterator(String operationId) {
     // Simulate expensive iterator creation - this takes real time!
@@ -157,7 +159,7 @@ public class ThenManyThreadSelectionPrototype {
     List<Output> results = new ArrayList<>();
 
     // Simulate expensive computation - random 200-500ms
-    int expensiveWorkTime = 200 + RANDOM.nextInt(301);
+    int expensiveWorkTime = 1000+ 200 + RANDOM.nextInt(301);
     try {
       Thread.sleep(expensiveWorkTime);
     } catch (InterruptedException e) {
@@ -196,11 +198,11 @@ public class ThenManyThreadSelectionPrototype {
 
     // Create more substantial test data for each operation
     Flux<Input> items1 = Flux.fromStream(
-        IntStream.range(0, 20).mapToObj(i -> new Input("op1-item-" + i)));
+        IntStream.range(0, 10).mapToObj(i -> new Input("op1-item-" + i)));
     Flux<Input> items2 = Flux.fromStream(
         IntStream.range(0, 20).mapToObj(i -> new Input("op2-item-" + i)));
     Flux<Input> items3 = Flux.fromStream(
-        IntStream.range(0, 20).mapToObj(i -> new Input("op3-item-" + i)));
+        IntStream.range(0, 30).mapToObj(i -> new Input("op3-item-" + i)));
 
     // Use CountDownLatch to wait for all operations to complete
     CountDownLatch latch = new CountDownLatch(3);
@@ -208,24 +210,15 @@ public class ThenManyThreadSelectionPrototype {
 
     // Subscribe to all three concurrently
     prototype.process(items1, "op-1")
-        .doOnComplete(() -> {
-          System.out.println(">>> op-1 COMPLETE");
-          latch.countDown();
-        })
+        .doOnComplete(latch::countDown)
         .subscribe();
 
     prototype.process(items2, "op-2")
-        .doOnComplete(() -> {
-          System.out.println(">>> op-2 COMPLETE");
-          latch.countDown();
-        })
+        .doOnComplete(latch::countDown)
         .subscribe();
 
     prototype.process(items3, "op-3")
-        .doOnComplete(() -> {
-          System.out.println(">>> op-3 COMPLETE");
-          latch.countDown();
-        })
+        .doOnComplete(latch::countDown)
         .subscribe();
 
     // Wait for all to complete
@@ -234,7 +227,7 @@ public class ThenManyThreadSelectionPrototype {
 
     System.out.println("---");
     System.out.println("Total time for all 3 operations: " + totalTime + "ms");
-
+    System.out.println("Threads that ran thenMany gather operations: " + prototype.threadsThatRanThenMany);
     // Dispose the scheduler to allow JVM to exit
     prototype.sharedParallelScheduler.dispose();
   }

@@ -17,6 +17,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>1.18.42</version>
         </dependency>
         <dependency>
             <!-- detect blocking code in non-blocking context -->
