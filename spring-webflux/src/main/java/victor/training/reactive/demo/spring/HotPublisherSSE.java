@@ -1,12 +1,12 @@
 package victor.training.reactive.demo.spring;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
 
-import javax.annotation.PostConstruct;
 import java.time.Duration;
 
 @RestController

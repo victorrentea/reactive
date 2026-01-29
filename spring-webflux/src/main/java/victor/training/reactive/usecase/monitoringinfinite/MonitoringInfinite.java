@@ -1,11 +1,11 @@
 package victor.training.reactive.usecase.monitoringinfinite;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import victor.training.reactive.Utils;
 
-import javax.annotation.PostConstruct;
 import java.time.Duration;
 
 

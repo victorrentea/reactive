@@ -24,12 +24,12 @@ import java.util.stream.IntStream;
  * across multiple concurrent operations (each with their own Flux), which results
  * in serialization of those thenMany actions. What is the best way to ameliorate this?
  */
-public class ThenManyThreadSelectionPrototype {
+public class ThenManyThreadSelection {
 
   private static final int PARALLELISM = 4;
   private static final int PREFETCH = 20;
   private static final Random RANDOM = new Random();
-  private static final Logger log = LoggerFactory.getLogger(ThenManyThreadSelectionPrototype.class);
+  private static final Logger log = LoggerFactory.getLogger(ThenManyThreadSelection.class);
 
   // Shared scheduler across multiple concurrent Flux operations, ~ prod
   private final Scheduler sharedParallelScheduler =
@@ -145,7 +145,7 @@ public class ThenManyThreadSelectionPrototype {
    * Demonstrates the serialization problem with multiple concurrent operations
    */
   public static void main(String[] args) throws InterruptedException {
-    ThenManyThreadSelectionPrototype prototype = new ThenManyThreadSelectionPrototype();
+    ThenManyThreadSelection prototype = new ThenManyThreadSelection();
 
     System.out.println("=== ThenMany Thread Selection Prototype ===");
     System.out.println("This demonstrates how thenMany() selects threads after parallel/flatMap");

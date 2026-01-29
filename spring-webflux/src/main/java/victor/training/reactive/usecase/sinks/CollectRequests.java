@@ -1,5 +1,6 @@
 package victor.training.reactive.usecase.sinks;
 
+import jakarta.annotation.PostConstruct;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +15,6 @@ import reactor.core.publisher.Sinks.EmitResult;
 import reactor.core.publisher.Sinks.Many;
 import reactor.core.publisher.Sinks.One;
 
-import javax.annotation.PostConstruct;
 import java.util.UUID;
 
 import static java.time.Duration.ofMillis;

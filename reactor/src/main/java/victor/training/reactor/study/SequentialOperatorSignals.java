@@ -14,7 +14,7 @@ import static reactor.core.scheduler.Schedulers.boundedElastic;
 import static reactor.core.scheduler.Schedulers.parallel;
 
 @Slf4j
-public class RaceOrNot {
+public class SequentialOperatorSignals {
   static class State {
     Deque<String> elements = new ArrayDeque<>();
     Flux<String> process(String element) {
@@ -39,6 +39,7 @@ public class RaceOrNot {
 //        .concatMap(element -> state.process(element))
 
         .flatMap(element -> state.process(element))
+        // 👍 Does NOT race as REACTOR guarantees that one operator's -> is never called in parallel on the same Flux instance
         .blockLast();
   }
 

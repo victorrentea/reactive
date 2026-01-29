@@ -1,12 +1,12 @@
 package victor.training.reactor.workshop;
 
+import jakarta.annotation.PostConstruct;
 import lombok.Value;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.One;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 
 import static java.util.stream.Collectors.toMap;

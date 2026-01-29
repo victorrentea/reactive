@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestTemplate;
 import reactor.blockhound.BlockHound;
 import reactor.core.publisher.Flux;
@@ -81,22 +80,6 @@ BlockHoundTest {
       System.out.println(s);
    }
 
-   @Test
-   void asyncRestTemplatDoeNOTBLOCK() {
-      BlockHound.install();
-
-      String s = Mono.defer(() -> {
-               log.info("I am now in");
-             CompletableFuture<ResponseEntity<String>> cf =
-                 new AsyncRestTemplate().getForEntity("http://localhost:9999/api/product/6", String.class)
-                 .completable();
-             return Mono.fromFuture(cf);
-          })
-          .subscribeOn(Schedulers.parallel())
-          .map(HttpEntity::getBody)
-          .block();
-      System.out.println(s);
-   }
 
    @Test
    void test() {
